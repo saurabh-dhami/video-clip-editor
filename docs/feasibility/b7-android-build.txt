@@ -1,0 +1,17 @@
+Requested command:
+./gradlew :video-clip-editor-core:compileKotlinAndroid :video-clip-editor-compose:compileKotlinAndroid
+
+Result: NOT RUN. `./gradlew` was not generated because the required wrapper-generation command failed:
+
+Command:
+gradle wrapper --gradle-version 9.4.1
+
+Failure:
+> Task :wrapper FAILED
+Execution failed for task ':wrapper' (registered by plugin 'org.gradle.wrapper').
+> Test of distribution url https://services.gradle.org/distributions/gradle-9.4.1-bin.zip failed. Please check the values set with --gradle-distribution-url and --gradle-version.
+
+Additional environment constraint:
+`/usr/libexec/java_home -V 2>&1` reports only JDK 17.0.14; required JDK 21 is absent.
+
+Dependency lock output: NOT PRODUCED. Wrapper and required JDK 21 unavailable.

@@ -1,23 +1,51 @@
-Command: gradle --version
+# Task 1 toolchain evidence
 
+Java path: `/opt/homebrew/opt/openjdk@21/libexec/openjdk.jdk/Contents/Home`
+
+Official URL proof:
+
+```text
+Command: curl -fsSIL --proto '=https' --tlsv1.2 https://services.gradle.org/distributions/gradle-9.4.1-bin.zip
+Result: final HTTP/2 200 (via official services.gradle.org redirect chain)
+```
+
+Bootstrap distribution:
+
+```text
+Command: curl -fsSL --proto '=https' --tlsv1.2 https://services.gradle.org/distributions/gradle-9.4.1-bin.zip -o .gradle-bootstrap/gradle-9.4.1-bin.zip
+Expected SHA-256: 2ab2958f2a1e51120c326cad6f385153bb11ee93b3c216c5fccebfdfbb7ec6cb
+Verification result: .gradle-bootstrap/gradle-9.4.1-bin.zip: OK
+```
+
+Wrapper generation:
+
+```text
+Initial command: JAVA_HOME=/opt/homebrew/opt/openjdk@21/libexec/openjdk.jdk/Contents/Home .gradle-bootstrap/gradle-9.4.1/bin/gradle wrapper --gradle-version 9.4.1 --distribution-type bin --gradle-distribution-sha256-sum 2ab2958f2a1e51120c326cad6f385153bb11ee93b3c216c5fccebfdfbb7ec6cb
+Initial result: FAILED. Gradle Java URL HEAD timed out after 10000ms: java.net.SocketTimeoutException: Connect timed out.
+Fallback command: JAVA_HOME=/opt/homebrew/opt/openjdk@21/libexec/openjdk.jdk/Contents/Home .gradle-bootstrap/gradle-9.4.1/bin/gradle wrapper --no-validate-url --gradle-version 9.4.1 --distribution-type bin --gradle-distribution-sha256-sum 2ab2958f2a1e51120c326cad6f385153bb11ee93b3c216c5fccebfdfbb7ec6cb
+Fallback justification: verified ZIP plus separate successful official curl URL proof; fallback used once.
+Generated JAR expected SHA-256: 55243ef57851f12b070ad14f7f5bb8302daceeebc5bce5ece5fa6edb23e1145c
+Verification result: gradle/wrapper/gradle-wrapper.jar: OK
+```
+
+Wrapper cache note: the generated wrapper's Java download timed out despite the successful curl proof. Its distribution cache was seeded solely from the already SHA-256-verified bootstrap ZIP before the first `./gradlew` execution.
+
+`./gradlew --version` actual output:
+
+```text
 ------------------------------------------------------------
-Gradle 9.5.0
+Gradle 9.4.1
 ------------------------------------------------------------
 
-Build time:    2026-04-28 12:05:30 UTC
-Revision:      3fe117d68f3907790f3809f121aa36303a9151f8
+Build time:    2026-03-19 08:46:28 UTC
+Revision:      2d6327017519d23b96af35865dc997fcb544fb40
 
-Kotlin:        2.3.20
+Kotlin:        2.3.0
 Groovy:        4.0.29
 Ant:           Apache Ant(TM) version 1.10.15 compiled on August 25 2024
-Launcher JVM:  25.0.2 (Homebrew 25.0.2)
-Daemon JVM:    /opt/homebrew/Cellar/openjdk/25.0.2/libexec/openjdk.jdk/Contents/Home (no Daemon JVM specified, using current Java home)
+Launcher JVM:  21.0.12 (Homebrew 21.0.12)
+Daemon JVM:    /opt/homebrew/Cellar/openjdk@21/21.0.12/libexec/openjdk.jdk/Contents/Home (no Daemon JVM specified, using current Java home)
 OS:            Mac OS X 15.6 aarch64
+```
 
-Command: /usr/libexec/java_home -V 2>&1
-
-Matching Java Virtual Machines (1):
-    17.0.14 (arm64) "Amazon.com Inc." - "Amazon Corretto 17" /Users/sandeepdhami/Library/Java/JavaVirtualMachines/corretto-17.0.14/Contents/Home
-/Users/sandeepdhami/Library/Java/JavaVirtualMachines/corretto-17.0.14/Contents/Home
-
-Result: JDK 21 absent. Required `./gradlew --version` cannot run because the pinned Gradle 9.4.1 distribution cannot be validated or generated.
+Cleanup: untracked `.gradle-bootstrap/` deleted only after generated JAR verification and successful wrapper version command.

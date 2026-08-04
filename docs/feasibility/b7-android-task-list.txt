@@ -1,0 +1,510 @@
+
+> Configure project :video-clip-editor-compose
+w: [33m[1m⚠️ Native task 'iosX64Test' is disabled[0m[0m
+Task 'iosX64Test' for target 'ios_x64' cannot run on the current host (macos-aarch64).
+Reason: architecture mismatch - target requires X64, current host is ARM64
+[32m[1mSolution:[0m[0m
+[32m[3mTo suppress this warning, add 'kotlin.native.ignoreDisabledTargets=true' to gradle.properties.[0m[0m
+
+
+> Task :video-clip-editor-core:tasks
+
+------------------------------------------------------------
+Tasks runnable from project ':video-clip-editor-core'
+------------------------------------------------------------
+
+Build tasks
+-----------
+allMetadataJar - Assembles a jar archive containing the metadata for all Kotlin source sets.
+androidSourcesJar - Assembles a jar archive containing the sources of target 'android'.
+assemble - Assembles the outputs of this project.
+assembleAndroidTest - Assembles all the Test applications.
+assembleUnitTest - Assembles all the unit test applications.
+build - Assembles and tests this project.
+buildDependents - Assembles and tests this project and all projects that depend on it.
+buildKotlinToolingMetadata - Build metadata json file containing information about the used Kotlin tooling
+buildNeeded - Assembles and tests this project and all projects it depends on.
+clean - Deletes the build directory.
+cleanAllTests - Deletes all the test results.
+compileAppleMainKotlinMetadata - Compiles a klibrary from the 'appleMain' compilation in target 'metadata'.
+compileIosMainKotlinMetadata - Compiles a klibrary from the 'iosMain' compilation in target 'metadata'.
+compileKotlinIosArm64 - Compiles a klibrary from the 'main' compilation in target 'iosArm64'.
+compileKotlinIosSimulatorArm64 - Compiles a klibrary from the 'main' compilation in target 'iosSimulatorArm64'.
+compileKotlinIosX64 - Compiles a klibrary from the 'main' compilation in target 'iosX64'.
+compileNativeMainKotlinMetadata - Compiles a klibrary from the 'nativeMain' compilation in target 'metadata'.
+compileTestKotlinIosArm64 - Compiles a klibrary from the 'test' compilation in target 'iosArm64'.
+compileTestKotlinIosSimulatorArm64 - Compiles a klibrary from the 'test' compilation in target 'iosSimulatorArm64'.
+compileTestKotlinIosX64 - Compiles a klibrary from the 'test' compilation in target 'iosX64'.
+embedSwiftExportForXcode - Embed swift export library as requested by Xcode's environment variables
+extractAndroidMainAnnotations - Extracts Android annotations for the androidMain variant into the archive file
+iosArm64Binaries - Assembles outputs for target 'iosArm64'.
+iosArm64MainBinaries - Links all binaries for compilation 'main' of target 'iosArm64'.
+iosArm64MainKlibrary - Assembles outputs for compilation 'main' of target 'iosArm64'
+iosArm64MetadataElements - Assembles Kotlin metadata of target 'iosArm64'.
+iosArm64SourcesJar - Assembles a jar archive containing the sources of target 'iosArm64'.
+iosArm64TestBinaries - Links all binaries for compilation 'test' of target 'iosArm64'.
+iosArm64TestKlibrary - Assembles outputs for compilation 'test' of target 'iosArm64'
+iosSimulatorArm64Binaries - Assembles outputs for target 'iosSimulatorArm64'.
+iosSimulatorArm64MainBinaries - Links all binaries for compilation 'main' of target 'iosSimulatorArm64'.
+iosSimulatorArm64MainKlibrary - Assembles outputs for compilation 'main' of target 'iosSimulatorArm64'
+iosSimulatorArm64MetadataElements - Assembles Kotlin metadata of target 'iosSimulatorArm64'.
+iosSimulatorArm64SourcesJar - Assembles a jar archive containing the sources of target 'iosSimulatorArm64'.
+iosSimulatorArm64TestBinaries - Links all binaries for compilation 'test' of target 'iosSimulatorArm64'.
+iosSimulatorArm64TestKlibrary - Assembles outputs for compilation 'test' of target 'iosSimulatorArm64'
+iosX64Binaries - Assembles outputs for target 'iosX64'.
+iosX64MainBinaries - Links all binaries for compilation 'main' of target 'iosX64'.
+iosX64MainKlibrary - Assembles outputs for compilation 'main' of target 'iosX64'
+iosX64MetadataElements - Assembles Kotlin metadata of target 'iosX64'.
+iosX64SourcesJar - Assembles a jar archive containing the sources of target 'iosX64'.
+iosX64TestBinaries - Links all binaries for compilation 'test' of target 'iosX64'.
+iosX64TestKlibrary - Assembles outputs for compilation 'test' of target 'iosX64'
+linkDebugTestIosArm64 - Links a test executable 'debugTest' for a target 'iosArm64'.
+linkDebugTestIosSimulatorArm64 - Links a test executable 'debugTest' for a target 'iosSimulatorArm64'.
+linkDebugTestIosX64 - Links a test executable 'debugTest' for a target 'iosX64'.
+linkIosArm64 - Links all binaries for target 'iosArm64'.
+linkIosSimulatorArm64 - Links all binaries for target 'iosSimulatorArm64'.
+linkIosX64 - Links all binaries for target 'iosX64'.
+metadataAppleMainClasses - Assembles outputs for compilation 'appleMain' of target 'metadata'
+metadataCommonMainClasses - Assembles outputs for compilation 'commonMain' of target 'metadata'
+metadataIosMainClasses - Assembles outputs for compilation 'iosMain' of target 'metadata'
+metadataMainClasses - Assembles outputs for compilation 'main' of target 'metadata'
+metadataNativeMainClasses - Assembles outputs for compilation 'nativeMain' of target 'metadata'
+metadataSourcesJar - Assembles a jar archive containing the sources of target 'metadata'.
+sourcesJar - Assembles a jar archive containing the sources of target 'kotlin'.
+
+Help tasks
+----------
+artifactTransforms - Displays the Artifact Transforms that can be executed in project ':video-clip-editor-core'.
+buildEnvironment - Displays all buildscript dependencies declared in project ':video-clip-editor-core'.
+dependencies - Displays all dependencies declared in project ':video-clip-editor-core'.
+dependencyInsight - Displays the insight into a specific dependency in project ':video-clip-editor-core'.
+help - Displays a help message.
+javaToolchains - Displays the detected java toolchains.
+kotlinDslAccessorsReport - Prints the Kotlin code for accessing the currently available project extensions.
+outgoingVariants - Displays the outgoing variants of project ':video-clip-editor-core'.
+projects - Displays the sub-projects of project ':video-clip-editor-core'.
+properties - Displays the properties of project ':video-clip-editor-core'.
+resolvableConfigurations - Displays the configurations that can be resolved in project ':video-clip-editor-core'.
+tasks - Displays the tasks runnable from project ':video-clip-editor-core'.
+
+Ide tasks
+---------
+resolveIdeDependencies - Debugging/Diagnosing task that will resolve dependencies for the IDE
+
+Install tasks
+-------------
+androidUninstallAll - Uninstall all applications.
+
+Interop tasks
+-------------
+cleanNativeDistributionCommonization - Deletes all previously commonized klib's from the Kotlin/Native distribution
+commonize - Aggregator task for all c-interop & Native distribution commonizer tasks
+commonizeNativeDistribution - Invokes the commonizer on platform libraries provided by the Kotlin/Native distribution
+runCommonizer - [Deprecated: Use 'commonize' instead]
+
+Verification tasks
+------------------
+allTests - Runs the tests for all targets and create aggregated report
+androidConnectedCheck - Runs all device checks on currently connected devices.
+androidDeviceCheck - Runs all device checks using Device Providers and Test Servers.
+check - Runs all checks.
+checkKotlinGradlePluginConfigurationErrors - Checks that Kotlin Gradle Plugin hasn't reported project configuration errors, failing otherwise. This task always runs before compileKotlin* or similar tasks.
+iosSimulatorArm64Test - Executes Kotlin/Native unit tests for target iosSimulatorArm64.
+iosX64Test - Executes Kotlin/Native unit tests for target iosX64.
+
+Other tasks
+-----------
+androidCompileLintChecks
+androidJar
+androidPreBuild
+assembleAndroidMain - Assembles main Android output for variant <androidMain>
+bundleAndroidMainAar
+bundleAndroidMainClassesToCompileJar
+bundleAndroidMainClassesToRuntimeJar
+bundleAndroidMainLocalLintAar
+bundleLibRuntimeToDirAndroidMain
+checkAndroidMainAarMetadata
+compileAndroidMain - Compiles the compilation 'main' in target 'android'.
+compileCommonMainKotlinMetadata - Compiles the kotlin sources in compilation 'commonMain' in target 'metadata' to Metadata.
+compileKotlinMetadata - Compiles the kotlin sources in compilation 'main' in target 'metadata' to Metadata.
+compileLint
+computeLocalPackageDependencyInputFiles
+consumeConfigAttr
+convertSyntheticImportProjectIntoDefFileIphoneos
+convertSyntheticImportProjectIntoDefFileIphonesimulator
+copyAndroidMainJniLibsProjectOnly
+createFullJarAndroidMain
+downloadKotlinNativeDistribution
+exportCommonSourceSetsMetadataLocationsForMetadataApiElements
+exportCrossCompilationMetadataForIosArm64ApiElements
+exportCrossCompilationMetadataForIosSimulatorArm64ApiElements
+exportCrossCompilationMetadataForIosX64ApiElements
+exportRootPublicationCoordinatesForMetadataApiElements
+exportTargetPublicationCoordinatesForAndroidApiElements
+exportTargetPublicationCoordinatesForAndroidRuntimeElements
+exportTargetPublicationCoordinatesForIosArm64ApiElements
+exportTargetPublicationCoordinatesForIosSimulatorArm64ApiElements
+exportTargetPublicationCoordinatesForIosX64ApiElements
+extractProguardFiles
+fetchSyntheticImportProjectPackages
+generateAndroidMainEmptyResourceFiles
+generateProjectStructureMetadata - Generates serialized project structure metadata of the current project (for tooling)
+generateSyntheticLinkageSwiftPMImportProjectForCinteropsAndLdDump
+generateSyntheticLinkageSwiftPMImportProjectForEmbedAndSignLinkage
+generateSyntheticLinkageSwiftPMImportProjectForLinkageForCli
+integrateEmbedAndSign
+integrateLinkagePackage
+iosArm64Klib
+iosArm64ProcessResources - Processes file collection.
+iosArm64TestProcessResources - Processes file collection.
+iosSimulatorArm64Klib
+iosSimulatorArm64ProcessResources - Processes file collection.
+iosSimulatorArm64TestProcessResources - Processes file collection.
+iosX64Klib
+iosX64ProcessResources - Processes file collection.
+iosX64TestProcessResources - Processes file collection.
+kmpPartiallyResolvedDependenciesChecker
+mergeAndroidMainJavaResource
+mergeAndroidMainJniLibFolders
+mergeAndroidMainNativeLibs
+metadataAppleMainProcessResources - Processes file collection.
+metadataCommonMainProcessResources - Processes file collection.
+metadataIosMainProcessResources - Processes file collection.
+metadataNativeMainProcessResources - Processes file collection.
+metadataProcessResources - Processes file collection.
+preAndroidMainBuild
+prepareAndroidMainArtProfile
+prepareKotlinIdeaImport - Umbrella for all tasks required to run before IDEA/Gradle import
+prepareLintJarForPublish
+processAndroidMainJavaRes
+processAndroidMainManifest
+resolveConfigAttr
+serializeSwiftPMDependenciesMetadataForLockFiles
+setupLldbScript - Generate lldbinit file with imported konan_lldb.py script
+syncAndroidMainLibJars
+syncPersistedPackageResolvedToSynthetic
+syncSyntheticPackageResolvedToPersisted
+transformAppleMainDependenciesMetadata - Generates serialized dependencies metadata for compilation 'appleMain' (for tooling)
+transformCommonMainDependenciesMetadata - Generates serialized dependencies metadata for compilation 'commonMain' (for tooling)
+transformDependenciesMetadata
+transformIosMainDependenciesMetadata - Generates serialized dependencies metadata for compilation 'iosMain' (for tooling)
+transformNativeMainDependenciesMetadata - Generates serialized dependencies metadata for compilation 'nativeMain' (for tooling)
+writeAndroidMainAarMetadata
+xcodeVersion
+
+Rules
+-----
+Pattern: clean<TaskName>: Cleans the output files of a task.
+Pattern: build<ConfigurationName>: Assembles the artifacts of a configuration.
+
+[Incubating] Problems report is available at: file:///Users/sandeepdhami/Documents/GitHub/video-clip-editor/.worktrees/feasibility/build/reports/problems/problems-report.html
+
+BUILD SUCCESSFUL in 727ms
+1 actionable task: 1 executed
+Consider enabling configuration cache to speed up this build: https://docs.gradle.org/9.4.1/userguide/configuration_cache_enabling.html
+
+> Configure project :video-clip-editor-compose
+w: [33m[1m⚠️ Native task 'iosX64Test' is disabled[0m[0m
+Task 'iosX64Test' for target 'ios_x64' cannot run on the current host (macos-aarch64).
+Reason: architecture mismatch - target requires X64, current host is ARM64
+[32m[1mSolution:[0m[0m
+[32m[3mTo suppress this warning, add 'kotlin.native.ignoreDisabledTargets=true' to gradle.properties.[0m[0m
+
+
+> Task :video-clip-editor-compose:tasks
+
+------------------------------------------------------------
+Tasks runnable from project ':video-clip-editor-compose'
+------------------------------------------------------------
+
+Build tasks
+-----------
+allMetadataJar - Assembles a jar archive containing the metadata for all Kotlin source sets.
+androidSourcesJar - Assembles a jar archive containing the sources of target 'android'.
+assemble - Assembles the outputs of this project.
+assembleAndroidTest - Assembles all the Test applications.
+assembleUnitTest - Assembles all the unit test applications.
+build - Assembles and tests this project.
+buildDependents - Assembles and tests this project and all projects that depend on it.
+buildKotlinToolingMetadata - Build metadata json file containing information about the used Kotlin tooling
+buildNeeded - Assembles and tests this project and all projects it depends on.
+clean - Deletes the build directory.
+cleanAllTests - Deletes all the test results.
+compileAppleMainKotlinMetadata - Compiles a klibrary from the 'appleMain' compilation in target 'metadata'.
+compileIosMainKotlinMetadata - Compiles a klibrary from the 'iosMain' compilation in target 'metadata'.
+compileKotlinIosArm64 - Compiles a klibrary from the 'main' compilation in target 'iosArm64'.
+compileKotlinIosSimulatorArm64 - Compiles a klibrary from the 'main' compilation in target 'iosSimulatorArm64'.
+compileKotlinIosX64 - Compiles a klibrary from the 'main' compilation in target 'iosX64'.
+compileNativeMainKotlinMetadata - Compiles a klibrary from the 'nativeMain' compilation in target 'metadata'.
+compileTestKotlinIosArm64 - Compiles a klibrary from the 'test' compilation in target 'iosArm64'.
+compileTestKotlinIosSimulatorArm64 - Compiles a klibrary from the 'test' compilation in target 'iosSimulatorArm64'.
+compileTestKotlinIosX64 - Compiles a klibrary from the 'test' compilation in target 'iosX64'.
+embedSwiftExportForXcode - Embed swift export library as requested by Xcode's environment variables
+extractAndroidMainAnnotations - Extracts Android annotations for the androidMain variant into the archive file
+iosArm64Binaries - Assembles outputs for target 'iosArm64'.
+iosArm64MainBinaries - Links all binaries for compilation 'main' of target 'iosArm64'.
+iosArm64MainKlibrary - Assembles outputs for compilation 'main' of target 'iosArm64'
+iosArm64MetadataElements - Assembles Kotlin metadata of target 'iosArm64'.
+iosArm64SourcesJar - Assembles a jar archive containing the sources of target 'iosArm64'.
+iosArm64TestBinaries - Links all binaries for compilation 'test' of target 'iosArm64'.
+iosArm64TestKlibrary - Assembles outputs for compilation 'test' of target 'iosArm64'
+iosSimulatorArm64Binaries - Assembles outputs for target 'iosSimulatorArm64'.
+iosSimulatorArm64MainBinaries - Links all binaries for compilation 'main' of target 'iosSimulatorArm64'.
+iosSimulatorArm64MainKlibrary - Assembles outputs for compilation 'main' of target 'iosSimulatorArm64'
+iosSimulatorArm64MetadataElements - Assembles Kotlin metadata of target 'iosSimulatorArm64'.
+iosSimulatorArm64SourcesJar - Assembles a jar archive containing the sources of target 'iosSimulatorArm64'.
+iosSimulatorArm64TestBinaries - Links all binaries for compilation 'test' of target 'iosSimulatorArm64'.
+iosSimulatorArm64TestKlibrary - Assembles outputs for compilation 'test' of target 'iosSimulatorArm64'
+iosX64Binaries - Assembles outputs for target 'iosX64'.
+iosX64MainBinaries - Links all binaries for compilation 'main' of target 'iosX64'.
+iosX64MainKlibrary - Assembles outputs for compilation 'main' of target 'iosX64'
+iosX64MetadataElements - Assembles Kotlin metadata of target 'iosX64'.
+iosX64SourcesJar - Assembles a jar archive containing the sources of target 'iosX64'.
+iosX64TestBinaries - Links all binaries for compilation 'test' of target 'iosX64'.
+iosX64TestKlibrary - Assembles outputs for compilation 'test' of target 'iosX64'
+linkDebugTestIosArm64 - Links a test executable 'debugTest' for a target 'iosArm64'.
+linkDebugTestIosSimulatorArm64 - Links a test executable 'debugTest' for a target 'iosSimulatorArm64'.
+linkDebugTestIosX64 - Links a test executable 'debugTest' for a target 'iosX64'.
+linkIosArm64 - Links all binaries for target 'iosArm64'.
+linkIosSimulatorArm64 - Links all binaries for target 'iosSimulatorArm64'.
+linkIosX64 - Links all binaries for target 'iosX64'.
+metadataAppleMainClasses - Assembles outputs for compilation 'appleMain' of target 'metadata'
+metadataCommonMainClasses - Assembles outputs for compilation 'commonMain' of target 'metadata'
+metadataIosMainClasses - Assembles outputs for compilation 'iosMain' of target 'metadata'
+metadataMainClasses - Assembles outputs for compilation 'main' of target 'metadata'
+metadataNativeMainClasses - Assembles outputs for compilation 'nativeMain' of target 'metadata'
+metadataSourcesJar - Assembles a jar archive containing the sources of target 'metadata'.
+sourcesJar - Assembles a jar archive containing the sources of target 'kotlin'.
+
+Compose tasks
+-------------
+composeCompatibilityBrowserDistribution - This task combines both js and wasm distributions into one so that wasm application fallback to js target if modern wasm feature are not supported
+
+Help tasks
+----------
+artifactTransforms - Displays the Artifact Transforms that can be executed in project ':video-clip-editor-compose'.
+buildEnvironment - Displays all buildscript dependencies declared in project ':video-clip-editor-compose'.
+dependencies - Displays all dependencies declared in project ':video-clip-editor-compose'.
+dependencyInsight - Displays the insight into a specific dependency in project ':video-clip-editor-compose'.
+help - Displays a help message.
+javaToolchains - Displays the detected java toolchains.
+kotlinDslAccessorsReport - Prints the Kotlin code for accessing the currently available project extensions.
+outgoingVariants - Displays the outgoing variants of project ':video-clip-editor-compose'.
+projects - Displays the sub-projects of project ':video-clip-editor-compose'.
+properties - Displays the properties of project ':video-clip-editor-compose'.
+resolvableConfigurations - Displays the configurations that can be resolved in project ':video-clip-editor-compose'.
+tasks - Displays the tasks runnable from project ':video-clip-editor-compose'.
+
+Ide tasks
+---------
+resolveIdeDependencies - Debugging/Diagnosing task that will resolve dependencies for the IDE
+
+Install tasks
+-------------
+androidUninstallAll - Uninstall all applications.
+
+Interop tasks
+-------------
+cleanNativeDistributionCommonization - Deletes all previously commonized klib's from the Kotlin/Native distribution
+commonize - Aggregator task for all c-interop & Native distribution commonizer tasks
+commonizeNativeDistribution - Invokes the commonizer on platform libraries provided by the Kotlin/Native distribution
+runCommonizer - [Deprecated: Use 'commonize' instead]
+
+Verification tasks
+------------------
+allTests - Runs the tests for all targets and create aggregated report
+androidConnectedCheck - Runs all device checks on currently connected devices.
+androidDeviceCheck - Runs all device checks using Device Providers and Test Servers.
+check - Runs all checks.
+checkKotlinGradlePluginConfigurationErrors - Checks that Kotlin Gradle Plugin hasn't reported project configuration errors, failing otherwise. This task always runs before compileKotlin* or similar tasks.
+iosSimulatorArm64Test - Executes Kotlin/Native unit tests for target iosSimulatorArm64.
+iosX64Test - Executes Kotlin/Native unit tests for target iosX64.
+
+Other tasks
+-----------
+androidCompileLintChecks
+androidJar
+androidPreBuild
+assembleAndroidMain - Assembles main Android output for variant <androidMain>
+assembleIosArm64MainResources
+assembleIosArm64TestResources
+assembleIosSimulatorArm64MainResources
+assembleIosSimulatorArm64TestResources
+assembleIosX64MainResources
+assembleIosX64TestResources
+bundleAndroidMainAar
+bundleAndroidMainClassesToCompileJar
+bundleAndroidMainClassesToRuntimeJar
+bundleAndroidMainLocalLintAar
+bundleLibRuntimeToDirAndroidMain
+checkAndroidMainAarMetadata
+checkIosArm64MainComposeLibrariesCompatibility
+checkIosArm64TestComposeLibrariesCompatibility
+checkIosSimulatorArm64MainComposeLibrariesCompatibility
+checkIosSimulatorArm64TestComposeLibrariesCompatibility
+checkIosX64MainComposeLibrariesCompatibility
+checkIosX64TestComposeLibrariesCompatibility
+compileAndroidMain - Compiles the compilation 'main' in target 'android'.
+compileCommonMainKotlinMetadata - Compiles the kotlin sources in compilation 'commonMain' in target 'metadata' to Metadata.
+compileKotlinMetadata - Compiles the kotlin sources in compilation 'main' in target 'metadata' to Metadata.
+compileLint
+computeLocalPackageDependencyInputFiles
+consumeConfigAttr
+convertSyntheticImportProjectIntoDefFileIphoneos
+convertSyntheticImportProjectIntoDefFileIphonesimulator
+convertXmlValueResourcesForAndroidMain
+convertXmlValueResourcesForAppleMain
+convertXmlValueResourcesForAppleTest
+convertXmlValueResourcesForCommonMain
+convertXmlValueResourcesForCommonTest
+convertXmlValueResourcesForIosArm64Main
+convertXmlValueResourcesForIosArm64Test
+convertXmlValueResourcesForIosMain
+convertXmlValueResourcesForIosSimulatorArm64Main
+convertXmlValueResourcesForIosSimulatorArm64Test
+convertXmlValueResourcesForIosTest
+convertXmlValueResourcesForIosX64Main
+convertXmlValueResourcesForIosX64Test
+convertXmlValueResourcesForNativeMain
+convertXmlValueResourcesForNativeTest
+copyAndroidMainComposeResourcesToAndroidAssets
+copyAndroidMainJniLibsProjectOnly
+copyNonXmlValueResourcesForAndroidMain
+copyNonXmlValueResourcesForAppleMain
+copyNonXmlValueResourcesForAppleTest
+copyNonXmlValueResourcesForCommonMain
+copyNonXmlValueResourcesForCommonTest
+copyNonXmlValueResourcesForIosArm64Main
+copyNonXmlValueResourcesForIosArm64Test
+copyNonXmlValueResourcesForIosMain
+copyNonXmlValueResourcesForIosSimulatorArm64Main
+copyNonXmlValueResourcesForIosSimulatorArm64Test
+copyNonXmlValueResourcesForIosTest
+copyNonXmlValueResourcesForIosX64Main
+copyNonXmlValueResourcesForIosX64Test
+copyNonXmlValueResourcesForNativeMain
+copyNonXmlValueResourcesForNativeTest
+copyTestComposeResourcesForIosArm64
+copyTestComposeResourcesForIosSimulatorArm64
+createFullJarAndroidMain
+downloadKotlinNativeDistribution
+exportCommonSourceSetsMetadataLocationsForMetadataApiElements
+exportCrossCompilationMetadataForIosArm64ApiElements
+exportCrossCompilationMetadataForIosSimulatorArm64ApiElements
+exportCrossCompilationMetadataForIosX64ApiElements
+exportRootPublicationCoordinatesForMetadataApiElements
+exportTargetPublicationCoordinatesForAndroidApiElements
+exportTargetPublicationCoordinatesForAndroidRuntimeElements
+exportTargetPublicationCoordinatesForIosArm64ApiElements
+exportTargetPublicationCoordinatesForIosSimulatorArm64ApiElements
+exportTargetPublicationCoordinatesForIosX64ApiElements
+extractProguardFiles
+fetchSyntheticImportProjectPackages
+fetchUmbrellaPackageIdentifierForDefault
+generateActualResourceCollectorsForAndroidMain
+generateActualResourceCollectorsForIosArm64Main
+generateActualResourceCollectorsForIosSimulatorArm64Main
+generateActualResourceCollectorsForIosX64Main
+generateAndroidMainEmptyResourceFiles
+generateComposeResClass
+generateExpectResourceCollectorsForCommonMain
+generateProjectStructureMetadata - Generates serialized project structure metadata of the current project (for tooling)
+generateResourceAccessorsForAndroidMain
+generateResourceAccessorsForAppleMain
+generateResourceAccessorsForAppleTest
+generateResourceAccessorsForCommonMain
+generateResourceAccessorsForCommonTest
+generateResourceAccessorsForIosArm64Main
+generateResourceAccessorsForIosArm64Test
+generateResourceAccessorsForIosMain
+generateResourceAccessorsForIosSimulatorArm64Main
+generateResourceAccessorsForIosSimulatorArm64Test
+generateResourceAccessorsForIosTest
+generateResourceAccessorsForIosX64Main
+generateResourceAccessorsForIosX64Test
+generateResourceAccessorsForNativeMain
+generateResourceAccessorsForNativeTest
+generateSyntheticLinkageSwiftPMImportProjectForCinteropsAndLdDump
+generateSyntheticLinkageSwiftPMImportProjectForEmbedAndSignLinkage
+generateSyntheticLinkageSwiftPMImportProjectForLinkageForCli
+generateUmbrellaPackageIdentifierBasedResolutionForDefault
+integrateEmbedAndSign
+integrateLinkagePackage
+iosArm64AggregateResources
+iosArm64CopyHierarchicalMultiplatformResources
+iosArm64Klib
+iosArm64ProcessResources - Processes file collection.
+iosArm64ResolveResourcesFromDependencies
+iosArm64ResolveSelfResourcesCopyHierarchicalMultiplatformResources
+iosArm64TestProcessResources - Processes file collection.
+iosArm64ZipMultiplatformResourcesForPublication
+iosSimulatorArm64AggregateResources
+iosSimulatorArm64CopyHierarchicalMultiplatformResources
+iosSimulatorArm64Klib
+iosSimulatorArm64ProcessResources - Processes file collection.
+iosSimulatorArm64ResolveResourcesFromDependencies
+iosSimulatorArm64ResolveSelfResourcesCopyHierarchicalMultiplatformResources
+iosSimulatorArm64TestProcessResources - Processes file collection.
+iosSimulatorArm64ZipMultiplatformResourcesForPublication
+iosX64AggregateResources
+iosX64CopyHierarchicalMultiplatformResources
+iosX64Klib
+iosX64ProcessResources - Processes file collection.
+iosX64ResolveResourcesFromDependencies
+iosX64ResolveSelfResourcesCopyHierarchicalMultiplatformResources
+iosX64TestProcessResources - Processes file collection.
+iosX64ZipMultiplatformResourcesForPublication
+kmpPartiallyResolvedDependenciesChecker
+mergeAndroidMainJavaResource
+mergeAndroidMainJniLibFolders
+mergeAndroidMainNativeLibs
+metadataAppleMainProcessResources - Processes file collection.
+metadataCommonMainProcessResources - Processes file collection.
+metadataIosMainProcessResources - Processes file collection.
+metadataNativeMainProcessResources - Processes file collection.
+metadataProcessResources - Processes file collection.
+preAndroidMainBuild
+prepareAndroidMainArtProfile
+prepareComposeResourcesTaskForAndroidMain
+prepareComposeResourcesTaskForAppleMain
+prepareComposeResourcesTaskForAppleTest
+prepareComposeResourcesTaskForCommonMain
+prepareComposeResourcesTaskForCommonTest
+prepareComposeResourcesTaskForIosArm64Main
+prepareComposeResourcesTaskForIosArm64Test
+prepareComposeResourcesTaskForIosMain
+prepareComposeResourcesTaskForIosSimulatorArm64Main
+prepareComposeResourcesTaskForIosSimulatorArm64Test
+prepareComposeResourcesTaskForIosTest
+prepareComposeResourcesTaskForIosX64Main
+prepareComposeResourcesTaskForIosX64Test
+prepareComposeResourcesTaskForNativeMain
+prepareComposeResourcesTaskForNativeTest
+prepareKotlinIdeaImport - Umbrella for all tasks required to run before IDEA/Gradle import
+prepareLintJarForPublish
+processAndroidMainJavaRes
+processAndroidMainManifest
+resolveConfigAttr
+serializeSwiftPMDependenciesMetadataForLockFiles
+setupLldbScript - Generate lldbinit file with imported konan_lldb.py script
+syncAndroidMainLibJars
+syncPersistedPackageResolvedToSynthetic
+syncSyntheticPackageResolvedToPersisted
+transformAppleMainDependenciesMetadata - Generates serialized dependencies metadata for compilation 'appleMain' (for tooling)
+transformCommonMainDependenciesMetadata - Generates serialized dependencies metadata for compilation 'commonMain' (for tooling)
+transformDependenciesMetadata
+transformIosMainDependenciesMetadata - Generates serialized dependencies metadata for compilation 'iosMain' (for tooling)
+transformNativeMainDependenciesMetadata - Generates serialized dependencies metadata for compilation 'nativeMain' (for tooling)
+writeAndroidMainAarMetadata
+xcodeVersion
+
+Rules
+-----
+Pattern: clean<TaskName>: Cleans the output files of a task.
+Pattern: build<ConfigurationName>: Assembles the artifacts of a configuration.
+
+[Incubating] Problems report is available at: file:///Users/sandeepdhami/Documents/GitHub/video-clip-editor/.worktrees/feasibility/build/reports/problems/problems-report.html
+
+BUILD SUCCESSFUL in 400ms
+1 actionable task: 1 executed
+Consider enabling configuration cache to speed up this build: https://docs.gradle.org/9.4.1/userguide/configuration_cache_enabling.html

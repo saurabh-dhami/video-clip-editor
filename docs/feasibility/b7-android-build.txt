@@ -1,17 +1,110 @@
-Requested command:
-./gradlew :video-clip-editor-core:compileKotlinAndroid :video-clip-editor-compose:compileKotlinAndroid
+# B-7 Android main compilation evidence
 
-Result: NOT RUN. `./gradlew` was not generated because the required wrapper-generation command failed:
+Environment:
+JAVA_HOME=/opt/homebrew/opt/openjdk@21/libexec/openjdk.jdk/Contents/Home
+ANDROID_HOME=/Users/sandeepdhami/Library/Android/sdk
 
-Command:
-gradle wrapper --gradle-version 9.4.1
+## Wrapper version
+Command: JAVA_HOME=/opt/homebrew/opt/openjdk@21/libexec/openjdk.jdk/Contents/Home ./gradlew --version
 
-Failure:
-> Task :wrapper FAILED
-Execution failed for task ':wrapper' (registered by plugin 'org.gradle.wrapper').
-> Test of distribution url https://services.gradle.org/distributions/gradle-9.4.1-bin.zip failed. Please check the values set with --gradle-distribution-url and --gradle-version.
+------------------------------------------------------------
+Gradle 9.4.1
+------------------------------------------------------------
 
-Additional environment constraint:
-`/usr/libexec/java_home -V 2>&1` reports only JDK 17.0.14; required JDK 21 is absent.
+Build time:    2026-03-19 08:46:28 UTC
+Revision:      2d6327017519d23b96af35865dc997fcb544fb40
 
-Dependency lock output: NOT PRODUCED. Wrapper and required JDK 21 unavailable.
+Kotlin:        2.3.0
+Groovy:        4.0.29
+Ant:           Apache Ant(TM) version 1.10.15 compiled on August 25 2024
+Launcher JVM:  21.0.12 (Homebrew 21.0.12)
+Daemon JVM:    /opt/homebrew/Cellar/openjdk@21/21.0.12/libexec/openjdk.jdk/Contents/Home (no Daemon JVM specified, using current Java home)
+OS:            Mac OS X 15.6 aarch64
+
+
+## Task selection
+Discovery commands:
+./gradlew :video-clip-editor-core:tasks --all > docs/feasibility/b7-android-task-list.txt
+./gradlew :video-clip-editor-compose:tasks --all >> docs/feasibility/b7-android-task-list.txt
+Selected tasks: :video-clip-editor-core:compileAndroidMain :video-clip-editor-compose:compileAndroidMain
+
+## Dependency locks
+Command: JAVA_HOME=/opt/homebrew/opt/openjdk@21/libexec/openjdk.jdk/Contents/Home ANDROID_HOME=/Users/sandeepdhami/Library/Android/sdk ./gradlew --write-locks :video-clip-editor-core:compileAndroidMain :video-clip-editor-compose:compileAndroidMain
+
+> Configure project :video-clip-editor-compose
+w: [33m[1m⚠️ Native task 'iosX64Test' is disabled[0m[0m
+Task 'iosX64Test' for target 'ios_x64' cannot run on the current host (macos-aarch64).
+Reason: architecture mismatch - target requires X64, current host is ARM64
+[32m[1mSolution:[0m[0m
+[32m[3mTo suppress this warning, add 'kotlin.native.ignoreDisabledTargets=true' to gradle.properties.[0m[0m
+
+
+> Task :video-clip-editor-core:kmpPartiallyResolvedDependenciesChecker
+> Task :video-clip-editor-core:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :video-clip-editor-compose:kmpPartiallyResolvedDependenciesChecker
+> Task :video-clip-editor-compose:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :video-clip-editor-compose:convertXmlValueResourcesForAndroidMain NO-SOURCE
+> Task :video-clip-editor-compose:copyNonXmlValueResourcesForAndroidMain NO-SOURCE
+> Task :video-clip-editor-compose:prepareComposeResourcesTaskForAndroidMain NO-SOURCE
+> Task :video-clip-editor-compose:generateResourceAccessorsForAndroidMain SKIPPED
+> Task :video-clip-editor-compose:convertXmlValueResourcesForCommonMain NO-SOURCE
+> Task :video-clip-editor-compose:copyNonXmlValueResourcesForCommonMain NO-SOURCE
+> Task :video-clip-editor-compose:prepareComposeResourcesTaskForCommonMain NO-SOURCE
+> Task :video-clip-editor-compose:generateResourceAccessorsForCommonMain SKIPPED
+> Task :video-clip-editor-compose:generateActualResourceCollectorsForAndroidMain SKIPPED
+> Task :video-clip-editor-compose:generateComposeResClass SKIPPED
+> Task :video-clip-editor-compose:generateExpectResourceCollectorsForCommonMain SKIPPED
+> Task :video-clip-editor-core:androidPreBuild UP-TO-DATE
+> Task :video-clip-editor-core:preAndroidMainBuild UP-TO-DATE
+> Task :video-clip-editor-core:compileAndroidMain
+> Task :video-clip-editor-core:bundleAndroidMainClassesToCompileJar UP-TO-DATE
+> Task :video-clip-editor-compose:compileAndroidMain NO-SOURCE
+Persisted dependency lock state for unknown
+Persisted dependency lock state for buildscript of root project 'video-clip-editor'
+Persisted dependency lock state for project ':video-clip-editor-compose'
+Persisted dependency lock state for project ':video-clip-editor-core'
+
+[Incubating] Problems report is available at: file:///Users/sandeepdhami/Documents/GitHub/video-clip-editor/.worktrees/feasibility/build/reports/problems/problems-report.html
+
+BUILD SUCCESSFUL in 2s
+4 actionable tasks: 3 executed, 1 up-to-date
+Consider enabling configuration cache to speed up this build: https://docs.gradle.org/9.4.1/userguide/configuration_cache_enabling.html
+
+## SHA-256 dependency verification metadata
+Command: JAVA_HOME=/opt/homebrew/opt/openjdk@21/libexec/openjdk.jdk/Contents/Home ANDROID_HOME=/Users/sandeepdhami/Library/Android/sdk ./gradlew --write-verification-metadata sha256 :video-clip-editor-core:compileAndroidMain :video-clip-editor-compose:compileAndroidMain
+Calculating task graph as configuration cache cannot be reused due to --write-verification-metadata
+
+> Configure project :video-clip-editor-compose
+w: [33m[1m⚠️ Native task 'iosX64Test' is disabled[0m[0m
+Task 'iosX64Test' for target 'ios_x64' cannot run on the current host (macos-aarch64).
+Reason: architecture mismatch - target requires X64, current host is ARM64
+[32m[1mSolution:[0m[0m
+[32m[3mTo suppress this warning, add 'kotlin.native.ignoreDisabledTargets=true' to gradle.properties.[0m[0m
+
+
+> Task :video-clip-editor-core:kmpPartiallyResolvedDependenciesChecker
+> Task :video-clip-editor-core:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :video-clip-editor-compose:kmpPartiallyResolvedDependenciesChecker
+> Task :video-clip-editor-compose:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :video-clip-editor-compose:convertXmlValueResourcesForAndroidMain NO-SOURCE
+> Task :video-clip-editor-compose:copyNonXmlValueResourcesForAndroidMain NO-SOURCE
+> Task :video-clip-editor-compose:prepareComposeResourcesTaskForAndroidMain NO-SOURCE
+> Task :video-clip-editor-compose:generateResourceAccessorsForAndroidMain SKIPPED
+> Task :video-clip-editor-compose:convertXmlValueResourcesForCommonMain NO-SOURCE
+> Task :video-clip-editor-compose:copyNonXmlValueResourcesForCommonMain NO-SOURCE
+> Task :video-clip-editor-compose:prepareComposeResourcesTaskForCommonMain NO-SOURCE
+> Task :video-clip-editor-compose:generateResourceAccessorsForCommonMain SKIPPED
+> Task :video-clip-editor-compose:generateActualResourceCollectorsForAndroidMain SKIPPED
+> Task :video-clip-editor-compose:generateComposeResClass SKIPPED
+> Task :video-clip-editor-compose:generateExpectResourceCollectorsForCommonMain SKIPPED
+> Task :video-clip-editor-core:androidPreBuild UP-TO-DATE
+> Task :video-clip-editor-core:preAndroidMainBuild UP-TO-DATE
+> Task :video-clip-editor-core:compileAndroidMain
+> Task :video-clip-editor-core:bundleAndroidMainClassesToCompileJar UP-TO-DATE
+> Task :video-clip-editor-compose:compileAndroidMain NO-SOURCE
+
+[Incubating] Problems report is available at: file:///Users/sandeepdhami/Documents/GitHub/video-clip-editor/.worktrees/feasibility/build/reports/problems/problems-report.html
+
+BUILD SUCCESSFUL in 980ms
+4 actionable tasks: 3 executed, 1 up-to-date
+Consider enabling configuration cache to speed up this build: https://docs.gradle.org/9.4.1/userguide/configuration_cache_enabling.html

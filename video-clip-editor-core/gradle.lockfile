@@ -1,0 +1,33 @@
+# This is a Gradle generated file for dependency locking.
+# Manual edits can break the build and are not advised.
+# This file is expected to be part of source control.
+org.jetbrains.kotlin:kotlin-build-tools-api:2.4.10=kotlinBuildToolsApiClasspath
+org.jetbrains.kotlin:kotlin-build-tools-compat:2.4.10=kotlinBuildToolsApiClasspath
+org.jetbrains.kotlin:kotlin-build-tools-cri-impl:2.4.10=kotlinBuildToolsApiClasspath
+org.jetbrains.kotlin:kotlin-build-tools-impl:2.4.10=kotlinBuildToolsApiClasspath
+org.jetbrains.kotlin:kotlin-compiler-embeddable:2.4.10=kotlinBuildToolsApiClasspath
+org.jetbrains.kotlin:kotlin-compiler-runner:2.4.10=kotlinBuildToolsApiClasspath
+org.jetbrains.kotlin:kotlin-daemon-client:2.4.10=kotlinBuildToolsApiClasspath
+org.jetbrains.kotlin:kotlin-daemon-embeddable:2.4.10=kotlinBuildToolsApiClasspath
+org.jetbrains.kotlin:kotlin-reflect:1.6.10=kotlinBuildToolsApiClasspath
+org.jetbrains.kotlin:kotlin-script-runtime:2.4.10=kotlinBuildToolsApiClasspath,kotlinCompilerPluginClasspathAndroidMain
+org.jetbrains.kotlin:kotlin-scripting-common:2.4.10=kotlinCompilerPluginClasspathAndroidMain
+org.jetbrains.kotlin:kotlin-scripting-compiler-embeddable:2.4.10=kotlinCompilerPluginClasspathAndroidMain
+org.jetbrains.kotlin:kotlin-scripting-compiler-impl-embeddable:2.4.10=kotlinCompilerPluginClasspathAndroidMain
+org.jetbrains.kotlin:kotlin-scripting-jvm:2.4.10=kotlinCompilerPluginClasspathAndroidMain
+org.jetbrains.kotlin:kotlin-stdlib:2.4.10=androidCompileClasspath,iosArm64CompileKlibraries,iosSimulatorArm64CompileKlibraries,iosX64CompileKlibraries,kotlinBuildToolsApiClasspath,kotlinCompilerPluginClasspathAndroidMain
+org.jetbrains.kotlin:kotlin-tooling-core:2.4.10=kotlinBuildToolsApiClasspath
+org.jetbrains.kotlinx:atomicfu-iosarm64:0.26.1=iosArm64CompileKlibraries
+org.jetbrains.kotlinx:atomicfu-iossimulatorarm64:0.26.1=iosSimulatorArm64CompileKlibraries
+org.jetbrains.kotlinx:atomicfu-iosx64:0.26.1=iosX64CompileKlibraries
+org.jetbrains.kotlinx:atomicfu:0.26.1=iosArm64CompileKlibraries,iosSimulatorArm64CompileKlibraries,iosX64CompileKlibraries
+org.jetbrains.kotlinx:kotlinx-coroutines-bom:1.10.2=androidCompileClasspath
+org.jetbrains.kotlinx:kotlinx-coroutines-core-iosarm64:1.10.2=iosArm64CompileKlibraries
+org.jetbrains.kotlinx:kotlinx-coroutines-core-iossimulatorarm64:1.10.2=iosSimulatorArm64CompileKlibraries
+org.jetbrains.kotlinx:kotlinx-coroutines-core-iosx64:1.10.2=iosX64CompileKlibraries
+org.jetbrains.kotlinx:kotlinx-coroutines-core-jvm:1.10.2=androidCompileClasspath
+org.jetbrains.kotlinx:kotlinx-coroutines-core-jvm:1.8.0=kotlinBuildToolsApiClasspath
+org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.2=androidCompileClasspath,iosArm64CompileKlibraries,iosSimulatorArm64CompileKlibraries,iosX64CompileKlibraries
+org.jetbrains:annotations:13.0=kotlinBuildToolsApiClasspath,kotlinCompilerPluginClasspathAndroidMain
+org.jetbrains:annotations:23.0.0=androidCompileClasspath
+empty=

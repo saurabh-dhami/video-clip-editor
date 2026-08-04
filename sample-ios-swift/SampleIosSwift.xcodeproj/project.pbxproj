@@ -1,0 +1,53 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		A10000000000000000000001 /* App.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000002 /* App.swift */; };
+		A10000000000000000000003 /* VideoClipEditorCore.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = A10000000000000000000004 /* VideoClipEditorCore.xcframework */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		A10000000000000000000002 /* App.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = App.swift; sourceTree = "<group>"; };
+		A10000000000000000000004 /* VideoClipEditorCore.xcframework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcframework; path = Frameworks/VideoClipEditorCore.xcframework; sourceTree = "<group>"; };
+		A10000000000000000000005 /* SampleIosSwift.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = SampleIosSwift.app; sourceTree = BUILT_PRODUCTS_DIR; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		A10000000000000000000006 /* Frameworks */ = {isa = PBXFrameworksBuildPhase; buildActionMask = 2147483647; files = (A10000000000000000000003 /* VideoClipEditorCore.xcframework in Frameworks */,); runOnlyForDeploymentPostprocessing = 0; };
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		A10000000000000000000007 = {isa = PBXGroup; children = (A10000000000000000000002 /* App.swift */, A10000000000000000000004 /* VideoClipEditorCore.xcframework */, A10000000000000000000008 /* Products */,); sourceTree = "<group>"; };
+		A10000000000000000000008 /* Products */ = {isa = PBXGroup; children = (A10000000000000000000005 /* SampleIosSwift.app */,); name = Products; sourceTree = "<group>"; };
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		A10000000000000000000009 /* SampleIosSwift */ = {isa = PBXNativeTarget; buildConfigurationList = A1000000000000000000000A /* Build configuration list for PBXNativeTarget "SampleIosSwift" */; buildPhases = (A1000000000000000000000B /* Sources */, A10000000000000000000006 /* Frameworks */,); buildRules = (); dependencies = (); name = SampleIosSwift; productName = SampleIosSwift; productReference = A10000000000000000000005 /* SampleIosSwift.app */; productType = "com.apple.product-type.application"; };
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		A1000000000000000000000C /* Project object */ = {isa = PBXProject; attributes = { BuildIndependentTargetsInParallel = 1; LastSwiftUpdateCheck = 2660; LastUpgradeCheck = 2660; TargetAttributes = { A10000000000000000000009 = { CreatedOnToolsVersion = 26.6; }; }; }; buildConfigurationList = A1000000000000000000000D /* Build configuration list for PBXProject "SampleIosSwift" */; compatibilityVersion = "Xcode 16.0"; developmentRegion = en; hasScannedForEncodings = 0; knownRegions = (en, Base); mainGroup = A10000000000000000000007; productRefGroup = A10000000000000000000008 /* Products */; projectDirPath = ""; projectRoot = ""; targets = (A10000000000000000000009 /* SampleIosSwift */,); };
+/* End PBXProject section */
+
+/* Begin PBXSourcesBuildPhase section */
+		A1000000000000000000000B /* Sources */ = {isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (A10000000000000000000001 /* App.swift in Sources */,); runOnlyForDeploymentPostprocessing = 0; };
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		A1000000000000000000000E /* Debug */ = {isa = XCBuildConfiguration; buildSettings = { ALWAYS_SEARCH_USER_PATHS = NO; CLANG_ENABLE_MODULES = YES; IPHONEOS_DEPLOYMENT_TARGET = 18.0; SDKROOT = iphoneos; SWIFT_VERSION = 6.0; }; name = Debug; };
+		A1000000000000000000000F /* Release */ = {isa = XCBuildConfiguration; buildSettings = { ALWAYS_SEARCH_USER_PATHS = NO; CLANG_ENABLE_MODULES = YES; IPHONEOS_DEPLOYMENT_TARGET = 18.0; SDKROOT = iphoneos; SWIFT_COMPILATION_MODE = wholemodule; SWIFT_OPTIMIZATION_LEVEL = "-O"; SWIFT_VERSION = 6.0; }; name = Release; };
+		A10000000000000000000010 /* Debug */ = {isa = XCBuildConfiguration; buildSettings = { ASSETCATALOG_COMPILER_APPICON_NAME = ""; CODE_SIGNING_ALLOWED = NO; CODE_SIGNING_REQUIRED = NO; GENERATE_INFOPLIST_FILE = YES; PRODUCT_BUNDLE_IDENTIFIER = com.oneononearena.feasibility.SampleIosSwift; PRODUCT_NAME = "$(TARGET_NAME)"; SUPPORTED_PLATFORMS = "iphonesimulator iphoneos"; SWIFT_EMIT_LOC_STRINGS = YES; TARGETED_DEVICE_FAMILY = "1,2"; }; name = Debug; };
+		A10000000000000000000011 /* Release */ = {isa = XCBuildConfiguration; buildSettings = { ASSETCATALOG_COMPILER_APPICON_NAME = ""; CODE_SIGNING_ALLOWED = NO; CODE_SIGNING_REQUIRED = NO; GENERATE_INFOPLIST_FILE = YES; PRODUCT_BUNDLE_IDENTIFIER = com.oneononearena.feasibility.SampleIosSwift; PRODUCT_NAME = "$(TARGET_NAME)"; SUPPORTED_PLATFORMS = "iphonesimulator iphoneos"; SWIFT_EMIT_LOC_STRINGS = YES; TARGETED_DEVICE_FAMILY = "1,2"; }; name = Release; };
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		A1000000000000000000000A /* Build configuration list for PBXNativeTarget "SampleIosSwift" */ = {isa = XCConfigurationList; buildConfigurations = (A10000000000000000000010 /* Debug */, A10000000000000000000011 /* Release */,); defaultConfigurationIsVisible = 0; defaultConfigurationName = Release; };
+		A1000000000000000000000D /* Build configuration list for PBXProject "SampleIosSwift" */ = {isa = XCConfigurationList; buildConfigurations = (A1000000000000000000000E /* Debug */, A1000000000000000000000F /* Release */,); defaultConfigurationIsVisible = 0; defaultConfigurationName = Release; };
+/* End XCConfigurationList section */
+	};
+	rootObject = A1000000000000000000000C /* Project object */;
+}

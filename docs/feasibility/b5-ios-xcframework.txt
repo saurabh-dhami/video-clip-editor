@@ -1,0 +1,119 @@
+# B-5 iOS XCFramework feasibility evidence
+
+## Status
+
+BLOCKED for the plan-required Xcode 26.6 / `iPhone 16` proof. Packaging and
+Swift linkage passed on the installed alternative environment.
+
+## Tools actually used
+
+```text
+$ xcodebuild -version
+Xcode 26.1.1
+Build version 17B100
+```
+
+- Installed iOS Simulator runtime: `26.1`.
+- Available iPhone simulator used for supplemental linkage proof: `iPhone 16e`
+  (`arm64`, OS `26.1`).
+- The plan-required `iPhone 16` is not installed.
+
+## XCFramework assembly
+
+```text
+$ JAVA_HOME=/opt/homebrew/opt/openjdk@21/libexec/openjdk.jdk/Contents/Home \
+    ./gradlew :video-clip-editor-core:assembleVideoClipEditorCoreReleaseXCFramework
+
+> Task :video-clip-editor-core:linkReleaseFrameworkIosArm64
+> Task :video-clip-editor-core:linkReleaseFrameworkIosSimulatorArm64
+> Task :video-clip-editor-core:linkReleaseFrameworkIosX64
+> Task :video-clip-editor-core:assembleVideoClipEditorCoreReleaseXCFramework
+xcframework successfully written out to: .../video-clip-editor-core/build/XCFrameworks/release/VideoClipEditorCore.xcframework
+
+BUILD SUCCESSFUL in 1m 1s
+10 actionable tasks: 9 executed, 1 up-to-date
+```
+
+Generated slices:
+
+```text
+ios-arm64/VideoClipEditorCore.framework
+ios-arm64_x86_64-simulator/VideoClipEditorCore.framework
+```
+
+The simulator framework is the combined `iosSimulatorArm64` and `iosX64`
+slice; device framework is `iosArm64`.
+
+## Generated Swift surface
+
+Generated header:
+`video-clip-editor-core/build/XCFrameworks/release/VideoClipEditorCore.xcframework/ios-arm64_x86_64-simulator/VideoClipEditorCore.framework/Headers/VideoClipEditorCore.h`
+
+```objc
+__attribute__((swift_name("IosClipEditorFacade")))
+@interface VCECIosClipEditorFacade : VCECBase
+- (void)openSessionSourcePath:(NSString *)sourcePath completion:(void (^)(VCECIosOpenSessionResult *))completion __attribute__((swift_name("openSession(sourcePath:completion:)")));
+@end
+
+__attribute__((swift_name("IosClipEditorFactory")))
+@interface VCECIosClipEditorFactory : VCECBase
+@property (class, readonly, getter=shared) VCECIosClipEditorFactory *shared __attribute__((swift_name("shared")));
+- (VCECIosClipEditorFacade *)create __attribute__((swift_name("create()")));
+@end
+
+@property (class, readonly) VCECIosOpenSessionCode *iosEngineUnavailable __attribute__((swift_name("iosEngineUnavailable")));
+@property (readonly) VCECIosOpenSessionCode *code __attribute__((swift_name("code")));
+```
+
+This verifies the Swift call used by `sample-ios-swift/App.swift`:
+
+```swift
+IosClipEditorFactory.shared.create().openSession(sourcePath:completion:)
+result.code == .iosEngineUnavailable
+```
+
+## Copy and Xcode builds
+
+The assembled XCFramework was copied into
+`sample-ios-swift/Frameworks/VideoClipEditorCore.xcframework` with `rsync`.
+The final copy used a trailing source/destination slash so the bundle contains
+its root `Info.plist`; an earlier non-empty destination created a nested bundle
+and was replaced before the proof build.
+
+Plan command, exact result:
+
+```text
+$ xcodebuild -project sample-ios-swift/SampleIosSwift.xcodeproj \
+    -scheme SampleIosSwift -sdk iphonesimulator \
+    -destination 'platform=iOS Simulator,name=iPhone 16' build
+
+xcodebuild: error: Unable to find a device matching the provided destination specifier:
+        { platform:iOS Simulator, OS:latest, name:iPhone 16 }
+
+The requested device could not be found because no available devices matched the request.
+```
+
+Exit status: `70`.
+
+Supplemental installed-target command:
+
+```text
+$ xcodebuild -project sample-ios-swift/SampleIosSwift.xcodeproj \
+    -scheme SampleIosSwift -sdk iphonesimulator \
+    -destination 'platform=iOS Simulator,name=iPhone 16e' \
+    -derivedDataPath /private/tmp/video-clip-editor-task2-derived-data build
+
+ProcessXCFramework .../Frameworks/VideoClipEditorCore.xcframework \
+  .../Build/Products/Debug-iphonesimulator/VideoClipEditorCore.framework ios simulator
+SwiftDriverJobDiscovery normal arm64 Compiling App.swift
+Ld ... -framework VideoClipEditorCore -o .../SampleIosSwift.app/SampleIosSwift
+** BUILD SUCCEEDED **
+```
+
+Exit status: `0`.
+
+## Concern / unblock
+
+Provision Xcode `26.6` and an available `iPhone 16` simulator, then rerun the
+plan command above. Until then B-5 remains BLOCKED; the iPhone 16e pass is
+supplemental packaging/linkage evidence only.

@@ -22,11 +22,13 @@ import java.util.UUID
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.buffer
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.joinAll
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -331,8 +333,8 @@ private class AndroidClipEditorSession(
 /**
  * Tracks frame workers that send into their own channel-backed Flow.
  *
- * `close()` cancels workers, never the collector that requested close. A rendezvous channel keeps
- * event delivery serialized, and cancellation prevents any later send after close returns.
+ * `close()` cancels and joins workers, except itself when called by a worker. A rendezvous channel
+ * keeps event delivery serialized, and joining prevents any later send after close returns.
  */
 internal class FrameEmissionGate {
     private val lock = Any()
@@ -354,12 +356,14 @@ internal class FrameEmissionGate {
         return admitted
     }
 
-    fun close() {
+    suspend fun close() {
+        val caller = currentCoroutineContext()[Job]
         val workers = synchronized(lock) {
             closed = true
             activeWorkers.toList()
         }
         workers.forEach { it.cancel() }
+        workers.filterNot { it === caller }.joinAll()
     }
 }
 

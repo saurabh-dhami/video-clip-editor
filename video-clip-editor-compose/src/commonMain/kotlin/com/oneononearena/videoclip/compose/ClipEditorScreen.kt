@@ -108,13 +108,13 @@ fun ClipEditorScreen(
 private fun EditorControls(ready: ClipEditorUiState.Ready, presenter: ClipEditorPresenter) {
     var size by remember { mutableStateOf(IntSize.Zero) }
     val durationMs = ready.metadata.duration.inWholeMilliseconds.coerceAtLeast(1)
-    val hitTargetWidthPx = with(LocalDensity.current) { 48.dp.toPx() }
+    val hitTargetWidthPx = with(LocalDensity.current) { 48.dp.roundToPx() }
     val edgeInsetPx = hitTargetWidthPx / 2f
     Box(Modifier.fillMaxWidth().widthIn(min = 48.dp).height(48.dp).background(Color.DarkGray).onSizeChanged { size = it }) {
-        DragHandle("clip-start-handle", toPosition(ready.range.start, durationMs, size.width, edgeInsetPx), size, edgeInsetPx) { x ->
+        DragHandle("clip-start-handle", toPosition(ready.range.start, durationMs, size.width, edgeInsetPx), size, hitTargetWidthPx, edgeInsetPx) { x ->
             presenter.updateStart(toDuration(x, size.width, durationMs, edgeInsetPx))
         }
-        DragHandle("clip-end-handle", toPosition(ready.range.endExclusive, durationMs, size.width, edgeInsetPx), size, edgeInsetPx) { x ->
+        DragHandle("clip-end-handle", toPosition(ready.range.endExclusive, durationMs, size.width, edgeInsetPx), size, hitTargetWidthPx, edgeInsetPx) { x ->
             presenter.updateEnd(toDuration(x, size.width, durationMs, edgeInsetPx))
         }
     }
@@ -133,16 +133,17 @@ private fun DragHandle(
     label: String,
     initialPosition: Float,
     size: IntSize,
+    hitTargetWidthPx: Int,
     edgeInsetPx: Float,
     onPosition: (Float) -> Unit,
 ) {
     val density = LocalDensity.current
-    val hitTargetWidthPx = with(density) { 48.dp.toPx() }
+    val hitTargetWidth = with(density) { hitTargetWidthPx.toDp() }
     var position by remember(label, initialPosition) { mutableFloatStateOf(initialPosition) }
     Box(
         Modifier
-            .offset { IntOffset((position - hitTargetWidthPx / 2f).roundToInt(), 0) }
-            .size(48.dp)
+            .offset { IntOffset(timelineHandleOffsetPx(position, hitTargetWidthPx), 0) }
+            .size(hitTargetWidth)
             .semantics { testTag = label }
             .pointerInput(label, size, edgeInsetPx) {
                 detectDragGestures { _, drag ->
@@ -189,6 +190,9 @@ internal fun toPosition(
 
 internal fun timelineEdgeInset(trackWidthPx: Int, requestedInsetPx: Float): Float =
     requestedInsetPx.coerceIn(0f, trackWidthPx.coerceAtLeast(0).toFloat() / 2f)
+
+internal fun timelineHandleOffsetPx(position: Float, targetWidthPx: Int): Int =
+    (position - targetWidthPx.coerceAtLeast(0) / 2f).roundToInt()
 
 internal sealed interface ClipEditorUiState {
     data object LoadingMetadata : ClipEditorUiState

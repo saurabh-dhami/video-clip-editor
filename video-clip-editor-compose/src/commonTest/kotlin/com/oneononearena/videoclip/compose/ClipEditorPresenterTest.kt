@@ -67,6 +67,20 @@ class ClipEditorPresenterTest {
     }
 
     @Test
+    fun `fractional density target stays within full measured track bounds`() {
+        val targetWidthPx = 53 // 48dp rounded at density 1.1
+        val trackWidthPx = 200
+        val edgeInsetPx = targetWidthPx / 2f
+        val startPosition = toPosition(0.milliseconds, 10_000, trackWidthPx, edgeInsetPx)
+        val endPosition = toPosition(10_000.milliseconds, 10_000, trackWidthPx, edgeInsetPx)
+
+        assertEquals(0, timelineHandleOffsetPx(startPosition, targetWidthPx))
+        assertEquals(trackWidthPx - targetWidthPx, timelineHandleOffsetPx(endPosition, targetWidthPx))
+        assertEquals(0.milliseconds, toDuration(startPosition, trackWidthPx, 10_000, edgeInsetPx))
+        assertEquals(10_000.milliseconds, toDuration(endPosition, trackWidthPx, 10_000, edgeInsetPx))
+    }
+
+    @Test
     fun `retry closes current session before opening next session`() = runTest {
         val first = FakeSession(flow { emit(FrameStripEvent.Complete) })
         val second = FakeSession(flow { emit(FrameStripEvent.Complete) })

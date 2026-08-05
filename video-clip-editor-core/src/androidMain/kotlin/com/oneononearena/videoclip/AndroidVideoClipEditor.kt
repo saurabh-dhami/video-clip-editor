@@ -20,7 +20,11 @@ import java.io.File
 import java.io.IOException
 import java.util.UUID
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.suspendCancellableCoroutine
@@ -137,7 +141,7 @@ private class AndroidClipEditorSession(
     private val context: Context,
 ) : ClipEditorSession {
     private val exportMutex = Mutex()
-    private val frameEmissionMutex = Mutex()
+    private val frameEmissionGate = FrameEmissionGate()
     private val lifecycleLock = Any()
     private val issuedLeases = mutableMapOf<String, LeaseRecord>()
     @Volatile private var closed = false
@@ -206,6 +210,7 @@ private class AndroidClipEditorSession(
             closed = true
             activeTransformer to activeCancellation
         }
+        frameEmissionGate.close()
         AndroidMainLooperDispatcher.run {
             runCatching { active.first?.cancel() }
             runCatching { active.second?.invoke() }
@@ -230,10 +235,7 @@ private class AndroidClipEditorSession(
     }
 
     private suspend fun emitIfOpen(emitEvent: suspend () -> Unit): Boolean {
-        val admitted = frameEmissionMutex.withLock { !closed }
-        if (!admitted) return false
-        emitEvent()
-        return true
+        return frameEmissionGate.emitIfOpen(emitEvent)
     }
 
     private suspend fun extractFrames(count: Int): List<ThumbnailFrame> = withContext(Dispatchers.IO) {
@@ -322,6 +324,44 @@ private class AndroidClipEditorSession(
                 if (continuation.isActive) continuation.resumeWith(Result.failure(error))
             }
         }
+    }
+}
+
+/**
+ * Cancels queued frame events when the owning session closes.
+ *
+ * No lock spans Flow delivery: a collector may call `close()` from `emit`, and waiting for that
+ * collector would deadlock. Instead, close cancels every admitted event job before returning.
+ */
+internal class FrameEmissionGate {
+    private val lock = Any()
+    private val activeEmissions = mutableSetOf<Job>()
+    private var closed = false
+
+    suspend fun emitIfOpen(emitEvent: suspend () -> Unit): Boolean = coroutineScope {
+        val emission = async(start = CoroutineStart.LAZY) { emitEvent() }
+        val admitted = synchronized(lock) {
+            if (closed) false else {
+                activeEmissions += emission
+                true
+            }
+        }
+        if (!admitted) return@coroutineScope false
+
+        emission.invokeOnCompletion {
+            synchronized(lock) { activeEmissions -= emission }
+        }
+        emission.start()
+        emission.join()
+        !emission.isCancelled
+    }
+
+    fun close() {
+        val emissions = synchronized(lock) {
+            closed = true
+            activeEmissions.toList()
+        }
+        emissions.forEach { it.cancel() }
     }
 }
 

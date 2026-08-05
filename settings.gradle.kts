@@ -15,4 +15,4 @@ dependencyResolutionManagement {
 }
 
 rootProject.name = "video-clip-editor"
-include(":video-clip-editor-core", ":video-clip-editor-compose")
+include(":video-clip-editor-core", ":video-clip-editor-compose", ":demo-android")

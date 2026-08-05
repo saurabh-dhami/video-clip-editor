@@ -6,11 +6,13 @@ media3 = "1.10.1"
 coroutines = "1.10.2"
 
 [libraries]
+androidx-activity-compose = { module = "androidx.activity:activity-compose", version = "1.11.0" }
 media3-transformer = { module = "androidx.media3:media3-transformer", version.ref = "media3" }
 media3-exoplayer = { module = "androidx.media3:media3-exoplayer", version.ref = "media3" }
 kotlinx-coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "coroutines" }
 
 [plugins]
+android-application = { id = "com.android.application", version.ref = "agp" }
 kotlin-multiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref = "kotlin" }
 android-kmp-library = { id = "com.android.kotlin.multiplatform.library", version.ref = "agp" }
 compose-multiplatform = { id = "org.jetbrains.compose", version.ref = "compose" }

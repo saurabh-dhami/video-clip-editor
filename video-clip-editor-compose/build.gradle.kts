@@ -17,5 +17,13 @@ kotlin {
 
     sourceSets.commonMain.dependencies {
         implementation(project(":video-clip-editor-core"))
+        implementation(libs.kotlinx.coroutines.core)
+        implementation(compose.runtime)
+        implementation(compose.foundation)
+        implementation(compose.material3)
+    }
+    sourceSets.commonTest.dependencies {
+        implementation(kotlin("test"))
+        implementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.10.2")
     }
 }

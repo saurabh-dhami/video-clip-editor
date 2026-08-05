@@ -10,6 +10,9 @@ kotlin {
         namespace = "com.oneononearena.videoclip"
         compileSdk = 36
         minSdk = 23
+        withDeviceTest {
+            instrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        }
     }
     val xcf = XCFramework("VideoClipEditorCore")
 
@@ -24,5 +27,13 @@ kotlin {
 
     sourceSets.commonMain.dependencies {
         api(libs.kotlinx.coroutines.core)
+    }
+    sourceSets.named("androidDeviceTest") {
+        dependencies {
+            implementation(libs.media3.transformer)
+            implementation("androidx.test:runner:1.7.0")
+            implementation("androidx.test.ext:junit:1.3.0")
+            implementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.10.2")
+        }
     }
 }

@@ -26,6 +26,7 @@ import com.oneononearena.videoclip.VideoSourcePath
 import com.oneononearena.videoclip.compose.ClipEditorScreen
 import com.oneononearena.videoclip.createAndroidVideoClipEditor
 import java.io.File
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -40,19 +41,28 @@ class DemoActivity : ComponentActivity() {
 @Composable
 private fun DemoApp(activity: DemoActivity) {
     val scope = rememberCoroutineScope()
-    val editor = remember(activity) { createAndroidVideoClipEditor(activity) }
+    val editor = remember(activity) { SessionTrackingEditor(createAndroidVideoClipEditor(activity)) }
     var source by remember { mutableStateOf<File?>(null) }
     var output by remember { mutableStateOf<TemporaryClipLease?>(null) }
     var message by remember { mutableStateOf<String?>(null) }
     var editorVisible by remember { mutableStateOf(true) }
     var cleanupBlocked by remember { mutableStateOf(false) }
+    var operationInProgress by remember { mutableStateOf(false) }
+    var pickerOpen by remember { mutableStateOf(false) }
     val launcher = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
-        if (uri == null || cleanupBlocked) return@rememberLauncherForActivityResult
+        if (!pickerOpen || cleanupBlocked) return@rememberLauncherForActivityResult
+        pickerOpen = false
+        if (uri == null) return@rememberLauncherForActivityResult
         scope.launch {
-            val result = withContext(Dispatchers.IO) {
-                activity.contentResolver.openInputStream(uri)?.use { input ->
-                    BoundedDocumentImporter(File(activity.filesDir, "demo-inputs")).import(input)
-                } ?: DocumentImportResult.Failed("Document provider returned no stream")
+            operationInProgress = true
+            val result = try {
+                withContext(Dispatchers.IO) {
+                    BoundedDocumentImporter(File(activity.filesDir, "demo-inputs")).importFrom {
+                        activity.contentResolver.openInputStream(uri)
+                    }
+                }
+            } finally {
+                operationInProgress = false
             }
             when (result) {
                 is DocumentImportResult.Imported -> {
@@ -67,34 +77,54 @@ private fun DemoApp(activity: DemoActivity) {
         }
     }
 
-    fun select() = launcher.launch(arrayOf("video/mp4"))
+    fun select() {
+        if (!operationInProgress && !pickerOpen && !cleanupBlocked) {
+            pickerOpen = true
+            launcher.launch(arrayOf("video/mp4"))
+        }
+    }
     fun clear() {
+        if (operationInProgress) return
         scope.launch {
+            operationInProgress = true
             cleanupBlocked = true
             // No demo playback dependency: releasePlayer is intentionally a no-op.
             val coordinator = DemoCleanupCoordinator(
                 releasePlayer = {},
                 clearOutput = {
-                    when (val result = output?.let { lease -> runCatching { lease.clearTemporaryFile() }.getOrNull() }) {
-                        null, TempDeleteResult.Cleared, TempDeleteResult.AlreadyCleared -> DemoClearResult.Cleared
-                        is TempDeleteResult.Failed -> DemoClearResult.Failed
+                    val lease = output ?: return@DemoCleanupCoordinator DemoClearResult.Cleared
+                    try {
+                        when (lease.clearTemporaryFile()) {
+                            TempDeleteResult.Cleared, TempDeleteResult.AlreadyCleared -> DemoClearResult.Cleared
+                            is TempDeleteResult.Failed -> DemoClearResult.Failed
+                        }
+                    } catch (error: CancellationException) {
+                        throw error
+                    } catch (_: Exception) {
+                        DemoClearResult.Failed
                     }
                 },
-                // Removing the screen invokes ClipEditorScreen's presenter close before its resources are disposed.
-                closeSession = { editorVisible = false },
+                closeSession = {
+                    editor.closeActiveSession()
+                    editorVisible = false
+                },
                 deleteSource = { source?.delete() ?: true },
                 clearUi = { source = null; output = null; message = null },
             )
-            when (coordinator.clear()) {
-                DemoClearResult.Cleared -> cleanupBlocked = false
-                DemoClearResult.Failed -> message = "Temporary output clear failed. Retry Clear temp before reselecting."
+            try {
+                when (coordinator.clear()) {
+                    DemoClearResult.Cleared -> cleanupBlocked = false
+                    DemoClearResult.Failed -> message = "Temporary output clear failed. Retry Clear temp before reselecting."
+                }
+            } finally {
+                operationInProgress = false
             }
         }
     }
 
     Column(Modifier.fillMaxSize().padding(16.dp)) {
-        Button(onClick = ::select, enabled = source == null && !cleanupBlocked) { Text("Select MP4") }
-        if (source != null || cleanupBlocked) Button(onClick = ::clear) { Text("Clear temp") }
+        Button(onClick = ::select, enabled = source == null && !cleanupBlocked && !operationInProgress && !pickerOpen) { Text("Select MP4") }
+        if (source != null || cleanupBlocked) Button(onClick = ::clear, enabled = !operationInProgress && !pickerOpen) { Text("Clear temp") }
         message?.let { Text(it) }
         source?.let { imported ->
             if (editorVisible) ClipEditorScreen(

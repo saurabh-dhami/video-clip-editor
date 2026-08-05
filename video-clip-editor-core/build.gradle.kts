@@ -31,6 +31,9 @@ kotlin {
     sourceSets.commonTest.dependencies {
         implementation(kotlin("test"))
     }
+    sourceSets.androidMain.dependencies {
+        implementation(libs.media3.transformer)
+    }
     sourceSets.named("androidDeviceTest") {
         dependencies {
             implementation(libs.media3.transformer)

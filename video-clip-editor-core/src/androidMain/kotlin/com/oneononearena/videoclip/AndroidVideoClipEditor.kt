@@ -9,9 +9,6 @@ import android.net.Uri
 import android.os.Build
 import android.os.Handler
 import android.os.Looper
-import android.system.ErrnoException
-import android.system.Os
-import android.system.OsConstants
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MimeTypes
 import androidx.media3.transformer.Composition
@@ -179,10 +176,7 @@ private class AndroidClipEditorSession(
                     ClipResult.Failed(VideoEditFailure(FailureCode.TEMP_RENAME_FAILED, true, final.name))
                 } else {
                     val opaqueId = UUID.randomUUID().toString()
-                    val record = runCatching { LeaseRecord(opaqueId, final.leaseIdentity()) }.getOrElse {
-                        final.delete()
-                        return ClipResult.Failed(VideoEditFailure(FailureCode.TEMP_RENAME_FAILED, true, it.message))
-                    }
+                    val record = LeaseRecord(opaqueId)
                     synchronized(lifecycleLock) {
                         if (closed) {
                             final.delete()
@@ -208,11 +202,9 @@ private class AndroidClipEditorSession(
     }
 
     override suspend fun close() {
-        val active = frameEmissionMutex.withLock {
-            synchronized(lifecycleLock) {
-                closed = true
-                activeTransformer to activeCancellation
-            }
+        val active = synchronized(lifecycleLock) {
+            closed = true
+            activeTransformer to activeCancellation
         }
         AndroidMainLooperDispatcher.run {
             runCatching { active.first?.cancel() }
@@ -234,32 +226,14 @@ private class AndroidClipEditorSession(
     private suspend fun clearIssuedLease(target: File, opaqueId: String): TempDeleteResult = synchronized(lifecycleLock) {
         val record = issuedLeases[target.absolutePath]
         if (record?.opaqueId != opaqueId) return@synchronized TempDeleteResult.AlreadyCleared
-        if (!target.hasLeaseIdentity(record.identity, sessionRoot)) {
-            return@synchronized TempDeleteResult.Failed(VideoEditFailure(FailureCode.TEMP_DELETE_FAILED, true, target.name))
-        }
-        return@synchronized try {
-            if (!target.delete()) {
-                TempDeleteResult.Failed(VideoEditFailure(FailureCode.TEMP_DELETE_FAILED, true, target.name))
-            } else {
-                issuedLeases.remove(target.absolutePath)
-                if (sessionRoot.listFiles().isNullOrEmpty()) sessionRoot.delete()
-                TempDeleteResult.Cleared
-            }
-        } catch (error: SecurityException) {
-            TempDeleteResult.Failed(VideoEditFailure(FailureCode.TEMP_DELETE_FAILED, true, error.message))
-        }
+        AndroidLeaseDeletionPolicy.clear(target)
     }
 
     private suspend fun emitIfOpen(emitEvent: suspend () -> Unit): Boolean {
-        frameEmissionMutex.lock()
-        return try {
-            if (closed) false else {
-                emitEvent()
-                true
-            }
-        } finally {
-            frameEmissionMutex.unlock()
-        }
+        val admitted = frameEmissionMutex.withLock { !closed }
+        if (!admitted) return false
+        emitEvent()
+        return true
     }
 
     private suspend fun extractFrames(count: Int): List<ThumbnailFrame> = withContext(Dispatchers.IO) {
@@ -365,25 +339,17 @@ internal class AndroidTemporaryClipLease(
     }
 }
 
-private data class LeaseRecord(val opaqueId: String, val identity: LeaseIdentity)
+private data class LeaseRecord(val opaqueId: String)
 
-private data class LeaseIdentity(val canonicalPath: String, val device: Long, val inode: Long)
-
-@Throws(ErrnoException::class, IOException::class)
-private fun File.leaseIdentity(): LeaseIdentity {
-    val stat = Os.lstat(absolutePath)
-    if (!OsConstants.S_ISREG(stat.st_mode)) throw IOException("Temporary output is not a regular file")
-    return LeaseIdentity(canonicalPath, stat.st_dev, stat.st_ino)
-}
-
-private fun File.hasLeaseIdentity(identity: LeaseIdentity, root: File): Boolean = try {
-    leaseIdentity() == identity && canonicalFile.parentFile == root.canonicalFile
-} catch (_: IOException) {
-    false
-} catch (_: ErrnoException) {
-    false
-} catch (_: SecurityException) {
-    false
+/**
+ * Android's public Os API has neither openat nor unlinkat. A descriptor can identify an issued
+ * inode, but pathname removal after that check can still unlink a replacement inode. Keep the
+ * issued output intact and return a typed retryable failure instead of risking that deletion.
+ */
+internal object AndroidLeaseDeletionPolicy {
+    fun clear(target: File): TempDeleteResult = TempDeleteResult.Failed(
+        VideoEditFailure(FailureCode.TEMP_DELETE_FAILED, true, target.name),
+    )
 }
 
 private class DeviceEncoderUnavailableException(cause: ExportException) : Exception(cause.message, cause)

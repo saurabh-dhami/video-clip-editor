@@ -49,6 +49,30 @@ class ClipEditorPresenterTest {
     }
 
     @Test
+    fun `timeline mapping clamps positions at both track edges`() {
+        assertEquals(0.milliseconds, toDuration(-4f, 100, 10_000))
+        assertEquals(10_000.milliseconds, toDuration(104f, 100, 10_000))
+        assertEquals(0f, toPosition((-1).milliseconds, 10_000, 100))
+        assertEquals(100f, toPosition(12_000.milliseconds, 10_000, 100))
+    }
+
+    @Test
+    fun `retry closes current session before opening next session`() = runTest {
+        val first = FakeSession(flow { emit(FrameStripEvent.Complete) })
+        val second = FakeSession(flow { emit(FrameStripEvent.Complete) })
+        val editor = SequentialFakeEditor(first, second)
+        val presenter = ClipEditorPresenter(this, {})
+
+        presenter.start(VideoSourcePath("/video.mp4"), editor)
+        testScheduler.advanceUntilIdle()
+        presenter.retry()
+        testScheduler.advanceUntilIdle()
+
+        assertEquals(listOf("open-0", "close-0", "open-1"), editor.events)
+        assertEquals(1, first.closeCalls)
+    }
+
+    @Test
     fun `create submission and result callback happen once`() = runTest {
         var callbacks = 0
         val session = FakeSession(flow { emit(FrameStripEvent.Complete) })
@@ -130,10 +154,28 @@ private class FakeEditor(private val session: ClipEditorSession) : VideoClipEdit
 private class FakeSession(private val events: Flow<FrameStripEvent>) : ClipEditorSession {
     override val metadata = VideoMetadata(10_000.milliseconds, 100, 100, false)
     var createCalls = 0
+    var closeCalls = 0
     override fun frames(request: FrameStripRequest): Flow<FrameStripEvent> = events
     override suspend fun createClip(range: ClipRange): ClipResult {
         createCalls++
         return ClipResult.Failed(VideoEditFailure(com.oneononearena.videoclip.FailureCode.EXPORT_FAILED, false, null))
     }
-    override suspend fun close() = Unit
+    override suspend fun close() { closeCalls++ }
+}
+
+private class SequentialFakeEditor(vararg private val sessions: FakeSession) : VideoClipEditor {
+    val events = mutableListOf<String>()
+    private var index = 0
+
+    override suspend fun openSession(source: VideoSourcePath): OpenSessionResult {
+        events += "open-$index"
+        val session = sessions[index]
+        val openIndex = index++
+        return OpenSessionResult.Open(object : ClipEditorSession by session {
+            override suspend fun close() {
+                events += "close-$openIndex"
+                session.close()
+            }
+        })
+    }
 }

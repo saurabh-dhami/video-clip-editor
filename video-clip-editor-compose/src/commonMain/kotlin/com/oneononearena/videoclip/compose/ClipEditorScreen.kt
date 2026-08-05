@@ -11,11 +11,13 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.material3.Button
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
@@ -25,10 +27,12 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.testTag
 import androidx.compose.ui.unit.IntOffset
@@ -50,13 +54,15 @@ import kotlin.math.roundToInt
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.milliseconds
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.isActive
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 
 private val minimumRange = 500.milliseconds
 private const val frameCount = 24
@@ -72,10 +78,10 @@ fun ClipEditorScreen(
     val scope = rememberCoroutineScope()
     val result by rememberUpdatedState(onResult)
     val cancel by rememberUpdatedState(onCancel)
-    val presenter = remember(source, editor) { ClipEditorPresenter(scope, result, cancel) }
-    presenter.updateCallbacks(result, cancel)
+    val presenter = remember { ClipEditorPresenter(scope) }
+    SideEffect { presenter.updateCallbacks(result, cancel) }
     val state by presenter.state.collectAsState()
-    LaunchedEffect(presenter) { presenter.start(source, editor) }
+    LaunchedEffect(source, editor, presenter) { presenter.start(source, editor) }
     DisposableEffect(presenter) { onDispose { presenter.close() } }
 
     Column(modifier.padding(16.dp)) {
@@ -101,12 +107,12 @@ fun ClipEditorScreen(
 private fun EditorControls(ready: ClipEditorUiState.Ready, presenter: ClipEditorPresenter) {
     var size by remember { mutableStateOf(IntSize.Zero) }
     val durationMs = ready.metadata.duration.inWholeMilliseconds.coerceAtLeast(1)
-    Box(Modifier.fillMaxWidth().height(32.dp).background(Color.DarkGray).onSizeChanged { size = it }) {
-        DragHandle("clip-start-handle", toPosition(ready.range.start, durationMs, size), size) { x ->
-            presenter.updateStart(toDuration(x, size, durationMs))
+    Box(Modifier.fillMaxWidth().height(48.dp).background(Color.DarkGray).onSizeChanged { size = it }) {
+        DragHandle("clip-start-handle", toPosition(ready.range.start, durationMs, size.width), size) { x ->
+            presenter.updateStart(toDuration(x, size.width, durationMs))
         }
-        DragHandle("clip-end-handle", toPosition(ready.range.endExclusive, durationMs, size), size) { x ->
-            presenter.updateEnd(toDuration(x, size, durationMs))
+        DragHandle("clip-end-handle", toPosition(ready.range.endExclusive, durationMs, size.width), size) { x ->
+            presenter.updateEnd(toDuration(x, size.width, durationMs))
         }
     }
     Row {
@@ -121,11 +127,13 @@ private fun EditorControls(ready: ClipEditorUiState.Ready, presenter: ClipEditor
 
 @Composable
 private fun DragHandle(label: String, initialPosition: Float, size: IntSize, onPosition: (Float) -> Unit) {
+    val density = LocalDensity.current
+    val hitTargetWidthPx = with(density) { 48.dp.toPx() }
     var position by remember(label, initialPosition) { mutableFloatStateOf(initialPosition) }
     Box(
         Modifier
-            .offset { IntOffset((position - 12f).roundToInt(), 0) }
-            .size(24.dp, 32.dp)
+            .offset { IntOffset((position - hitTargetWidthPx / 2f).roundToInt(), 0) }
+            .size(48.dp)
             .semantics { testTag = label }
             .pointerInput(label, size) {
                 detectDragGestures { _, drag ->
@@ -133,16 +141,24 @@ private fun DragHandle(label: String, initialPosition: Float, size: IntSize, onP
                     onPosition(position)
                 }
             },
-    )
+    ) {
+        Box(Modifier.align(Alignment.Center).width(12.dp).height(32.dp).background(Color.White))
+    }
 }
 
 internal expect fun decodeJpegForRender(bytes: ByteArray): ImageBitmap?
 
-private fun toDuration(position: Float, size: IntSize, durationMs: Long): Duration =
-    ((position / size.width.coerceAtLeast(1)) * durationMs).roundToLong().milliseconds
+internal fun toDuration(position: Float, trackWidthPx: Int, durationMs: Long): Duration {
+    val width = trackWidthPx.toFloat()
+    if (width <= 0f) return Duration.ZERO
+    return ((position.coerceIn(0f, width) / width) * durationMs).roundToLong().milliseconds
+}
 
-private fun toPosition(duration: Duration, durationMs: Long, size: IntSize): Float =
-    (duration.inWholeMilliseconds.toFloat() / durationMs * size.width).coerceIn(0f, size.width.toFloat())
+internal fun toPosition(duration: Duration, durationMs: Long, trackWidthPx: Int): Float {
+    val width = trackWidthPx.coerceAtLeast(0).toFloat()
+    if (durationMs <= 0L) return 0f
+    return (duration.inWholeMilliseconds.toFloat() / durationMs * width).coerceIn(0f, width)
+}
 
 internal sealed interface ClipEditorUiState {
     data object LoadingMetadata : ClipEditorUiState
@@ -156,7 +172,7 @@ internal sealed interface ClipEditorUiState {
 
 internal class ClipEditorPresenter(
     private val scope: CoroutineScope,
-    onResult: (ClipResult) -> Unit,
+    onResult: (ClipResult) -> Unit = {},
     onCancel: () -> Unit = {},
 ) {
     private val backingState = MutableStateFlow<ClipEditorUiState>(ClipEditorUiState.LoadingMetadata)
@@ -167,10 +183,9 @@ internal class ClipEditorPresenter(
     private var operation: Job? = null
     private var resultSent = false
     private var cancelSent = false
-    private var framesTerminal = false
     private var onResult = onResult
     private var onCancel = onCancel
-    private val closeScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+    private val sessionMutex = Mutex()
 
     fun updateCallbacks(onResult: (ClipResult) -> Unit, onCancel: () -> Unit) {
         this.onResult = onResult
@@ -178,28 +193,50 @@ internal class ClipEditorPresenter(
     }
 
     fun start(source: VideoSourcePath, editor: VideoClipEditor) {
-        close()
+        operation?.cancel()
         this.source = source
         this.editor = editor
         resultSent = false
-        framesTerminal = false
         backingState.value = ClipEditorUiState.LoadingMetadata
         operation = scope.launch {
-            when (val opened = editor.openSession(source)) {
-                is OpenSessionResult.Open -> collectFrames(opened.session)
-                is OpenSessionResult.Failed -> finishFailure(opened.failure)
-                is OpenSessionResult.Unsupported -> finish(ClipResult.Unsupported(opened.code, opened.diagnostic))
-                is OpenSessionResult.InvalidRequest -> finish(ClipResult.InvalidRequest(opened.code, opened.diagnostic))
+            val openedSession = sessionMutex.withLock {
+                session?.close()
+                session = null
+                when (val opened = editor.openSession(source)) {
+                    is OpenSessionResult.Open -> {
+                        if (!currentCoroutineContext().isActive) {
+                            opened.session.close()
+                            null
+                        } else {
+                            session = opened.session
+                            opened.session
+                        }
+                    }
+                    is OpenSessionResult.Failed -> {
+                        finishFailure(opened.failure)
+                        null
+                    }
+                    is OpenSessionResult.Unsupported -> {
+                        finish(ClipResult.Unsupported(opened.code, opened.diagnostic))
+                        null
+                    }
+                    is OpenSessionResult.InvalidRequest -> {
+                        finish(ClipResult.InvalidRequest(opened.code, opened.diagnostic))
+                        null
+                    }
+                }
             }
+            if (openedSession != null) collectFrames(openedSession)
         }
     }
 
     private suspend fun collectFrames(opened: ClipEditorSession) {
-        session = opened
+        if (session !== opened || !currentCoroutineContext().isActive) return
         backingState.value = ClipEditorUiState.LoadingFrames
         val frames = mutableListOf<ThumbnailFrame>()
+        var framesTerminal = false
         opened.frames(FrameStripRequest(frameCount)).collect { event ->
-            if (framesTerminal) return@collect
+            if (framesTerminal || session !== opened || !currentCoroutineContext().isActive) return@collect
             when (event) {
                 is FrameStripEvent.Frame -> frames += event.value
                 is FrameStripEvent.Progress -> Unit
@@ -257,8 +294,12 @@ internal class ClipEditorPresenter(
     fun close() {
         operation?.cancel()
         operation = null
-        session?.let { old -> closeScope.launch { old.close() } }
-        session = null
+        scope.launch {
+            sessionMutex.withLock {
+                session?.close()
+                session = null
+            }
+        }
     }
     private fun finishFailure(failure: VideoEditFailure) {
         if (failure.retryable) backingState.value = ClipEditorUiState.Retry(failure.diagnostic ?: failure.code.name)

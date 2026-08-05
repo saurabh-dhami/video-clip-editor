@@ -19,7 +19,13 @@ internal class Mp4BoxScanner(private val file: File) {
             val boxEnd: Long
             when (size32) {
                 0L -> { headerSize = 8L; boxEnd = end }
-                1L -> { if (offset + 16 > end) return false; headerSize = 16L; boxEnd = input.readLong() }
+                1L -> {
+                    if (offset + 16 > end) return false
+                    headerSize = 16L
+                    val size64 = input.readLong()
+                    if (size64 < headerSize || size64 > end - offset) return false
+                    boxEnd = offset + size64
+                }
                 else -> { headerSize = 8L; boxEnd = offset + size32 }
             }
             if (boxEnd <= offset || boxEnd > end || boxEnd - offset < headerSize) return false

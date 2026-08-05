@@ -20,13 +20,13 @@ import java.io.File
 import java.io.IOException
 import java.util.UUID
 import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.async
-import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.buffer
+import kotlinx.coroutines.flow.callbackFlow
+import kotlinx.coroutines.channels.awaitClose
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -148,21 +148,26 @@ private class AndroidClipEditorSession(
     private var activeTransformer: Transformer? = null
     private var activeCancellation: (() -> Unit)? = null
 
-    override fun frames(request: FrameStripRequest): Flow<FrameStripEvent> = flow {
-        CommonValidation.frameRequest(request, configuration)?.let {
-            emitIfOpen { emit(FrameStripEvent.InvalidRequest(it, null)) }
-            return@flow
+    override fun frames(request: FrameStripRequest): Flow<FrameStripEvent> = callbackFlow {
+        val worker = launch {
+            if (!frameEmissionGate.register(coroutineContext[Job]!!)) return@launch
+            CommonValidation.frameRequest(request, configuration)?.let {
+                send(FrameStripEvent.InvalidRequest(it, null))
+                return@launch
+            }
+            val frames = runCatching { extractFrames(request.frameCount) }.getOrElse {
+                send(FrameStripEvent.Failed(VideoEditFailure(FailureCode.FRAME_EXTRACTION_FAILED, true, it.message)))
+                return@launch
+            }
+            frames.forEachIndexed { index, frame ->
+                send(FrameStripEvent.Frame(frame))
+                send(FrameStripEvent.Progress(index + 1, frames.size))
+            }
+            send(FrameStripEvent.Complete)
         }
-        val frames = runCatching { extractFrames(request.frameCount) }.getOrElse {
-            emitIfOpen { emit(FrameStripEvent.Failed(VideoEditFailure(FailureCode.FRAME_EXTRACTION_FAILED, true, it.message))) }
-            return@flow
-        }
-        frames.forEachIndexed { index, frame ->
-            if (!emitIfOpen { emit(FrameStripEvent.Frame(frame)) }) return@flow
-            if (!emitIfOpen { emit(FrameStripEvent.Progress(index + 1, frames.size)) }) return@flow
-        }
-        emitIfOpen { emit(FrameStripEvent.Complete) }
-    }
+        worker.invokeOnCompletion { close() }
+        awaitClose { worker.cancel() }
+    }.buffer(0)
 
     override suspend fun createClip(range: ClipRange): ClipResult {
         if (closed) return ClipResult.InvalidRequest(ValidationCode.SESSION_CLOSED, null)
@@ -232,10 +237,6 @@ private class AndroidClipEditorSession(
         val record = issuedLeases[target.absolutePath]
         if (record?.opaqueId != opaqueId) return@synchronized TempDeleteResult.AlreadyCleared
         AndroidLeaseDeletionPolicy.clear(target)
-    }
-
-    private suspend fun emitIfOpen(emitEvent: suspend () -> Unit): Boolean {
-        return frameEmissionGate.emitIfOpen(emitEvent)
     }
 
     private suspend fun extractFrames(count: Int): List<ThumbnailFrame> = withContext(Dispatchers.IO) {
@@ -328,40 +329,37 @@ private class AndroidClipEditorSession(
 }
 
 /**
- * Cancels queued frame events when the owning session closes.
+ * Tracks frame workers that send into their own channel-backed Flow.
  *
- * No lock spans Flow delivery: a collector may call `close()` from `emit`, and waiting for that
- * collector would deadlock. Instead, close cancels every admitted event job before returning.
+ * `close()` cancels workers, never the collector that requested close. A rendezvous channel keeps
+ * event delivery serialized, and cancellation prevents any later send after close returns.
  */
 internal class FrameEmissionGate {
     private val lock = Any()
-    private val activeEmissions = mutableSetOf<Job>()
+    private val activeWorkers = mutableSetOf<Job>()
     private var closed = false
 
-    suspend fun emitIfOpen(emitEvent: suspend () -> Unit): Boolean = coroutineScope {
-        val emission = async(start = CoroutineStart.LAZY) { emitEvent() }
+    fun register(worker: Job): Boolean {
         val admitted = synchronized(lock) {
             if (closed) false else {
-                activeEmissions += emission
+                activeWorkers += worker
                 true
             }
         }
-        if (!admitted) return@coroutineScope false
-
-        emission.invokeOnCompletion {
-            synchronized(lock) { activeEmissions -= emission }
+        if (admitted) {
+            worker.invokeOnCompletion {
+                synchronized(lock) { activeWorkers -= worker }
+            }
         }
-        emission.start()
-        emission.join()
-        !emission.isCancelled
+        return admitted
     }
 
     fun close() {
-        val emissions = synchronized(lock) {
+        val workers = synchronized(lock) {
             closed = true
-            activeEmissions.toList()
+            activeWorkers.toList()
         }
-        emissions.forEach { it.cancel() }
+        workers.forEach { it.cancel() }
     }
 }
 

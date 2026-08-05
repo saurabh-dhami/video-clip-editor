@@ -28,6 +28,9 @@ kotlin {
     sourceSets.commonMain.dependencies {
         api(libs.kotlinx.coroutines.core)
     }
+    sourceSets.commonTest.dependencies {
+        implementation(kotlin("test"))
+    }
     sourceSets.named("androidDeviceTest") {
         dependencies {
             implementation(libs.media3.transformer)

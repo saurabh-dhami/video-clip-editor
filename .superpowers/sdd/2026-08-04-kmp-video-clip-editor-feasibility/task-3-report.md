@@ -1,6 +1,8 @@
 # Task 3 report — Android Media3 B-6 proof
 
-Commit: pending
+Evidence attempt commit: `329a735`
+
+Source-repair commits: `4750f01`, `426111a`
 
 ## Implemented
 

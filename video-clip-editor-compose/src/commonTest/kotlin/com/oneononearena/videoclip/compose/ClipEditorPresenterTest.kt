@@ -5,6 +5,7 @@ import com.oneononearena.videoclip.ClipRange
 import com.oneononearena.videoclip.ClipResult
 import com.oneononearena.videoclip.FrameStripEvent
 import com.oneononearena.videoclip.FrameStripRequest
+import com.oneononearena.videoclip.FailureCode
 import com.oneononearena.videoclip.OpenSessionResult
 import com.oneononearena.videoclip.TemporaryClipLease
 import com.oneononearena.videoclip.VideoClipEditor
@@ -62,6 +63,62 @@ class ClipEditorPresenterTest {
         assertEquals(1, session.createCalls)
         assertEquals(1, callbacks)
         assertIs<ClipEditorUiState.Terminal>(presenter.state.value)
+    }
+
+    @Test
+    fun `complete after failed frame strip cannot replace terminal failure`() = runTest {
+        val presenter = ClipEditorPresenter(this, {})
+        val failure = VideoEditFailure(FailureCode.FRAME_EXTRACTION_FAILED, false, "bad frame")
+
+        presenter.start(VideoSourcePath("/video.mp4"), FakeEditor(FakeSession(flow {
+            emit(FrameStripEvent.Failed(failure))
+            emit(FrameStripEvent.Complete)
+        })))
+        testScheduler.advanceUntilIdle()
+
+        assertIs<ClipEditorUiState.Terminal>(presenter.state.value)
+    }
+
+    @Test
+    fun `complete after invalid frame strip cannot replace terminal result`() = runTest {
+        val presenter = ClipEditorPresenter(this, {})
+
+        presenter.start(VideoSourcePath("/video.mp4"), FakeEditor(FakeSession(flow {
+            emit(FrameStripEvent.InvalidRequest(com.oneononearena.videoclip.ValidationCode.INVALID_FRAME_REQUEST, "bad request"))
+            emit(FrameStripEvent.Complete)
+        })))
+        testScheduler.advanceUntilIdle()
+
+        assertIs<ClipEditorUiState.Terminal>(presenter.state.value)
+    }
+
+    @Test
+    fun `complete after unsupported frame strip cannot replace terminal result`() = runTest {
+        val presenter = ClipEditorPresenter(this, {})
+
+        presenter.start(VideoSourcePath("/video.mp4"), FakeEditor(FakeSession(flow {
+            emit(FrameStripEvent.Unsupported(com.oneononearena.videoclip.UnsupportedCode.UNSUPPORTED_VIDEO_CODEC, "unsupported"))
+            emit(FrameStripEvent.Complete)
+        })))
+        testScheduler.advanceUntilIdle()
+
+        assertIs<ClipEditorUiState.Terminal>(presenter.state.value)
+    }
+
+    @Test
+    fun `updated result callback receives terminal result`() = runTest {
+        var stale = 0
+        var fresh = 0
+        val presenter = ClipEditorPresenter(this, { stale++ })
+        presenter.updateCallbacks(onResult = { fresh++ }, onCancel = {})
+
+        presenter.start(VideoSourcePath("/video.mp4"), FakeEditor(FakeSession(flow {
+            emit(FrameStripEvent.InvalidRequest(com.oneononearena.videoclip.ValidationCode.RANGE_BELOW_MINIMUM, "bad request"))
+        })))
+        testScheduler.advanceUntilIdle()
+
+        assertEquals(0, stale)
+        assertEquals(1, fresh)
     }
 
 }

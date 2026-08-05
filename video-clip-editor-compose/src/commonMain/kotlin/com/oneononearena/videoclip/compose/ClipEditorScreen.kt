@@ -2,13 +2,14 @@ package com.oneononearena.videoclip.compose
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Button
 import androidx.compose.material3.Text
@@ -17,23 +18,25 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
-import androidx.compose.ui.graphics.toComposeImageBitmap
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.testTag
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import com.oneononearena.videoclip.ClipEditorSession
 import com.oneononearena.videoclip.ClipRange
 import com.oneononearena.videoclip.ClipResult
-import com.oneononearena.videoclip.FailureCode
 import com.oneononearena.videoclip.FrameStripEvent
 import com.oneononearena.videoclip.FrameStripRequest
 import com.oneononearena.videoclip.OpenSessionResult
@@ -43,15 +46,17 @@ import com.oneononearena.videoclip.VideoEditFailure
 import com.oneononearena.videoclip.VideoMetadata
 import com.oneononearena.videoclip.VideoSourcePath
 import kotlin.math.roundToLong
+import kotlin.math.roundToInt
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.milliseconds
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import org.jetbrains.skia.Image as SkiaImage
 
 private val minimumRange = 500.milliseconds
 private const val frameCount = 24
@@ -68,6 +73,7 @@ fun ClipEditorScreen(
     val result by rememberUpdatedState(onResult)
     val cancel by rememberUpdatedState(onCancel)
     val presenter = remember(source, editor) { ClipEditorPresenter(scope, result, cancel) }
+    presenter.updateCallbacks(result, cancel)
     val state by presenter.state.collectAsState()
     LaunchedEffect(presenter) { presenter.start(source, editor) }
     DisposableEffect(presenter) { onDispose { presenter.close() } }
@@ -93,11 +99,15 @@ fun ClipEditorScreen(
 
 @Composable
 private fun EditorControls(ready: ClipEditorUiState.Ready, presenter: ClipEditorPresenter) {
-    var size = remember { IntSize.Zero }
+    var size by remember { mutableStateOf(IntSize.Zero) }
     val durationMs = ready.metadata.duration.inWholeMilliseconds.coerceAtLeast(1)
     Box(Modifier.fillMaxWidth().height(32.dp).background(Color.DarkGray).onSizeChanged { size = it }) {
-        DragHandle("clip-start-handle", size) { x -> presenter.updateStart(toDuration(x, size, durationMs)) }
-        DragHandle("clip-end-handle", size) { x -> presenter.updateEnd(toDuration(x, size, durationMs)) }
+        DragHandle("clip-start-handle", toPosition(ready.range.start, durationMs, size), size) { x ->
+            presenter.updateStart(toDuration(x, size, durationMs))
+        }
+        DragHandle("clip-end-handle", toPosition(ready.range.endExclusive, durationMs, size), size) { x ->
+            presenter.updateEnd(toDuration(x, size, durationMs))
+        }
     }
     Row {
         ready.frames.forEach { frame ->
@@ -110,20 +120,29 @@ private fun EditorControls(ready: ClipEditorUiState.Ready, presenter: ClipEditor
 }
 
 @Composable
-private fun DragHandle(label: String, size: IntSize, onPosition: (Float) -> Unit) {
-    Box(Modifier.semantics { testTag = label }.pointerInput(label, size) {
-        detectDragGestures { change, drag ->
-            change.consume()
-            onPosition((change.position.x + drag.x).coerceIn(0f, size.width.toFloat()))
-        }
-    })
+private fun DragHandle(label: String, initialPosition: Float, size: IntSize, onPosition: (Float) -> Unit) {
+    var position by remember(label, initialPosition) { mutableFloatStateOf(initialPosition) }
+    Box(
+        Modifier
+            .offset { IntOffset((position - 12f).roundToInt(), 0) }
+            .size(24.dp, 32.dp)
+            .semantics { testTag = label }
+            .pointerInput(label, size) {
+                detectDragGestures { _, drag ->
+                    position = (position + drag.x).coerceIn(0f, size.width.toFloat())
+                    onPosition(position)
+                }
+            },
+    )
 }
 
-private fun decodeJpegForRender(bytes: ByteArray): ImageBitmap? =
-    runCatching { SkiaImage.makeFromEncoded(bytes).toComposeImageBitmap() }.getOrNull()
+internal expect fun decodeJpegForRender(bytes: ByteArray): ImageBitmap?
 
 private fun toDuration(position: Float, size: IntSize, durationMs: Long): Duration =
     ((position / size.width.coerceAtLeast(1)) * durationMs).roundToLong().milliseconds
+
+private fun toPosition(duration: Duration, durationMs: Long, size: IntSize): Float =
+    (duration.inWholeMilliseconds.toFloat() / durationMs * size.width).coerceIn(0f, size.width.toFloat())
 
 internal sealed interface ClipEditorUiState {
     data object LoadingMetadata : ClipEditorUiState
@@ -137,8 +156,8 @@ internal sealed interface ClipEditorUiState {
 
 internal class ClipEditorPresenter(
     private val scope: CoroutineScope,
-    private val onResult: (ClipResult) -> Unit,
-    private val onCancel: () -> Unit = {},
+    onResult: (ClipResult) -> Unit,
+    onCancel: () -> Unit = {},
 ) {
     private val backingState = MutableStateFlow<ClipEditorUiState>(ClipEditorUiState.LoadingMetadata)
     val state: StateFlow<ClipEditorUiState> = backingState.asStateFlow()
@@ -149,6 +168,14 @@ internal class ClipEditorPresenter(
     private var resultSent = false
     private var cancelSent = false
     private var framesTerminal = false
+    private var onResult = onResult
+    private var onCancel = onCancel
+    private val closeScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+
+    fun updateCallbacks(onResult: (ClipResult) -> Unit, onCancel: () -> Unit) {
+        this.onResult = onResult
+        this.onCancel = onCancel
+    }
 
     fun start(source: VideoSourcePath, editor: VideoClipEditor) {
         close()
@@ -184,9 +211,18 @@ internal class ClipEditorPresenter(
                         backingState.value = ClipEditorUiState.Ready(opened.metadata, frames.toList(), ClipRange(Duration.ZERO, opened.metadata.duration))
                     }
                 }
-                is FrameStripEvent.Failed -> finishFailure(event.error)
-                is FrameStripEvent.InvalidRequest -> finish(ClipResult.InvalidRequest(event.code, event.diagnostic))
-                is FrameStripEvent.Unsupported -> finish(ClipResult.Unsupported(event.code, event.diagnostic))
+                is FrameStripEvent.Failed -> {
+                    framesTerminal = true
+                    finishFailure(event.error)
+                }
+                is FrameStripEvent.InvalidRequest -> {
+                    framesTerminal = true
+                    finish(ClipResult.InvalidRequest(event.code, event.diagnostic))
+                }
+                is FrameStripEvent.Unsupported -> {
+                    framesTerminal = true
+                    finish(ClipResult.Unsupported(event.code, event.diagnostic))
+                }
             }
         }
     }
@@ -221,7 +257,7 @@ internal class ClipEditorPresenter(
     fun close() {
         operation?.cancel()
         operation = null
-        session?.let { old -> scope.launch { old.close() } }
+        session?.let { old -> closeScope.launch { old.close() } }
         session = null
     }
     private fun finishFailure(failure: VideoEditFailure) {

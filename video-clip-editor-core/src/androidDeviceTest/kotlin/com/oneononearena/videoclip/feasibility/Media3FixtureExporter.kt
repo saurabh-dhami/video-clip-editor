@@ -89,7 +89,8 @@ internal class ExportOperation(
 }
 
 internal suspend fun probe(file: File): MediaProbe = withContext(Dispatchers.IO) {
-    MediaMetadataRetriever().use { retriever ->
+    val retriever = MediaMetadataRetriever()
+    try {
         retriever.setDataSource(file.absolutePath)
         val durationMs = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION)?.toLong() ?: error("Missing MP4 duration")
         val extractor = MediaExtractor()
@@ -103,6 +104,8 @@ internal suspend fun probe(file: File): MediaProbe = withContext(Dispatchers.IO)
         val videoStart = starts.entries.firstOrNull { trackMimes.getValue(it.key).startsWith("video/") }?.value ?: error("Missing video track")
         val audioStart = starts.entries.firstOrNull { trackMimes.getValue(it.key).startsWith("audio/") }?.value ?: error("Missing audio track")
         MediaProbe(videoStart, durationMs, abs(videoStart - audioStart) / 1_000L)
+    } finally {
+        retriever.release()
     }
 }
 

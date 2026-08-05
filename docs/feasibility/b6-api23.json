@@ -1,6 +1,6 @@
 {
   "status": "BLOCKED",
-  "commit": "329a735",
+  "commit": "4750f01",
   "apiLevel": 23,
   "fixtureSha256": "8c2c8ac4cb6ca54b1fed4f688f7c64b466e3afe3727ffac76ab4ebb33eee465a",
   "media3Version": "1.10.1",
@@ -9,6 +9,7 @@
   "timing": null,
   "cancellation": null,
   "evidence": {
+    "sourceRemediation": "APPLIED: explicit MediaMetadataRetriever.release() replaces API 29+ AutoCloseable.close() from use(); device execution remains blocked.",
     "adbDevices": "List of devices attached\\n",
     "installedPlatforms": ["android-34", "android-35", "android-36", "android-36.1"],
     "connectedTest": "Execution failed for task ':video-clip-editor-core:connectedAndroidDeviceTest'. com.android.builder.testing.api.DeviceException: No connected devices!",

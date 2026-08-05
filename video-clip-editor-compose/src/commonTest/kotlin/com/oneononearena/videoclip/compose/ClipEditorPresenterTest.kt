@@ -57,6 +57,16 @@ class ClipEditorPresenterTest {
     }
 
     @Test
+    fun `timeline mapping keeps 48dp edge targets fully inside track`() {
+        val edgeInsetPx = 24f
+
+        assertEquals(0.milliseconds, toDuration(24f, 100, 10_000, edgeInsetPx))
+        assertEquals(10_000.milliseconds, toDuration(76f, 100, 10_000, edgeInsetPx))
+        assertEquals(24f, toPosition(0.milliseconds, 10_000, 100, edgeInsetPx))
+        assertEquals(76f, toPosition(10_000.milliseconds, 10_000, 100, edgeInsetPx))
+    }
+
+    @Test
     fun `retry closes current session before opening next session`() = runTest {
         val first = FakeSession(flow { emit(FrameStripEvent.Complete) })
         val second = FakeSession(flow { emit(FrameStripEvent.Complete) })
@@ -143,6 +153,27 @@ class ClipEditorPresenterTest {
 
         assertEquals(0, stale)
         assertEquals(1, fresh)
+    }
+
+    @Test
+    fun `cancel callback is delivered for each started session`() = runTest {
+        var callbacks = 0
+        val presenter = ClipEditorPresenter(this, onCancel = { callbacks++ })
+        val editor = SequentialFakeEditor(
+            FakeSession(flow { emit(FrameStripEvent.Complete) }),
+            FakeSession(flow { emit(FrameStripEvent.Complete) }),
+        )
+
+        presenter.start(VideoSourcePath("/first.mp4"), editor)
+        testScheduler.advanceUntilIdle()
+        presenter.cancel()
+        testScheduler.advanceUntilIdle()
+        presenter.start(VideoSourcePath("/second.mp4"), editor)
+        testScheduler.advanceUntilIdle()
+        presenter.cancel()
+        testScheduler.advanceUntilIdle()
+
+        assertEquals(2, callbacks)
     }
 
 }

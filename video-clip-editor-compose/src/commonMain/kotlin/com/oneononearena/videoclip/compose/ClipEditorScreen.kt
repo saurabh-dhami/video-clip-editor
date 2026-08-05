@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.material3.Button
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -107,12 +108,14 @@ fun ClipEditorScreen(
 private fun EditorControls(ready: ClipEditorUiState.Ready, presenter: ClipEditorPresenter) {
     var size by remember { mutableStateOf(IntSize.Zero) }
     val durationMs = ready.metadata.duration.inWholeMilliseconds.coerceAtLeast(1)
-    Box(Modifier.fillMaxWidth().height(48.dp).background(Color.DarkGray).onSizeChanged { size = it }) {
-        DragHandle("clip-start-handle", toPosition(ready.range.start, durationMs, size.width), size) { x ->
-            presenter.updateStart(toDuration(x, size.width, durationMs))
+    val hitTargetWidthPx = with(LocalDensity.current) { 48.dp.toPx() }
+    val edgeInsetPx = hitTargetWidthPx / 2f
+    Box(Modifier.fillMaxWidth().widthIn(min = 48.dp).height(48.dp).background(Color.DarkGray).onSizeChanged { size = it }) {
+        DragHandle("clip-start-handle", toPosition(ready.range.start, durationMs, size.width, edgeInsetPx), size, edgeInsetPx) { x ->
+            presenter.updateStart(toDuration(x, size.width, durationMs, edgeInsetPx))
         }
-        DragHandle("clip-end-handle", toPosition(ready.range.endExclusive, durationMs, size.width), size) { x ->
-            presenter.updateEnd(toDuration(x, size.width, durationMs))
+        DragHandle("clip-end-handle", toPosition(ready.range.endExclusive, durationMs, size.width, edgeInsetPx), size, edgeInsetPx) { x ->
+            presenter.updateEnd(toDuration(x, size.width, durationMs, edgeInsetPx))
         }
     }
     Row {
@@ -126,7 +129,13 @@ private fun EditorControls(ready: ClipEditorUiState.Ready, presenter: ClipEditor
 }
 
 @Composable
-private fun DragHandle(label: String, initialPosition: Float, size: IntSize, onPosition: (Float) -> Unit) {
+private fun DragHandle(
+    label: String,
+    initialPosition: Float,
+    size: IntSize,
+    edgeInsetPx: Float,
+    onPosition: (Float) -> Unit,
+) {
     val density = LocalDensity.current
     val hitTargetWidthPx = with(density) { 48.dp.toPx() }
     var position by remember(label, initialPosition) { mutableFloatStateOf(initialPosition) }
@@ -135,9 +144,12 @@ private fun DragHandle(label: String, initialPosition: Float, size: IntSize, onP
             .offset { IntOffset((position - hitTargetWidthPx / 2f).roundToInt(), 0) }
             .size(48.dp)
             .semantics { testTag = label }
-            .pointerInput(label, size) {
+            .pointerInput(label, size, edgeInsetPx) {
                 detectDragGestures { _, drag ->
-                    position = (position + drag.x).coerceIn(0f, size.width.toFloat())
+                    position = (position + drag.x).coerceIn(
+                        timelineEdgeInset(size.width, edgeInsetPx),
+                        size.width.toFloat() - timelineEdgeInset(size.width, edgeInsetPx),
+                    )
                     onPosition(position)
                 }
             },
@@ -148,17 +160,35 @@ private fun DragHandle(label: String, initialPosition: Float, size: IntSize, onP
 
 internal expect fun decodeJpegForRender(bytes: ByteArray): ImageBitmap?
 
-internal fun toDuration(position: Float, trackWidthPx: Int, durationMs: Long): Duration {
+internal fun toDuration(
+    position: Float,
+    trackWidthPx: Int,
+    durationMs: Long,
+    edgeInsetPx: Float = 0f,
+): Duration {
     val width = trackWidthPx.toFloat()
     if (width <= 0f) return Duration.ZERO
-    return ((position.coerceIn(0f, width) / width) * durationMs).roundToLong().milliseconds
+    val edgeInset = timelineEdgeInset(trackWidthPx, edgeInsetPx)
+    val usableWidth = width - edgeInset * 2f
+    if (usableWidth <= 0f) return Duration.ZERO
+    return (((position.coerceIn(edgeInset, width - edgeInset) - edgeInset) / usableWidth) * durationMs).roundToLong().milliseconds
 }
 
-internal fun toPosition(duration: Duration, durationMs: Long, trackWidthPx: Int): Float {
+internal fun toPosition(
+    duration: Duration,
+    durationMs: Long,
+    trackWidthPx: Int,
+    edgeInsetPx: Float = 0f,
+): Float {
     val width = trackWidthPx.coerceAtLeast(0).toFloat()
-    if (durationMs <= 0L) return 0f
-    return (duration.inWholeMilliseconds.toFloat() / durationMs * width).coerceIn(0f, width)
+    val edgeInset = timelineEdgeInset(trackWidthPx, edgeInsetPx)
+    val usableWidth = width - edgeInset * 2f
+    if (durationMs <= 0L || usableWidth <= 0f) return edgeInset
+    return (edgeInset + duration.inWholeMilliseconds.toFloat() / durationMs * usableWidth).coerceIn(edgeInset, width - edgeInset)
 }
+
+internal fun timelineEdgeInset(trackWidthPx: Int, requestedInsetPx: Float): Float =
+    requestedInsetPx.coerceIn(0f, trackWidthPx.coerceAtLeast(0).toFloat() / 2f)
 
 internal sealed interface ClipEditorUiState {
     data object LoadingMetadata : ClipEditorUiState
@@ -197,6 +227,7 @@ internal class ClipEditorPresenter(
         this.source = source
         this.editor = editor
         resultSent = false
+        cancelSent = false
         backingState.value = ClipEditorUiState.LoadingMetadata
         operation = scope.launch {
             val openedSession = sessionMutex.withLock {

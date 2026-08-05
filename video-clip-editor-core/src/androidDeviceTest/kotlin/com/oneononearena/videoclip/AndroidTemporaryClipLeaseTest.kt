@@ -1,0 +1,41 @@
+package com.oneononearena.videoclip
+
+import androidx.test.ext.junit.runners.AndroidJUnit4
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.async
+import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.yield
+import org.junit.Assert.assertEquals
+import org.junit.Test
+import org.junit.runner.RunWith
+import java.io.File
+
+@RunWith(AndroidJUnit4::class)
+class AndroidTemporaryClipLeaseTest {
+    @Test
+    fun failed_clear_does_not_make_concurrent_clear_report_already_cleared() = runTest {
+        val firstClearEntered = CompletableDeferred<Unit>()
+        val allowFirstClearToFail = CompletableDeferred<Unit>()
+        var attempts = 0
+        val lease = AndroidTemporaryClipLease(File("unused"), "lease-id") {
+            attempts += 1
+            if (attempts == 1) {
+                firstClearEntered.complete(Unit)
+                allowFirstClearToFail.await()
+                TempDeleteResult.Failed(VideoEditFailure(FailureCode.TEMP_DELETE_FAILED, true, null))
+            } else {
+                TempDeleteResult.Cleared
+            }
+        }
+
+        val first = async { lease.clearTemporaryFile() }
+        firstClearEntered.await()
+        val second = async { lease.clearTemporaryFile() }
+        yield()
+        allowFirstClearToFail.complete(Unit)
+
+        assertEquals(TempDeleteResult.Failed(VideoEditFailure(FailureCode.TEMP_DELETE_FAILED, true, null)), first.await())
+        assertEquals(TempDeleteResult.Cleared, second.await())
+        assertEquals(2, attempts)
+    }
+}

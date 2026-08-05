@@ -9,6 +9,9 @@ import android.net.Uri
 import android.os.Build
 import android.os.Handler
 import android.os.Looper
+import android.system.ErrnoException
+import android.system.Os
+import android.system.OsConstants
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MimeTypes
 import androidx.media3.transformer.Composition
@@ -25,6 +28,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import kotlin.coroutines.resume
 import kotlin.math.max
@@ -136,34 +140,27 @@ private class AndroidClipEditorSession(
     private val context: Context,
 ) : ClipEditorSession {
     private val exportMutex = Mutex()
+    private val frameEmissionMutex = Mutex()
     private val lifecycleLock = Any()
-    private val issuedLeases = mutableMapOf<String, String>()
+    private val issuedLeases = mutableMapOf<String, LeaseRecord>()
     @Volatile private var closed = false
     private var activeTransformer: Transformer? = null
     private var activeCancellation: (() -> Unit)? = null
 
     override fun frames(request: FrameStripRequest): Flow<FrameStripEvent> = flow {
-        if (closed) {
-            emit(FrameStripEvent.InvalidRequest(ValidationCode.SESSION_CLOSED, null))
-            return@flow
-        }
         CommonValidation.frameRequest(request, configuration)?.let {
-            emit(FrameStripEvent.InvalidRequest(it, null))
+            emitIfOpen { emit(FrameStripEvent.InvalidRequest(it, null)) }
             return@flow
         }
         val frames = runCatching { extractFrames(request.frameCount) }.getOrElse {
-            emit(FrameStripEvent.Failed(VideoEditFailure(FailureCode.FRAME_EXTRACTION_FAILED, true, it.message)))
+            emitIfOpen { emit(FrameStripEvent.Failed(VideoEditFailure(FailureCode.FRAME_EXTRACTION_FAILED, true, it.message))) }
             return@flow
         }
         frames.forEachIndexed { index, frame ->
-            if (closed) {
-                emit(FrameStripEvent.InvalidRequest(ValidationCode.SESSION_CLOSED, null))
-                return@flow
-            }
-            emit(FrameStripEvent.Frame(frame))
-            emit(FrameStripEvent.Progress(index + 1, frames.size))
+            if (!emitIfOpen { emit(FrameStripEvent.Frame(frame)) }) return@flow
+            if (!emitIfOpen { emit(FrameStripEvent.Progress(index + 1, frames.size)) }) return@flow
         }
-        emit(FrameStripEvent.Complete)
+        emitIfOpen { emit(FrameStripEvent.Complete) }
     }
 
     override suspend fun createClip(range: ClipRange): ClipResult {
@@ -182,12 +179,16 @@ private class AndroidClipEditorSession(
                     ClipResult.Failed(VideoEditFailure(FailureCode.TEMP_RENAME_FAILED, true, final.name))
                 } else {
                     val opaqueId = UUID.randomUUID().toString()
+                    val record = runCatching { LeaseRecord(opaqueId, final.leaseIdentity()) }.getOrElse {
+                        final.delete()
+                        return ClipResult.Failed(VideoEditFailure(FailureCode.TEMP_RENAME_FAILED, true, it.message))
+                    }
                     synchronized(lifecycleLock) {
                         if (closed) {
                             final.delete()
                             return ClipResult.Failed(VideoEditFailure(FailureCode.EXPORT_CANCELLED, true, "Session closed"))
                         }
-                        issuedLeases[final.name] = opaqueId
+                        issuedLeases[final.absolutePath] = record
                     }
                     ClipResult.Success(AndroidTemporaryClipLease(final, opaqueId) { clearIssuedLease(final, opaqueId) }, range)
                 }
@@ -207,19 +208,21 @@ private class AndroidClipEditorSession(
     }
 
     override suspend fun close() {
-        val active = synchronized(lifecycleLock) {
-            closed = true
-            activeTransformer to activeCancellation
+        val active = frameEmissionMutex.withLock {
+            synchronized(lifecycleLock) {
+                closed = true
+                activeTransformer to activeCancellation
+            }
         }
         AndroidMainLooperDispatcher.run {
-            active.first?.cancel()
-            active.second?.invoke()
+            runCatching { active.first?.cancel() }
+            runCatching { active.second?.invoke() }
         }
         exportMutex.lock()
         try {
             synchronized(lifecycleLock) {
                 sessionRoot.listFiles()?.forEach { child ->
-                    if (child.name !in issuedLeases) child.delete()
+                    if (child.absolutePath !in issuedLeases) child.delete()
                 }
                 if (sessionRoot.listFiles().isNullOrEmpty()) sessionRoot.delete()
             }
@@ -229,16 +232,33 @@ private class AndroidClipEditorSession(
     }
 
     private suspend fun clearIssuedLease(target: File, opaqueId: String): TempDeleteResult = synchronized(lifecycleLock) {
-        if (issuedLeases[target.name] != opaqueId) return@synchronized TempDeleteResult.AlreadyCleared
-        if (target.canonicalFile.parentFile != sessionRoot.canonicalFile || !target.isFile) {
+        val record = issuedLeases[target.absolutePath]
+        if (record?.opaqueId != opaqueId) return@synchronized TempDeleteResult.AlreadyCleared
+        if (!target.hasLeaseIdentity(record.identity, sessionRoot)) {
             return@synchronized TempDeleteResult.Failed(VideoEditFailure(FailureCode.TEMP_DELETE_FAILED, true, target.name))
         }
-        if (target.exists() && !target.delete()) {
-            TempDeleteResult.Failed(VideoEditFailure(FailureCode.TEMP_DELETE_FAILED, true, target.name))
-        } else {
-            issuedLeases.remove(target.name)
-            if (sessionRoot.listFiles().isNullOrEmpty()) sessionRoot.delete()
-            TempDeleteResult.Cleared
+        return@synchronized try {
+            if (!target.delete()) {
+                TempDeleteResult.Failed(VideoEditFailure(FailureCode.TEMP_DELETE_FAILED, true, target.name))
+            } else {
+                issuedLeases.remove(target.absolutePath)
+                if (sessionRoot.listFiles().isNullOrEmpty()) sessionRoot.delete()
+                TempDeleteResult.Cleared
+            }
+        } catch (error: SecurityException) {
+            TempDeleteResult.Failed(VideoEditFailure(FailureCode.TEMP_DELETE_FAILED, true, error.message))
+        }
+    }
+
+    private suspend fun emitIfOpen(emitEvent: suspend () -> Unit): Boolean {
+        frameEmissionMutex.lock()
+        return try {
+            if (closed) false else {
+                emitEvent()
+                true
+            }
+        } finally {
+            frameEmissionMutex.unlock()
         }
     }
 
@@ -267,32 +287,40 @@ private class AndroidClipEditorSession(
 
     private suspend fun export(range: ClipRange, partial: File): ExportResult = suspendCancellableCoroutine { continuation ->
         AndroidMainLooperDispatcher.post {
-            if (!continuation.isActive) return@post
-            val transformer = Transformer.Builder(context)
+            var cleanup: (() -> Unit)? = null
+            try {
+                if (!continuation.isActive) return@post
+                val transformer = Transformer.Builder(context)
                 .setVideoMimeType(MimeTypes.VIDEO_H264)
                 .setAudioMimeType(MimeTypes.AUDIO_AAC)
                 .setEnsureFileStartsOnVideoFrameEnabled(true)
                 .build()
-            fun clearActive() = synchronized(lifecycleLock) {
-                if (activeTransformer === transformer) {
-                    activeTransformer = null
-                    activeCancellation = null
+                val clearActive = {
+                    synchronized(lifecycleLock) {
+                        if (activeTransformer === transformer) {
+                            activeTransformer = null
+                            activeCancellation = null
+                        }
+                    }
                 }
-            }
-            val cancel = {
-                transformer.cancel()
-                clearActive()
-                if (continuation.isActive) continuation.resumeWith(Result.failure(CancellationException("Export cancelled")))
-            }
-            synchronized(lifecycleLock) {
-                if (closed) {
-                    continuation.resumeWith(Result.failure(CancellationException("Session closed")))
-                    return@post
+                cleanup = clearActive
+                val cancel = {
+                    try {
+                        transformer.cancel()
+                    } finally {
+                        clearActive()
+                        if (continuation.isActive) continuation.resumeWith(Result.failure(CancellationException("Export cancelled")))
+                    }
                 }
-                activeTransformer = transformer
-                activeCancellation = cancel
-            }
-            transformer.addListener(object : Transformer.Listener {
+                synchronized(lifecycleLock) {
+                    if (closed) {
+                        continuation.resumeWith(Result.failure(CancellationException("Session closed")))
+                        return@post
+                    }
+                    activeTransformer = transformer
+                    activeCancellation = cancel
+                }
+                transformer.addListener(object : Transformer.Listener {
             override fun onCompleted(composition: Composition, result: ExportResult) {
                 clearActive()
                 if (continuation.isActive) continuation.resume(result)
@@ -303,9 +331,9 @@ private class AndroidClipEditorSession(
                 val error: Throwable = if (exception.errorCode == ExportException.ERROR_CODE_ENCODER_INIT_FAILED || exception.errorCode == ExportException.ERROR_CODE_ENCODING_FORMAT_UNSUPPORTED) DeviceEncoderUnavailableException(exception) else exception
                 if (continuation.isActive) continuation.resumeWith(Result.failure(error))
             }
-            })
-            continuation.invokeOnCancellation { AndroidMainLooperDispatcher.post { cancel(); partial.delete() } }
-            transformer.start(
+                })
+                continuation.invokeOnCancellation { AndroidMainLooperDispatcher.post { runCatching { cancel() }; partial.delete() } }
+                transformer.start(
             MediaItem.Builder().setUri(Uri.fromFile(source)).setClippingConfiguration(
                 MediaItem.ClippingConfiguration.Builder()
                     .setStartPositionMs(range.start.inWholeMilliseconds)
@@ -313,23 +341,49 @@ private class AndroidClipEditorSession(
                     .build(),
             ).build(),
             partial.absolutePath,
-            )
+                )
+            } catch (error: Throwable) {
+                cleanup?.invoke()
+                partial.delete()
+                if (continuation.isActive) continuation.resumeWith(Result.failure(error))
+            }
         }
     }
 }
 
-private class AndroidTemporaryClipLease(
+internal class AndroidTemporaryClipLease(
     private val target: File,
     opaqueId: String,
     private val onCleared: suspend () -> TempDeleteResult,
 ) : TemporaryClipLease {
     override val file = TemporaryVideoFile(target.absolutePath, opaqueId)
-    private val cleared = java.util.concurrent.atomic.AtomicBoolean(false)
+    private val clearMutex = Mutex()
+    private var cleared = false
 
-    override suspend fun clearTemporaryFile(): TempDeleteResult {
-        if (!cleared.compareAndSet(false, true)) return TempDeleteResult.AlreadyCleared
-        return onCleared().also { if (it !is TempDeleteResult.Cleared) cleared.set(false) }
+    override suspend fun clearTemporaryFile(): TempDeleteResult = clearMutex.withLock {
+        if (cleared) TempDeleteResult.AlreadyCleared else onCleared().also { if (it is TempDeleteResult.Cleared) cleared = true }
     }
+}
+
+private data class LeaseRecord(val opaqueId: String, val identity: LeaseIdentity)
+
+private data class LeaseIdentity(val canonicalPath: String, val device: Long, val inode: Long)
+
+@Throws(ErrnoException::class, IOException::class)
+private fun File.leaseIdentity(): LeaseIdentity {
+    val stat = Os.lstat(absolutePath)
+    if (!OsConstants.S_ISREG(stat.st_mode)) throw IOException("Temporary output is not a regular file")
+    return LeaseIdentity(canonicalPath, stat.st_dev, stat.st_ino)
+}
+
+private fun File.hasLeaseIdentity(identity: LeaseIdentity, root: File): Boolean = try {
+    leaseIdentity() == identity && canonicalFile.parentFile == root.canonicalFile
+} catch (_: IOException) {
+    false
+} catch (_: ErrnoException) {
+    false
+} catch (_: SecurityException) {
+    false
 }
 
 private class DeviceEncoderUnavailableException(cause: ExportException) : Exception(cause.message, cause)

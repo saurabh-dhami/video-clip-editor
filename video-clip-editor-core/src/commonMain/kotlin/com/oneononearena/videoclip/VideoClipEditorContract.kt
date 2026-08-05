@@ -17,7 +17,13 @@ data class VideoClipEditorConfiguration(
     val minimumClipDuration: Duration = 500.milliseconds,
     val maximumFrameCount: Int = 24,
     val maximumThumbnailDimensionPx: Int = 160,
-)
+) {
+    init {
+        require(minimumClipDuration >= 500.milliseconds)
+        require(maximumFrameCount in 1..24)
+        require(maximumThumbnailDimensionPx in 1..160)
+    }
+}
 
 data class FrameStripRequest(
     val frameCount: Int,
@@ -57,12 +63,13 @@ class ThumbnailFrame internal constructor(
     val heightPx: Int,
     encodedJpeg: ByteArray,
 ) {
-    private val bytes: ByteArray = encodedJpeg.copyOf()
+    private val bytes: ByteArray
 
     init {
         require(widthPx in 1..MAX_WIDTH_PX)
         require(heightPx in 1..MAX_HEIGHT_PX)
-        require(bytes.size <= MAX_ENCODED_JPEG_BYTES)
+        require(encodedJpeg.size <= MAX_ENCODED_JPEG_BYTES)
+        bytes = encodedJpeg.copyOf()
     }
 
     fun copyEncodedJpeg(): ByteArray = bytes.copyOf()

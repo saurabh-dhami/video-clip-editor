@@ -7,6 +7,8 @@ import android.media.MediaFormat
 import android.media.MediaMetadataRetriever
 import android.net.Uri
 import android.os.Build
+import android.os.Handler
+import android.os.Looper
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MimeTypes
 import androidx.media3.transformer.Composition
@@ -49,6 +51,21 @@ internal object AndroidSourcePolicy {
     fun canonicalFile(path: String): File? = canonicalOrNull(File(path))
 
     private fun canonicalOrNull(file: File): File? = runCatching { file.canonicalFile }.getOrNull()
+}
+
+/** Media3 Transformer binds listener and operation state to this Looper. */
+internal object AndroidMainLooperDispatcher {
+    private val handler = Handler(Looper.getMainLooper())
+
+    suspend fun <T> run(block: () -> T): T = suspendCancellableCoroutine { continuation ->
+        handler.post {
+            if (continuation.isActive) continuation.resumeWith(runCatching(block))
+        }
+    }
+
+    fun post(block: () -> Unit) {
+        handler.post(block)
+    }
 }
 
 private class AndroidVideoClipEditor(
@@ -96,8 +113,11 @@ private class AndroidVideoClipEditor(
             }
             val durationMs = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION)?.toLongOrNull()
                 ?: return@withContext SourceProbeResult.Failed(metadataFailure("Missing duration"))
-            val width = video.getInteger(MediaFormat.KEY_WIDTH)
-            val height = video.getInteger(MediaFormat.KEY_HEIGHT)
+            val encodedWidth = video.getInteger(MediaFormat.KEY_WIDTH)
+            val encodedHeight = video.getInteger(MediaFormat.KEY_HEIGHT)
+            val rotation = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_VIDEO_ROTATION)?.toIntOrNull() ?: 0
+            val width = if (rotation == 90 || rotation == 270) encodedHeight else encodedWidth
+            val height = if (rotation == 90 || rotation == 270) encodedWidth else encodedHeight
             SourceProbeResult.Success(VideoMetadata(durationMs.milliseconds, width, height, audio != null))
         } catch (error: Exception) {
             SourceProbeResult.Failed(metadataFailure(error.message))
@@ -116,10 +136,11 @@ private class AndroidClipEditorSession(
     private val context: Context,
 ) : ClipEditorSession {
     private val exportMutex = Mutex()
-    private val stateMutex = Mutex()
-    private val issuedLeases = mutableSetOf<String>()
+    private val lifecycleLock = Any()
+    private val issuedLeases = mutableMapOf<String, String>()
     @Volatile private var closed = false
-    @Volatile private var activeTransformer: Transformer? = null
+    private var activeTransformer: Transformer? = null
+    private var activeCancellation: (() -> Unit)? = null
 
     override fun frames(request: FrameStripRequest): Flow<FrameStripEvent> = flow {
         if (closed) {
@@ -160,10 +181,19 @@ private class AndroidClipEditorSession(
                     partial.delete()
                     ClipResult.Failed(VideoEditFailure(FailureCode.TEMP_RENAME_FAILED, true, final.name))
                 } else {
-                    stateMutex.lock()
-                    try { issuedLeases += final.name } finally { stateMutex.unlock() }
-                    ClipResult.Success(AndroidTemporaryClipLease(final) { clearIssuedLease(final.name) }, range)
+                    val opaqueId = UUID.randomUUID().toString()
+                    synchronized(lifecycleLock) {
+                        if (closed) {
+                            final.delete()
+                            return ClipResult.Failed(VideoEditFailure(FailureCode.EXPORT_CANCELLED, true, "Session closed"))
+                        }
+                        issuedLeases[final.name] = opaqueId
+                    }
+                    ClipResult.Success(AndroidTemporaryClipLease(final, opaqueId) { clearIssuedLease(final, opaqueId) }, range)
                 }
+            } catch (unavailable: DeviceEncoderUnavailableException) {
+                partial.delete()
+                ClipResult.Unsupported(UnsupportedCode.DEVICE_ENCODER_UNAVAILABLE, unavailable.message)
             } catch (cancelled: CancellationException) {
                 partial.delete()
                 ClipResult.Failed(VideoEditFailure(FailureCode.EXPORT_CANCELLED, true, cancelled.message))
@@ -177,59 +207,105 @@ private class AndroidClipEditorSession(
     }
 
     override suspend fun close() {
-        closed = true
-        activeTransformer?.cancel()
-        stateMutex.lock()
+        val active = synchronized(lifecycleLock) {
+            closed = true
+            activeTransformer to activeCancellation
+        }
+        AndroidMainLooperDispatcher.run {
+            active.first?.cancel()
+            active.second?.invoke()
+        }
+        exportMutex.lock()
         try {
-            sessionRoot.listFiles()?.forEach { child ->
-                if (child.name !in issuedLeases) child.delete()
+            synchronized(lifecycleLock) {
+                sessionRoot.listFiles()?.forEach { child ->
+                    if (child.name !in issuedLeases) child.delete()
+                }
+                if (sessionRoot.listFiles().isNullOrEmpty()) sessionRoot.delete()
             }
-            if (sessionRoot.listFiles().isNullOrEmpty()) sessionRoot.delete()
         } finally {
-            stateMutex.unlock()
+            exportMutex.unlock()
         }
     }
 
-    private suspend fun clearIssuedLease(name: String) {
-        stateMutex.lock()
-        try { issuedLeases.remove(name) } finally { stateMutex.unlock() }
+    private suspend fun clearIssuedLease(target: File, opaqueId: String): TempDeleteResult = synchronized(lifecycleLock) {
+        if (issuedLeases[target.name] != opaqueId) return@synchronized TempDeleteResult.AlreadyCleared
+        if (target.canonicalFile.parentFile != sessionRoot.canonicalFile || !target.isFile) {
+            return@synchronized TempDeleteResult.Failed(VideoEditFailure(FailureCode.TEMP_DELETE_FAILED, true, target.name))
+        }
+        if (target.exists() && !target.delete()) {
+            TempDeleteResult.Failed(VideoEditFailure(FailureCode.TEMP_DELETE_FAILED, true, target.name))
+        } else {
+            issuedLeases.remove(target.name)
+            if (sessionRoot.listFiles().isNullOrEmpty()) sessionRoot.delete()
+            TempDeleteResult.Cleared
+        }
     }
 
     private suspend fun extractFrames(count: Int): List<ThumbnailFrame> = withContext(Dispatchers.IO) {
         val retriever = MediaMetadataRetriever()
+        val extractor = MediaExtractor()
         try {
             retriever.setDataSource(source.absolutePath)
+            extractor.setDataSource(source.absolutePath)
+            val videoTrack = (0 until extractor.trackCount).firstOrNull { extractor.getTrackFormat(it).mime().startsWith("video/") }
+                ?: throw IOException("No video track")
+            extractor.selectTrack(videoTrack)
             (0 until count).map { index ->
                 val requested = (metadata.duration.inWholeMilliseconds * index / count).milliseconds
-                val bitmap = retriever.getFrameAtTime(requested.inWholeMicroseconds, MediaMetadataRetriever.OPTION_CLOSEST_SYNC)
+                extractor.seekTo(requested.inWholeMicroseconds, MediaExtractor.SEEK_TO_CLOSEST_SYNC)
+                val actual = extractor.sampleTime.coerceAtLeast(0).milliseconds / 1_000
+                val bitmap = retriever.getFrameAtTime(actual.inWholeMicroseconds, MediaMetadataRetriever.OPTION_CLOSEST_SYNC)
                     ?: throw IOException("No frame at ${requested.inWholeMilliseconds}ms")
-                bitmap.useAsThumbnail(requested, configuration.maximumThumbnailDimensionPx)
+                bitmap.useAsThumbnail(requested, actual, configuration.maximumThumbnailDimensionPx)
             }
         } finally {
+            extractor.release()
             retriever.release()
         }
     }
 
     private suspend fun export(range: ClipRange, partial: File): ExportResult = suspendCancellableCoroutine { continuation ->
-        val transformer = Transformer.Builder(context)
-            .setVideoMimeType(MimeTypes.VIDEO_H264)
-            .setAudioMimeType(MimeTypes.AUDIO_AAC)
-            .setEnsureFileStartsOnVideoFrameEnabled(true)
-            .build()
-        activeTransformer = transformer
-        transformer.addListener(object : Transformer.Listener {
+        AndroidMainLooperDispatcher.post {
+            if (!continuation.isActive) return@post
+            val transformer = Transformer.Builder(context)
+                .setVideoMimeType(MimeTypes.VIDEO_H264)
+                .setAudioMimeType(MimeTypes.AUDIO_AAC)
+                .setEnsureFileStartsOnVideoFrameEnabled(true)
+                .build()
+            fun clearActive() = synchronized(lifecycleLock) {
+                if (activeTransformer === transformer) {
+                    activeTransformer = null
+                    activeCancellation = null
+                }
+            }
+            val cancel = {
+                transformer.cancel()
+                clearActive()
+                if (continuation.isActive) continuation.resumeWith(Result.failure(CancellationException("Export cancelled")))
+            }
+            synchronized(lifecycleLock) {
+                if (closed) {
+                    continuation.resumeWith(Result.failure(CancellationException("Session closed")))
+                    return@post
+                }
+                activeTransformer = transformer
+                activeCancellation = cancel
+            }
+            transformer.addListener(object : Transformer.Listener {
             override fun onCompleted(composition: Composition, result: ExportResult) {
-                activeTransformer = null
+                clearActive()
                 if (continuation.isActive) continuation.resume(result)
             }
 
             override fun onError(composition: Composition, result: ExportResult, exception: ExportException) {
-                activeTransformer = null
-                if (continuation.isActive) continuation.resumeWith(Result.failure(exception))
+                clearActive()
+                val error: Throwable = if (exception.errorCode == ExportException.ERROR_CODE_ENCODER_INIT_FAILED || exception.errorCode == ExportException.ERROR_CODE_ENCODING_FORMAT_UNSUPPORTED) DeviceEncoderUnavailableException(exception) else exception
+                if (continuation.isActive) continuation.resumeWith(Result.failure(error))
             }
-        })
-        continuation.invokeOnCancellation { transformer.cancel(); partial.delete() }
-        transformer.start(
+            })
+            continuation.invokeOnCancellation { AndroidMainLooperDispatcher.post { cancel(); partial.delete() } }
+            transformer.start(
             MediaItem.Builder().setUri(Uri.fromFile(source)).setClippingConfiguration(
                 MediaItem.ClippingConfiguration.Builder()
                     .setStartPositionMs(range.start.inWholeMilliseconds)
@@ -237,32 +313,26 @@ private class AndroidClipEditorSession(
                     .build(),
             ).build(),
             partial.absolutePath,
-        )
+            )
+        }
     }
 }
 
 private class AndroidTemporaryClipLease(
     private val target: File,
-    private val onCleared: suspend () -> Unit,
+    opaqueId: String,
+    private val onCleared: suspend () -> TempDeleteResult,
 ) : TemporaryClipLease {
-    override val file = TemporaryVideoFile(target.absolutePath, UUID.randomUUID().toString())
-    private var cleared = false
+    override val file = TemporaryVideoFile(target.absolutePath, opaqueId)
+    private val cleared = java.util.concurrent.atomic.AtomicBoolean(false)
 
     override suspend fun clearTemporaryFile(): TempDeleteResult {
-        if (cleared) return TempDeleteResult.AlreadyCleared
-        return try {
-            if (target.exists() && !target.delete()) {
-                TempDeleteResult.Failed(VideoEditFailure(FailureCode.TEMP_DELETE_FAILED, true, target.name))
-            } else {
-                cleared = true
-                onCleared()
-                TempDeleteResult.Cleared
-            }
-        } catch (error: SecurityException) {
-            TempDeleteResult.Failed(VideoEditFailure(FailureCode.TEMP_DELETE_FAILED, true, error.message))
-        }
+        if (!cleared.compareAndSet(false, true)) return TempDeleteResult.AlreadyCleared
+        return onCleared().also { if (it !is TempDeleteResult.Cleared) cleared.set(false) }
     }
 }
+
+private class DeviceEncoderUnavailableException(cause: ExportException) : Exception(cause.message, cause)
 
 private sealed interface SourceProbeResult {
     data class Success(val metadata: VideoMetadata) : SourceProbeResult
@@ -275,7 +345,7 @@ private fun MediaFormat.mime(): String = getString(MediaFormat.KEY_MIME).orEmpty
 private fun MediaFormat.isHdr(): Boolean = containsKey(MediaFormat.KEY_COLOR_TRANSFER) &&
     getInteger(MediaFormat.KEY_COLOR_TRANSFER) in setOf(6, 7)
 
-private fun Bitmap.useAsThumbnail(requested: kotlin.time.Duration, maxDimension: Int): ThumbnailFrame {
+private fun Bitmap.useAsThumbnail(requested: kotlin.time.Duration, actual: kotlin.time.Duration, maxDimension: Int): ThumbnailFrame {
     val scale = min(1f, min(min(maxDimension, ThumbnailFrame.MAX_WIDTH_PX).toFloat() / width, ThumbnailFrame.MAX_HEIGHT_PX.toFloat() / height))
     val targetWidth = max(1, (width * scale).toInt())
     val targetHeight = max(1, (height * scale).toInt())
@@ -283,7 +353,7 @@ private fun Bitmap.useAsThumbnail(requested: kotlin.time.Duration, maxDimension:
     return try {
         val output = ByteArrayOutputStream()
         scaled.compress(Bitmap.CompressFormat.JPEG, 82, output)
-        ThumbnailFrame(requested, requested, targetWidth, targetHeight, output.toByteArray())
+        ThumbnailFrame(requested, actual, targetWidth, targetHeight, output.toByteArray())
     } finally {
         if (scaled !== this) scaled.recycle()
         recycle()

@@ -1,5 +1,6 @@
 package com.oneononearena.videoclip
 
+import android.system.Os
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.async
@@ -22,6 +23,24 @@ class AndroidTemporaryClipLeaseTest {
             assertFalse(target.exists())
             assertEquals(TempDeleteResult.AlreadyCleared, AndroidLeaseDeletionPolicy.clear(target))
         } finally {
+            target.delete()
+        }
+    }
+
+    @Test
+    fun rejects_terminal_symbolic_link_without_deleting_its_target() {
+        val target = File.createTempFile("video-editor-target", ".mp4")
+        val link = File(target.parentFile, "video-editor-link-${System.nanoTime()}.mp4")
+        try {
+            Os.symlink(target.absolutePath, link.absolutePath)
+
+            val result = AndroidLeaseDeletionPolicy.clear(link)
+
+            assertTrue(result is TempDeleteResult.Failed)
+            assertTrue(target.exists())
+            assertTrue(link.exists())
+        } finally {
+            link.delete()
             target.delete()
         }
     }

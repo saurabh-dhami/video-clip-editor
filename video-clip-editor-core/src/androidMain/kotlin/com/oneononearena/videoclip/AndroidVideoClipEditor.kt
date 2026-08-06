@@ -9,6 +9,9 @@ import android.net.Uri
 import android.os.Build
 import android.os.Handler
 import android.os.Looper
+import android.system.ErrnoException
+import android.system.Os
+import android.system.OsConstants
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MimeTypes
 import androidx.media3.transformer.Composition
@@ -18,8 +21,6 @@ import androidx.media3.transformer.Transformer
 import java.io.ByteArrayOutputStream
 import java.io.File
 import java.io.IOException
-import java.nio.file.Files
-import java.nio.file.LinkOption.NOFOLLOW_LINKS
 import java.util.UUID
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
@@ -417,20 +418,30 @@ internal class AndroidTemporaryClipLease(
 private data class LeaseRecord(val opaqueId: String)
 
 /**
- * Deletes only the final file entry. `Files.deleteIfExists` does not traverse a terminal symbolic
- * link; a link at the issued output path is rejected and its target is left untouched.
+ * Deletes only an issued regular-file entry. `lstat` inspects the terminal entry without following
+ * links; `remove` then removes that entry without traversing a target. Both APIs are available on
+ * Android API 21+, unlike `File.toPath`.
  */
 internal object AndroidLeaseDeletionPolicy {
-    fun clear(target: File): TempDeleteResult = try {
-        val path = target.toPath()
-        when {
-            Files.notExists(path, NOFOLLOW_LINKS) -> TempDeleteResult.AlreadyCleared
-            Files.isSymbolicLink(path) -> deleteFailure(target, "Refusing symbolic link")
-            Files.deleteIfExists(path) -> TempDeleteResult.Cleared
-            else -> TempDeleteResult.AlreadyCleared
+    fun clear(target: File): TempDeleteResult {
+        return try {
+            when (Os.lstat(target.absolutePath).st_mode and OsConstants.S_IFMT) {
+                OsConstants.S_IFLNK -> deleteFailure(target, "Refusing symbolic link")
+                OsConstants.S_IFREG -> removeRegularFile(target)
+                else -> deleteFailure(target, "Refusing non-regular file")
+            }
+        } catch (error: ErrnoException) {
+            if (error.errno == OsConstants.ENOENT) TempDeleteResult.AlreadyCleared else deleteFailure(target, error.message)
+        } catch (error: SecurityException) {
+            deleteFailure(target, error.message)
         }
-    } catch (error: IOException) {
-        deleteFailure(target, error.message)
+    }
+
+    private fun removeRegularFile(target: File): TempDeleteResult = try {
+        Os.remove(target.absolutePath)
+        TempDeleteResult.Cleared
+    } catch (error: ErrnoException) {
+        if (error.errno == OsConstants.ENOENT) TempDeleteResult.AlreadyCleared else deleteFailure(target, error.message)
     } catch (error: SecurityException) {
         deleteFailure(target, error.message)
     }

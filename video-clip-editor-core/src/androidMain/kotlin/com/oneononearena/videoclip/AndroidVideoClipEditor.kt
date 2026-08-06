@@ -43,6 +43,16 @@ internal fun createAndroidVideoClipEditor(
 internal fun createAndroidVideoClipEditor(
     context: Context,
     configuration: VideoClipEditorConfiguration,
+    decoderCapability: AndroidDecoderCapability,
+): VideoClipEditor = AndroidVideoClipEditor(
+    context.applicationContext,
+    configuration,
+    Media3ClipMediaEngine(context.applicationContext, decoderCapability),
+)
+
+internal fun createAndroidVideoClipEditor(
+    context: Context,
+    configuration: VideoClipEditorConfiguration,
     engine: ClipMediaEngine,
     temporaryStore: AndroidOwnedTempFileStore,
 ): VideoClipEditor = AndroidVideoClipEditor(context.applicationContext, configuration, engine, temporaryStore)

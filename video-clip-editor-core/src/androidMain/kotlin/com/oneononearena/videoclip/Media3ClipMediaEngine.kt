@@ -2,6 +2,7 @@ package com.oneononearena.videoclip
 
 import android.content.Context
 import android.graphics.Bitmap
+import android.media.MediaCodecList
 import android.media.MediaExtractor
 import android.media.MediaFormat
 import android.media.MediaMetadataRetriever
@@ -40,6 +41,7 @@ import kotlinx.coroutines.withContext
 /** Android-only production engine. The shared API sees only [ClipMediaEngine] result types. */
 internal class Media3ClipMediaEngine(
     private val context: Context,
+    private val decoderCapability: AndroidDecoderCapability = AndroidMediaCodecListDecoderCapability,
 ) : ClipMediaEngine {
     private val activeExportLock = Any()
     private var activeCancellation: (() -> Unit)? = null
@@ -87,6 +89,10 @@ internal class Media3ClipMediaEngine(
                     else -> null
                 }
                 return@withContext EngineProbeResult.Unsupported(code, diagnostic)
+            }
+            val videoMime = video.mime()
+            if (!decoderCapability.isAvailable(videoMime)) {
+                return@withContext EngineProbeResult.Unsupported(UnsupportedCode.UNSUPPORTED_VIDEO_CODEC, videoMime)
             }
             val durationMs = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION)?.toLongOrNull()
                 ?: return@withContext EngineProbeResult.Failed(metadataFailure("Missing duration"))
@@ -234,6 +240,23 @@ internal class Media3ClipMediaEngine(
         const val MAXIMUM_INPUT_BYTES: Long = 512L * 1024L * 1024L
         const val MAXIMUM_INPUT_DURATION_MS: Long = 300_000L
     }
+}
+
+/**
+ * Internal seam so the production Android adapter can reject an admitted input before a session
+ * exists when its MIME lacks a usable platform decoder.
+ */
+internal fun interface AndroidDecoderCapability {
+    fun isAvailable(mimeType: String): Boolean
+}
+
+/** Android API 23+ regular codec inventory; platform failures conservatively mean unavailable. */
+internal object AndroidMediaCodecListDecoderCapability : AndroidDecoderCapability {
+    override fun isAvailable(mimeType: String): Boolean = runCatching {
+        MediaCodecList(MediaCodecList.REGULAR_CODECS).codecInfos.any { codec ->
+            !codec.isEncoder && codec.supportedTypes.any { type -> type.equals(mimeType, ignoreCase = true) }
+        }
+    }.getOrDefault(false)
 }
 
 /** Preserves capability semantics: only encoder initialization means encoder unavailable. */

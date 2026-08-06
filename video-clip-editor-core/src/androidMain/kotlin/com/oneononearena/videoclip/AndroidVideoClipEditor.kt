@@ -40,6 +40,13 @@ internal fun createAndroidVideoClipEditor(
     engine: ClipMediaEngine,
 ): VideoClipEditor = AndroidVideoClipEditor(context.applicationContext, configuration, engine)
 
+internal fun createAndroidVideoClipEditor(
+    context: Context,
+    configuration: VideoClipEditorConfiguration,
+    engine: ClipMediaEngine,
+    temporaryStore: AndroidOwnedTempFileStore,
+): VideoClipEditor = AndroidVideoClipEditor(context.applicationContext, configuration, engine, temporaryStore)
+
 internal object AndroidSourcePolicy {
     fun validate(path: String, temporaryRoot: File): ValidationCode? {
         val source = File(path)
@@ -76,9 +83,8 @@ private class AndroidVideoClipEditor(
     private val context: Context,
     private val configuration: VideoClipEditorConfiguration,
     private val engine: ClipMediaEngine? = null,
+    private val temporaryStore: AndroidOwnedTempFileStore = AndroidOwnedTempFileStore(context),
 ) : VideoClipEditor {
-    private val temporaryStore = AndroidOwnedTempFileStore(context)
-
     override suspend fun openSession(source: VideoSourcePath): OpenSessionResult {
         AndroidSourcePolicy.validate(source.value, temporaryStore.root)?.let { return OpenSessionResult.InvalidRequest(it, null) }
         val sourceFile = AndroidSourcePolicy.canonicalFile(source.value)
@@ -273,7 +279,9 @@ internal object AndroidLeaseDeletionPolicy {
         libraryRoot: File,
         sessionParent: File,
     ): IssuedLeaseIdentity? {
-        if (!matchesLocation(target, libraryRoot.canonicalPathOrNull(), sessionParent.canonicalPathOrNull(), target.name)) {
+        val libraryRootCanonicalPath = libraryRoot.canonicalPathOrNull() ?: return null
+        val sessionParentCanonicalPath = sessionParent.canonicalPathOrNull() ?: return null
+        if (!matchesLocation(target, libraryRootCanonicalPath, sessionParentCanonicalPath, target.name)) {
             return null
         }
         return try {
@@ -283,8 +291,8 @@ internal object AndroidLeaseDeletionPolicy {
             } else {
                 IssuedLeaseIdentity(
                     opaqueId = opaqueId,
-                    libraryRootCanonicalPath = libraryRoot.canonicalPath,
-                    sessionParentCanonicalPath = sessionParent.canonicalPath,
+                    libraryRootCanonicalPath = libraryRootCanonicalPath,
+                    sessionParentCanonicalPath = sessionParentCanonicalPath,
                     finalBasename = target.name,
                     device = stat.st_dev,
                     inode = stat.st_ino,
@@ -295,6 +303,24 @@ internal object AndroidLeaseDeletionPolicy {
             null
         } catch (error: SecurityException) {
             null
+        }
+    }
+
+    /** Removes a just-renamed output only when it still has the pre-rename file identity. */
+    fun rollbackPublishedOutput(target: File, expectedIdentity: IssuedLeaseIdentity) {
+        try {
+            val stat = Os.lstat(target.absolutePath)
+            if ((stat.st_mode and OsConstants.S_IFMT) == OsConstants.S_IFREG &&
+                stat.st_dev == expectedIdentity.device &&
+                stat.st_ino == expectedIdentity.inode &&
+                stat.st_size == expectedIdentity.size
+            ) {
+                Os.remove(target.absolutePath)
+            }
+        } catch (_: ErrnoException) {
+            // Nothing was published, or replacement made cleanup unsafe.
+        } catch (_: SecurityException) {
+            // Cleanup cannot prove ownership; leave the entry untouched.
         }
     }
 

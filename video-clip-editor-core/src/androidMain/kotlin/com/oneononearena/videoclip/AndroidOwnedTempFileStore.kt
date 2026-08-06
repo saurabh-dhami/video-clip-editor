@@ -2,35 +2,54 @@ package com.oneononearena.videoclip
 
 import android.content.Context
 import java.io.File
+import java.io.IOException
 import java.util.UUID
 
 /**
  * Owns only files created below the library's private cache directory. Callers can receive an
  * opaque lease, but cannot nominate an arbitrary path for deletion.
  */
-internal class AndroidOwnedTempFileStore(context: Context) {
-    private val cacheRoot = context.cacheDir.canonicalFile
+internal class AndroidOwnedTempFileStore(
+    context: Context,
+    private val canonicalize: (File) -> File = { it.canonicalFile },
+    private val postRenameIdentityCapture: (File, String, File, File) -> IssuedLeaseIdentity? =
+        AndroidLeaseDeletionPolicy::captureIdentity,
+) {
+    private val cacheRoot = context.cacheDir
     internal val root = File(context.cacheDir, ROOT_DIRECTORY_NAME)
 
     private val lock = Any()
     private val sessions = mutableMapOf<String, SessionState>()
 
     fun createSession(): AndroidOwnedTempSession = synchronized(lock) {
+        try {
+            createSessionLocked()
+        } catch (error: TempStoreCreateException) {
+            throw error
+        } catch (error: IOException) {
+            throw TempStoreCreateException(root)
+        } catch (error: SecurityException) {
+            throw TempStoreCreateException(root)
+        }
+    }
+
+    private fun createSessionLocked(): AndroidOwnedTempSession {
         if (!root.isDirectory && !root.mkdirs()) throw TempStoreCreateException(root)
-        val canonicalRoot = root.canonicalFile
-        if (canonicalRoot.parentFile != cacheRoot || canonicalRoot.name != ROOT_DIRECTORY_NAME) {
+        val canonicalCacheRoot = canonicalize(cacheRoot)
+        val canonicalRoot = canonicalize(root)
+        if (canonicalRoot.parentFile != canonicalCacheRoot || canonicalRoot.name != ROOT_DIRECTORY_NAME) {
             throw TempStoreCreateException(root)
         }
         val sessionRoot = File(root, UUID.randomUUID().toString())
         if (!sessionRoot.mkdir()) throw TempStoreCreateException(sessionRoot)
-        val canonicalSessionRoot = sessionRoot.canonicalFile
+        val canonicalSessionRoot = canonicalize(sessionRoot)
         if (canonicalSessionRoot.parentFile != canonicalRoot || canonicalSessionRoot.name != sessionRoot.name) {
             sessionRoot.delete()
             throw TempStoreCreateException(sessionRoot)
         }
         val state = SessionState(canonicalRoot, canonicalSessionRoot, sessionRoot)
         sessions[sessionRoot.absolutePath] = state
-        AndroidOwnedTempSession(this, state)
+        return AndroidOwnedTempSession(this, state)
     }
 
     private fun createDestination(state: SessionState): AndroidOwnedExportDestination = synchronized(lock) {
@@ -48,18 +67,31 @@ internal class AndroidOwnedTempFileStore(context: Context) {
         check(state.pending.remove(destination.partial.absolutePath) === destination) {
             "Temporary export destination was not issued by this session"
         }
-        if (destination.final.exists() || !destination.partial.renameTo(destination.final)) {
-            destination.partial.delete()
-            throw TempStoreRenameException(destination.final)
-        }
         val opaqueId = UUID.randomUUID().toString()
-        val identity = AndroidLeaseDeletionPolicy.captureIdentity(
-            target = destination.final,
+        val partialIdentity = AndroidLeaseDeletionPolicy.captureIdentity(
+            target = destination.partial,
             opaqueId = opaqueId,
             libraryRoot = state.libraryRoot,
             sessionParent = state.root,
         ) ?: run {
-            destination.final.delete()
+            destination.partial.delete()
+            throw TempStoreRenameException(destination.partial)
+        }
+        if (destination.final.exists() || !destination.partial.renameTo(destination.final)) {
+            destination.partial.delete()
+            throw TempStoreRenameException(destination.final)
+        }
+        val expectedFinalIdentity = partialIdentity.copy(finalBasename = destination.final.name)
+        val identity = runCatching {
+            postRenameIdentityCapture(
+                destination.final,
+                opaqueId,
+                state.libraryRoot,
+                state.root,
+            )
+        }.getOrNull()
+        if (identity == null || !identity.matches(expectedFinalIdentity)) {
+            AndroidLeaseDeletionPolicy.rollbackPublishedOutput(destination.final, expectedFinalIdentity)
             throw TempStoreRenameException(destination.final)
         }
         state.issued[destination.final.absolutePath] = identity
@@ -152,4 +184,13 @@ internal data class IssuedLeaseIdentity(
     val device: Long,
     val inode: Long,
     val size: Long,
-)
+) {
+    fun matches(other: IssuedLeaseIdentity): Boolean =
+        opaqueId == other.opaqueId &&
+            libraryRootCanonicalPath == other.libraryRootCanonicalPath &&
+            sessionParentCanonicalPath == other.sessionParentCanonicalPath &&
+            finalBasename == other.finalBasename &&
+            device == other.device &&
+            inode == other.inode &&
+            size == other.size
+}

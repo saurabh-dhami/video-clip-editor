@@ -3,19 +3,109 @@ package com.oneononearena.videoclip
 import android.system.Os
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.core.app.ApplicationProvider
+import com.oneononearena.videoclip.internal.engine.ClipMediaEngine
+import com.oneononearena.videoclip.internal.engine.EngineExportRequest
+import com.oneononearena.videoclip.internal.engine.EngineExportResult
+import com.oneononearena.videoclip.internal.engine.EngineFrameEvent
+import com.oneononearena.videoclip.internal.engine.EngineFrameRequest
+import com.oneononearena.videoclip.internal.engine.EngineProbeResult
+import com.oneononearena.videoclip.internal.engine.EngineSource
+import com.oneononearena.videoclip.internal.engine.EngineStreamTopology
+import com.oneononearena.videoclip.internal.engine.EngineVideoCodec
+import java.io.File
+import java.io.IOException
+import kotlin.time.Duration.Companion.milliseconds
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.async
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.yield
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
+import org.junit.Assert.fail
 import org.junit.Test
 import org.junit.runner.RunWith
-import java.io.File
 
 @RunWith(AndroidJUnit4::class)
 class AndroidTemporaryClipLeaseTest {
+    @Test
+    fun canonicalization_failure_at_session_creation_maps_to_typed_open_failure() = runTest {
+        val context = ApplicationProvider.getApplicationContext<android.content.Context>()
+        val source = File(context.cacheDir, "video-editor-canonical-source-${System.nanoTime()}.mp4").apply {
+            writeBytes(byteArrayOf(1))
+        }
+        val store = AndroidOwnedTempFileStore(
+            context,
+            canonicalize = { throw IOException("canonicalization denied") },
+        )
+        try {
+            val result = createAndroidVideoClipEditor(
+                context,
+                VideoClipEditorConfiguration(),
+                ProbeOnlyEngine,
+                store,
+            ).openSession(VideoSourcePath(source.absolutePath))
+
+            assertEquals(FailureCode.TEMP_CREATE_FAILED, (result as OpenSessionResult.Failed).failure.code)
+        } finally {
+            source.delete()
+        }
+    }
+
+    @Test
+    fun post_rename_identity_capture_failure_removes_only_the_new_library_output() {
+        val context = ApplicationProvider.getApplicationContext<android.content.Context>()
+        val store = AndroidOwnedTempFileStore(context, postRenameIdentityCapture = { _, _, _, _ -> null })
+        val session = store.createSession()
+        val destination = session.createDestination()
+        destination.partial.writeBytes(byteArrayOf(1))
+        try {
+            try {
+                session.publish(destination)
+                fail("Expected identity capture failure")
+            } catch (_: TempStoreRenameException) {
+                assertFalse(destination.partial.exists())
+                assertFalse(destination.final.exists())
+            }
+        } finally {
+            destination.partial.delete()
+            destination.final.delete()
+            session.close()
+        }
+    }
+
+    @Test
+    fun post_rename_identity_capture_never_removes_a_replacement_file() {
+        val context = ApplicationProvider.getApplicationContext<android.content.Context>()
+        val replacement = byteArrayOf(9, 9)
+        val store = AndroidOwnedTempFileStore(
+            context,
+            postRenameIdentityCapture = { published, _, _, _ ->
+                assertTrue(published.delete())
+                published.writeBytes(replacement)
+                null
+            },
+        )
+        val session = store.createSession()
+        val destination = session.createDestination()
+        destination.partial.writeBytes(byteArrayOf(1))
+        try {
+            try {
+                session.publish(destination)
+                fail("Expected identity capture failure")
+            } catch (_: TempStoreRenameException) {
+                assertTrue(destination.final.exists())
+                assertTrue(destination.final.readBytes().contentEquals(replacement))
+            }
+        } finally {
+            destination.partial.delete()
+            destination.final.delete()
+            session.close()
+        }
+    }
+
     @Test
     fun issued_store_lease_clears_only_its_owned_output_and_is_idempotent() = runTest {
         val context = ApplicationProvider.getApplicationContext<android.content.Context>()
@@ -174,5 +264,20 @@ class AndroidTemporaryClipLeaseTest {
         assertEquals(TempDeleteResult.Failed(VideoEditFailure(FailureCode.TEMP_DELETE_FAILED, true, null)), first.await())
         assertEquals(TempDeleteResult.Cleared, second.await())
         assertEquals(2, attempts)
+    }
+
+    private data object ProbeOnlyEngine : ClipMediaEngine {
+        override suspend fun probe(source: EngineSource): EngineProbeResult = EngineProbeResult.Success(
+            metadata = VideoMetadata(10_000.milliseconds, 640, 480, false),
+            topology = EngineStreamTopology(EngineVideoCodec.AVC, null, false),
+        )
+
+        override fun frames(source: EngineSource, request: EngineFrameRequest): Flow<EngineFrameEvent> = emptyFlow()
+
+        override suspend fun export(request: EngineExportRequest): EngineExportResult = EngineExportResult.Failed(
+            VideoEditFailure(FailureCode.EXPORT_FAILED, true, null),
+        )
+
+        override suspend fun cancelActiveExport() = Unit
     }
 }

@@ -81,9 +81,6 @@ internal class ExportOperation(
             val progressState = onMain { transformer.getProgress(ProgressHolder()) }
             check(progressState == Transformer.PROGRESS_STATE_NOT_STARTED) { "Transformer still active after cancel: $progressState" }
         }
-        sourceFile.delete()
-        partialFile.delete()
-        finalFile.delete()
     }
     suspend fun awaitExport(): ExportedFixture = completed.await()
 }

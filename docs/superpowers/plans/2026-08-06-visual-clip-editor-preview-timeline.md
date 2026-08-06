@@ -61,11 +61,16 @@ internal interface PreviewPort {
     fun dispatch(command: PreviewCommand)
 }
 
-@Composable internal expect fun rememberPlatformPreviewPort(): PreviewPort
-@Composable internal expect fun PlatformPreviewSurface(port: PreviewPort, modifier: Modifier = Modifier)
 ~~~
 
 Generation changes only for new source/session. Revision increases for each completed range change or retry. Presenter accepts Ready, Position, and RecoverableFailure only when generation and revision both match active binding. Release is terminal; screen waits for matching Released, with bounded recorded fallback, before ClipEditorSession.close().
+
+V1 freezes the value and port declarations above, which compile without platform code. V2 adds the internal helper declarations below with Android/iOS actuals in the same commit; this keeps V1 independently green while retaining the exact internal future seam.
+
+~~~
+@Composable internal expect fun rememberPlatformPreviewPort(): PreviewPort
+@Composable internal expect fun PlatformPreviewSurface(port: PreviewPort, modifier: Modifier = Modifier)
+~~~
 
 ## Ordered task map
 
@@ -82,7 +87,7 @@ Generation changes only for new source/session. Revision increases for each comp
 
 ### Task 1: V1 — common selector geometry and preview protocol
 
-**Scope:** Replace the detached dark handle bar plus Row thumbnail strip with one shared internal selector. No Android, Media3, iOS, core engine, demo, or public API work.
+**Scope:** Replace the detached dark handle bar plus Row thumbnail strip with one shared internal selector and freeze only the common port value/interface contract. No Android, Media3, iOS, core engine, demo, or public API work.
 
 **Files:**
 
@@ -103,7 +108,7 @@ Generation changes only for new source/session. Revision increases for each comp
 **Interfaces:**
 
 - Consumes ThumbnailFrame, VideoMetadata, ClipRange, Duration, existing decodeJpegForRender.
-- Produces ClipRangeSelector; RangeBoundary; sourceTimeToContentPx; viewportPxToSourceTime; clampRangeBoundary; clampPlayhead; exact PreviewPort contract.
+- Produces ClipRangeSelector; RangeBoundary; sourceTimeToContentPx; viewportPxToSourceTime; clampRangeBoundary; clampPlayhead; exact PreviewPort value/interface contract. V2 owns the expect/actual Compose helper functions.
 - Preserves ClipEditorScreen(source, editor, onResult, onCancel, modifier) and existing createClip(ready.range) call.
 
 **Acceptance:**
@@ -238,7 +243,7 @@ git commit -m "feat(compose): add shared clip range selector"
 - Coalesce old binding while new one prepares. A Ready for old revision does not reach presenter. Release clears/release exactly once and emits Released once.
 - iOS actual returns internal unavailable port/surface only. It does not import AVFoundation or change host code.
 
-**Interfaces:** Exact V1 PreviewPort declarations only. Test inspection remains internal/package-private and does not enter common/public code.
+**Interfaces:** Exact V1 PreviewPort value/interface declarations plus V2's internal expect/actual rememberPlatformPreviewPort and PlatformPreviewSurface helpers. Test inspection remains internal/package-private and does not enter common/public code.
 
 **Dependencies:** V1 accepted commit; Media3 1.10.1.
 

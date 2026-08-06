@@ -19,12 +19,15 @@ import androidx.media3.transformer.ExportException
 import androidx.media3.transformer.ExportResult
 import androidx.media3.transformer.Transformer
 import com.oneononearena.videoclip.internal.engine.ClipMediaEngine
+import com.oneononearena.videoclip.internal.engine.EngineAudioCodec
 import com.oneononearena.videoclip.internal.engine.EngineExportRequest
 import com.oneononearena.videoclip.internal.engine.EngineExportResult
 import com.oneononearena.videoclip.internal.engine.EngineFrameEvent
 import com.oneononearena.videoclip.internal.engine.EngineFrameRequest
 import com.oneononearena.videoclip.internal.engine.EngineProbeResult
 import com.oneononearena.videoclip.internal.engine.EngineSource
+import com.oneononearena.videoclip.internal.engine.EngineStreamTopology
+import com.oneononearena.videoclip.internal.engine.EngineVideoCodec
 import java.io.ByteArrayOutputStream
 import java.io.File
 import java.io.IOException
@@ -146,8 +149,6 @@ private class AndroidVideoClipEditor(
                 return@withContext SourceProbeResult.Unsupported(UnsupportedCode.UNSUPPORTED_VIDEO_CODEC, "Expected exactly one video track")
             }
             val video = videoTracks.single()
-            if (video.mime() != MimeTypes.VIDEO_H264) return@withContext SourceProbeResult.Unsupported(UnsupportedCode.UNSUPPORTED_VIDEO_CODEC, video.mime())
-            if (video.isHdr()) return@withContext SourceProbeResult.Unsupported(UnsupportedCode.HDR_UNSUPPORTED, null)
             val audioTracks = formats.filter { it.mime().startsWith("audio/") }
             if (audioTracks.size > 1) {
                 return@withContext SourceProbeResult.Unsupported(UnsupportedCode.UNSUPPORTED_AUDIO_CODEC, "Expected at most one audio track")
@@ -156,8 +157,18 @@ private class AndroidVideoClipEditor(
                 return@withContext SourceProbeResult.Unsupported(UnsupportedCode.UNSUPPORTED_CONTAINER, "Unsupported auxiliary track")
             }
             val audio = audioTracks.singleOrNull()
-            if (audio != null && audio.mime() != MimeTypes.AUDIO_AAC) {
-                return@withContext SourceProbeResult.Unsupported(UnsupportedCode.UNSUPPORTED_AUDIO_CODEC, audio.mime())
+            val topology = EngineStreamTopology(
+                videoCodec = video.toEngineVideoCodec(),
+                audioCodec = audio?.toEngineAudioCodec(),
+                isHdr = video.isHdr(),
+            )
+            AndroidSourceTopologyPolicy.validate(topology)?.let { code ->
+                val diagnostic = when (code) {
+                    UnsupportedCode.UNSUPPORTED_VIDEO_CODEC -> video.mime()
+                    UnsupportedCode.UNSUPPORTED_AUDIO_CODEC -> audio?.mime()
+                    else -> null
+                }
+                return@withContext SourceProbeResult.Unsupported(code, diagnostic)
             }
             val durationMs = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION)?.toLongOrNull()
                 ?: return@withContext SourceProbeResult.Failed(metadataFailure("Missing duration"))
@@ -185,7 +196,9 @@ private class AndroidVideoClipEditor(
 }
 
 private fun EngineProbeResult.toSourceProbeResult(): SourceProbeResult = when (this) {
-    is EngineProbeResult.Success -> SourceProbeResult.Success(metadata)
+    is EngineProbeResult.Success -> AndroidSourceTopologyPolicy.validate(topology)?.let { code ->
+        SourceProbeResult.Unsupported(code, null)
+    } ?: SourceProbeResult.Success(metadata)
     is EngineProbeResult.Unsupported -> SourceProbeResult.Unsupported(code, diagnostic)
     is EngineProbeResult.Failed -> SourceProbeResult.Failed(failure)
 }
@@ -524,6 +537,17 @@ private fun EngineFrameEvent.toFrameStripEvent(): FrameStripEvent = when (this) 
 }
 
 private fun MediaFormat.mime(): String = getString(MediaFormat.KEY_MIME).orEmpty()
+
+internal fun MediaFormat.toEngineVideoCodec(): EngineVideoCodec = when (mime()) {
+    MimeTypes.VIDEO_H264 -> EngineVideoCodec.AVC
+    MimeTypes.VIDEO_H265 -> EngineVideoCodec.HEVC
+    else -> EngineVideoCodec.OTHER
+}
+
+internal fun MediaFormat.toEngineAudioCodec(): EngineAudioCodec = when (mime()) {
+    MimeTypes.AUDIO_AAC -> EngineAudioCodec.AAC
+    else -> EngineAudioCodec.OTHER
+}
 
 private fun MediaFormat.isHdr(): Boolean = containsKey(MediaFormat.KEY_COLOR_TRANSFER) &&
     getInteger(MediaFormat.KEY_COLOR_TRANSFER) in setOf(6, 7)

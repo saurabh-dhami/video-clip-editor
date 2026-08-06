@@ -18,6 +18,9 @@ import androidx.media3.transformer.Composition
 import androidx.media3.transformer.ExportException
 import androidx.media3.transformer.ExportResult
 import androidx.media3.transformer.Transformer
+import com.oneononearena.videoclip.internal.engine.ClipMediaEngine
+import com.oneononearena.videoclip.internal.engine.EngineProbeResult
+import com.oneononearena.videoclip.internal.engine.EngineSource
 import java.io.ByteArrayOutputStream
 import java.io.File
 import java.io.IOException
@@ -45,6 +48,12 @@ public fun createAndroidVideoClipEditor(
     context: Context,
     configuration: VideoClipEditorConfiguration = VideoClipEditorConfiguration(),
 ): VideoClipEditor = AndroidVideoClipEditor(context.applicationContext, configuration)
+
+internal fun createAndroidVideoClipEditor(
+    context: Context,
+    configuration: VideoClipEditorConfiguration,
+    engine: ClipMediaEngine,
+): VideoClipEditor = AndroidVideoClipEditor(context.applicationContext, configuration, engine)
 
 internal object AndroidSourcePolicy {
     fun validate(path: String, temporaryRoot: File): ValidationCode? {
@@ -81,6 +90,7 @@ internal object AndroidMainLooperDispatcher {
 private class AndroidVideoClipEditor(
     private val context: Context,
     private val configuration: VideoClipEditorConfiguration,
+    private val engine: ClipMediaEngine? = null,
 ) : VideoClipEditor {
     private val temporaryRoot = File(context.cacheDir, "video-clip-editor")
 
@@ -88,7 +98,7 @@ private class AndroidVideoClipEditor(
         AndroidSourcePolicy.validate(source.value, temporaryRoot)?.let { return OpenSessionResult.InvalidRequest(it, null) }
         val sourceFile = AndroidSourcePolicy.canonicalFile(source.value)
             ?: return OpenSessionResult.InvalidRequest(ValidationCode.PATH_NOT_REGULAR_FILE, null)
-        return when (val probe = probeSource(sourceFile)) {
+        return when (val probe = engine?.probe(EngineSource(sourceFile.absolutePath))?.toSourceProbeResult() ?: probeSource(sourceFile)) {
             is SourceProbeResult.Unsupported -> OpenSessionResult.Unsupported(probe.code, probe.diagnostic)
             is SourceProbeResult.Failed -> OpenSessionResult.Failed(probe.failure)
             is SourceProbeResult.Success -> {
@@ -157,6 +167,12 @@ private class AndroidVideoClipEditor(
         const val MAXIMUM_INPUT_BYTES: Long = 512L * 1024L * 1024L
         const val MAXIMUM_INPUT_DURATION_MS: Long = 300_000L
     }
+}
+
+private fun EngineProbeResult.toSourceProbeResult(): SourceProbeResult = when (this) {
+    is EngineProbeResult.Success -> SourceProbeResult.Success(metadata)
+    is EngineProbeResult.Unsupported -> SourceProbeResult.Unsupported(code, diagnostic)
+    is EngineProbeResult.Failed -> SourceProbeResult.Failed(failure)
 }
 
 private class AndroidClipEditorSession(

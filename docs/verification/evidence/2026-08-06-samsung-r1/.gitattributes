@@ -1,0 +1,3 @@
+TEST-SM-S928B-16-video-clip-editor-core.xml -text
+samsung-instrumentation-test-results.log -text
+hevc-round-trip.log -text

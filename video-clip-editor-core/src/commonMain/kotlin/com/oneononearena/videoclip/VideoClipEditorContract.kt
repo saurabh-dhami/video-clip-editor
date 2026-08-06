@@ -19,9 +19,9 @@ data class VideoClipEditorConfiguration(
     val maximumThumbnailDimensionPx: Int = 160,
 ) {
     init {
-        require(minimumClipDuration >= 500.milliseconds)
-        require(maximumFrameCount in 1..24)
-        require(maximumThumbnailDimensionPx in 1..160)
+        require(minimumClipDuration == 500.milliseconds)
+        require(maximumFrameCount == 24)
+        require(maximumThumbnailDimensionPx == 160)
     }
 }
 

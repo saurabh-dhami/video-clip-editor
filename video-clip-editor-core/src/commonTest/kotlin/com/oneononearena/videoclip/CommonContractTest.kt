@@ -35,6 +35,15 @@ class CommonContractTest {
         assertIs<IllegalArgumentException>(runCatching {
             VideoClipEditorConfiguration(maximumThumbnailDimensionPx = 0)
         }.exceptionOrNull())
+        assertIs<IllegalArgumentException>(runCatching {
+            VideoClipEditorConfiguration(minimumClipDuration = 501.milliseconds)
+        }.exceptionOrNull())
+        assertIs<IllegalArgumentException>(runCatching {
+            VideoClipEditorConfiguration(maximumFrameCount = 23)
+        }.exceptionOrNull())
+        assertIs<IllegalArgumentException>(runCatching {
+            VideoClipEditorConfiguration(maximumThumbnailDimensionPx = 159)
+        }.exceptionOrNull())
     }
 
     @Test

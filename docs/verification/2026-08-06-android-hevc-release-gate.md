@@ -1,6 +1,6 @@
 # Android HEVC Release Gate — 2026-08-06
 
-**Disposition:** HOLD. Automated KMP and Android evidence is green, and the required Samsung physical AVC/HEVC smoke is now green. Fresh Android API-23 validation cannot run: `ClipEditor_API23` cannot be booted with only 641 MiB free on the host data volume. Do not publish Android V1 until that API-23 gate is re-run successfully.
+**Disposition:** R1 EVIDENCE PASS. Automated KMP and Android evidence is green; Samsung physical AVC/HEVC smoke is green; fresh Android API-23 validation is green. No R1 verification hold remains. Independent final review still decides acceptance and publication.
 
 **Scope:** standalone `video-clip-editor` only. No OneOnOneArena source, integration, or data was used or changed.
 
@@ -12,6 +12,7 @@
 | Android instrumentation and demo build | `ANDROID_HOME=/Users/sandeepdhami/Library/Android/sdk ./gradlew :video-clip-editor-core:connectedAndroidDeviceTest :demo-android:assembleDebug` | `BUILD SUCCESSFUL`; 43 instrumentation tests completed; demo debug APK assembled. | 6.4 s |
 | Demo launch | `adb -s emulator-5556 shell am start -W -n com.oneononearena.videoclip.demo/.DemoActivity` | `Status: ok`; process `23215`; top resumed activity was `DemoActivity`. | 0.6 s (cold launch 629 ms) |
 | Samsung focused instrumentation | `ANDROID_HOME=/Users/sandeepdhami/Library/Android/sdk ./gradlew :video-clip-editor-core:connectedAndroidDeviceTest` | `BUILD SUCCESSFUL`; `SM-S928B - 16` test log records `OK (17 tests)`. | 2.424 s test runtime |
+| API-23 device instrumentation | `env ANDROID_HOME=/Users/sandeepdhami/Library/Android/sdk ANDROID_SERIAL=emulator-5554 ./gradlew :video-clip-editor-core:connectedAndroidDeviceTest --rerun-tasks` | `Starting 43 tests on ClipEditor_API23(AVD) - 6.0`; `Finished 43 tests`; `BUILD SUCCESSFUL in 14s`. XML: 43 tests, 0 failures, 0 errors, 0 skipped. | 14 s Gradle wall; 6.692 s XML aggregate; 5.902 s instrumentation log |
 
 The first Android command without `ANDROID_HOME` failed before compilation because the worktree has no `local.properties` and the SDK variables were unset. The SDK directory existed. Supplying the verified SDK path only to the process resolved that environment defect; no repository file changed.
 
@@ -75,7 +76,7 @@ Physical result artifact: `video-clip-editor-core/build/outputs/androidTest-resu
 
 This closes the required Samsung gate. It does not establish compatibility for every Android device; devices without a usable codec must still return the typed `DEVICE_ENCODER_UNAVAILABLE` result.
 
-## API-23 emulator gate — blocked by host capacity
+## API-23 emulator gate — passed
 
 `/Users/sandeepdhami/Library/Android/sdk/emulator/emulator -list-avds` reports:
 
@@ -85,14 +86,15 @@ ClipEditor_API36
 Pixel_9a
 ```
 
-The API-23 emulator exists but must not be booted/re-run on the current host state. `df -h /Users/sandeepdhami/Documents/GitHub/video-clip-editor/.worktrees/feasibility` observed:
+The temporary read-only emulator booted as `emulator-5554`, Android 6.0/API23. It was stopped cleanly after testing; current `adb devices -l` no longer lists it.
 
-```text
-Filesystem      Size    Used   Avail Capacity
-/dev/disk3s5   228Gi   193Gi   641Mi   100%
-```
+Fresh result XML: `video-clip-editor-core/build/outputs/androidTest-results/connected/androidMain/TEST-ClipEditor_API23(AVD) - 6.0-_video-clip-editor-core-.xml`.
 
-The existing AVD directory alone is 13 GiB (`du -sh /Users/sandeepdhami/.android/avd`). With only 641 MiB available, a new API-23 boot has already failed capacity checks and cannot safely produce fresh test XML or timing. No emulator, repository, or host files were deleted to work around this condition. Re-run the API-23 `connectedAndroidDeviceTest` after restoring sufficient host capacity; record its XML and test time before publishing Android V1.
+- XML timestamp: `2026-08-06T10:44:46`; 43 tests, 0 failures, 0 errors, 0 skipped; aggregate test time 6.692 s.
+- Instrumentation log: `video-clip-editor-core/build/outputs/androidTest-results/connected/androidMain/ClipEditor_API23(AVD) - 6.0/testlog/test-results.log`; `OK (43 tests)` in 5.902 s.
+- The same API23 HEVC round-trip retained a durable lease line: `HEVC_OUTPUT path=/data/user/0/com.oneononearena.videoclip.test/cache/video-clip-editor/e53b8ed4-1ba9-4d74-b69d-39079a0018b1/f6809b1f-b5af-45f7-99d0-bd283bbfe81e.mp4 videoMime=video/avc audioMime=audio/mp4a-latm cleanup=Cleared existsAfterCleanup=false`.
+
+This replaces the earlier host-capacity hold. No emulator, repository, or host files were deleted to obtain this result.
 
 ## Frozen API and scope
 
@@ -104,4 +106,4 @@ The existing AVD directory alone is 13 GiB (`du -sh /Users/sandeepdhami/.android
 
 ## Release decision
 
-**HOLD:** Samsung `RZCX519T5FL` AVC/HEVC physical smoke now passes, but fresh Android API-23 validation is blocked by host capacity. Restore host disk capacity without deleting library-owned/host-owned test evidence, boot `ClipEditor_API23`, run the same device suite, and add the XML/timing result before publication.
+**R1 EVIDENCE PASS:** Samsung physical AVC/HEVC smoke and fresh API-23 validation both pass, alongside the recorded KMP, iOS simulator, API36, cleanup, and demo evidence. The only remaining process gate is independent final review; this evidence report does not self-accept the release.

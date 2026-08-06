@@ -6,7 +6,7 @@
 
 **Scope boundary:** Standalone `video-clip-editor` repository only. No file in OneOnOneArena is changed, imported, or used as a test fixture.
 
-**Predecessor baseline:** [Android H.264/H.265 V1 Blueprint](2026-08-06-kmp-video-clip-editor-hevc-v1-design.md) and the implementation accepted through `ddf47e0`. This blueprint fills the missing visual-editor outcome; it does not reopen the input, export, ownership, or cleanup contract.
+**Predecessor baseline:** The committed [V1 API baseline](2026-08-06-kmp-video-clip-editor-v1-api-baseline.md), the committed [Android release gate](../../verification/2026-08-06-android-hevc-release-gate.md), and the implementation accepted through `ddf47e0`. This blueprint fills the missing visual-editor outcome; it does not reopen the input, export, ownership, or cleanup contract. The separate untracked historical HEVC design document is not compatibility evidence for this delivery.
 
 ## 1. Observable outcome
 
@@ -78,7 +78,7 @@ The selection interior has a high-contrast outline. Before-start and after-end r
 | Drag playhead | Pause on gesture start; seek preview as it moves; remain paused when released. |
 | Drag bare track | Horizontal pan only. Panning does not change range or preview time. |
 | Play | Seek to start when current position is outside range, then play. |
-| Playback reaches end | Seek to start and keep play intent true. |
+| Playback reaches end | The source-level clipped media period repeats; no position-poll callback decides the boundary. |
 | Back/Cancel | Pause, release preview, close session, call existing `onCancel`. |
 | Done | Pause and use current range for existing export flow. |
 
@@ -100,7 +100,7 @@ Graph discovery returned no indexed communities for `video-clip-editor`, and Age
 
 ## 4. Public compatibility and module boundary
 
-The public ABI remains exactly the baseline declared in `2026-08-06-kmp-video-clip-editor-hevc-v1-design.md`. In particular, these do **not** change:
+The public ABI remains exactly the committed `2026-08-06-kmp-video-clip-editor-v1-api-baseline.md`. In particular, these do **not** change:
 
 ```kotlin
 @Composable
@@ -115,12 +115,55 @@ fun ClipEditorScreen(
 
 `ClipRangeSelector` is an **internal shared Compose component**, not a new public API. It receives only common value models, decoded `ImageBitmap` values, state, and callbacks. `Context`, `Uri`, `ExoPlayer`, `Player`, `Surface`, `MediaItem`, AVFoundation, UIKit, and Swift values are forbidden from its signature.
 
-An internal common preview seam will be introduced in the Compose module. Its exact declarations are implementation-private, but its stable responsibilities are:
+An internal common preview seam will be introduced in the Compose module. Its declarations are internal, but frozen for V1 before V1 implementation begins:
 
-* receive a `VideoSourcePath`, `VideoMetadata`, current `ClipRange`, requested seek/play/pause/release commands;
-* report bounded position, play intent, readiness, and a sanitized failure/retry signal;
-* never invoke export, create or clear a temporary file, navigate, or expose a native type;
-* be implemented by Android Media3 now and an iOS unavailable adapter now/AVFoundation adapter later.
+```kotlin
+internal data class PreviewGeneration(val value: Long)
+internal data class PreviewRevision(val value: Long)
+
+internal data class PreviewBinding(
+    val generation: PreviewGeneration,
+    val revision: PreviewRevision,
+    val source: VideoSourcePath,
+    val metadata: VideoMetadata,
+    val range: ClipRange,
+    val sourcePosition: Duration,
+    val playWhenReady: Boolean,
+)
+
+internal sealed interface PreviewCommand {
+    data class Bind(val binding: PreviewBinding) : PreviewCommand
+    data class Seek(val generation: PreviewGeneration, val revision: PreviewRevision, val sourcePosition: Duration) : PreviewCommand
+    data class SetPlayWhenReady(val generation: PreviewGeneration, val revision: PreviewRevision, val value: Boolean) : PreviewCommand
+    data class ReplaceRange(val binding: PreviewBinding) : PreviewCommand
+    data class Release(val generation: PreviewGeneration) : PreviewCommand
+}
+
+internal sealed interface PreviewEvent {
+    data class Ready(val generation: PreviewGeneration, val revision: PreviewRevision) : PreviewEvent
+    data class Position(val generation: PreviewGeneration, val revision: PreviewRevision, val sourcePosition: Duration, val isPlaying: Boolean) : PreviewEvent
+    data class Released(val generation: PreviewGeneration) : PreviewEvent
+    data class RecoverableFailure(val generation: PreviewGeneration, val revision: PreviewRevision, val diagnostic: String?) : PreviewEvent
+}
+
+internal interface PreviewPort {
+    val events: Flow<PreviewEvent>
+    fun dispatch(command: PreviewCommand)
+}
+```
+
+The presenter is the only producer of command generations/revisions and accepts an event only when both values match the active binding. `Bind` and `ReplaceRange` carry a complete snapshot rather than a delta. Android must emit `Ready` before a command for that revision can make Play available. `Release` is terminal for its generation; release completion is acknowledged by `Released`, and the screen must not close the `ClipEditorSession` until that acknowledgement or a bounded, recorded failure fallback. The controller never invokes export, creates/clears temporary files, navigates, or exposes a native type.
+
+| Port state | Accepted command | Required next event/state |
+| --- | --- | --- |
+| Unbound | `Bind(binding)` | `Binding(generation, revision)` then exactly one `Ready` or `RecoverableFailure` for that revision |
+| Ready-paused | `Seek`, `SetPlayWhenReady(false)` | Matching `Position`; remain ready-paused |
+| Ready-paused | `SetPlayWhenReady(true)` | Matching `Position(isPlaying=true)`; transition ready-playing |
+| Ready-playing | `Seek`, `SetPlayWhenReady(false)` | Matching `Position`; remain paused or resume only after explicit true command |
+| Ready-* | `ReplaceRange(binding)` | Pause/detach old revision; then exactly one `Ready` or `RecoverableFailure` for new revision |
+| Any non-terminal | `Release(generation)` | No later event for that generation except one `Released`; transition terminal |
+
+`PreviewPort` itself is an internal common interface. The platform-specific port instance and preview surface are created through an internal `expect/actual` Compose helper. Common tests use a fake `PreviewPort`; Android device tests use the Media3 actual. The expect/actual helper and all port declarations remain internal.
 
 `internal expect/actual` is permitted for this private platform surface. It is explicitly **not** a public common factory and cannot force future host call-site or core-contract changes. Android creates its player only in the Compose module; a Views-only host still depends only on core.
 
@@ -143,9 +186,11 @@ Sources: [Media3 Compose UI](https://developer.android.com/media/media3/ui/compo
 
 ### Chosen Android design
 
-The Android actual owns one `ExoPlayer` on the Android main thread. It sets the host-owned source file as a `MediaItem`, supplies the video surface using `media3-ui-compose` foundational surface APIs, and releases the player when the composable leaves composition. No Android player object reaches common state or the public API.
+The Android actual owns one `ExoPlayer` on the Android main thread. It sets the host-owned source file in a range-clipped `MediaItem`, supplies the video surface using `media3-ui-compose` foundational surface APIs, and releases the player when the composable leaves composition. No Android player object reaches common state or the public API.
 
-Range looping is controller-owned rather than full-media repeat mode: while play intent is true, a position at or beyond `range.endExclusive` seeks to `range.start` and continues. A range mutation rechecks current position before the next render/playback tick. This prevents trailing unselected source content from being played.
+Range enforcement is source-level, not a UI poll: for every `PreviewBinding`, Android creates an ExoPlayer media item with `MediaItem.ClippingConfiguration` from `range.start` to `range.endExclusive`, keeps clipping relative to the local source's zero position, and does not allow unseekable-media clipping. The player receives only that clipped media period and uses `REPEAT_MODE_ONE`; it therefore cannot advance into source samples after the selected end before a UI callback occurs. Player positions are clip-relative and the adapter reports source time as `range.start + clipRelativePosition`.
+
+On `ReplaceRange`, Android first pauses, replaces the entire clipped media item using the new complete binding, seeks the clip-relative position corresponding to the clamped source playhead, waits for `Ready`, then restores the requested play intent. The old source/revision is detached before the new revision is accepted. This is the only route that mutates playback range. Thumbnail extraction remains based on the complete source and is intentionally independent of preview clipping.
 
 Preview errors are sanitized into internal retry state with a diagnostic safe for UI; platform exceptions are neither rethrown nor added to the frozen public result enum. Core probe remains the first codec/capability gate. A preview failure disables Play/Done only until retry or Back, releases the player, and does not create an export lease.
 
@@ -184,7 +229,7 @@ Rules:
 | Timeline resembles approved design | One coordinate system for frames, selection, playhead, scroll | Separate bar/row cannot align visuals/gestures | Current separate controls observed | Shared Compose module | Selector test proves overlay mapping |
 | User can pan/scrub | Stable time↔content coordinate transform | Player seek and visible playhead must agree under horizontal scroll | `VideoMetadata.duration` and 24 ordered frames exist | Shared Compose module | Invalid duration or missing frames stays loading/failure |
 | Handles select valid clip | Central range clamp uses frozen minimum | Export must receive valid range | Existing `CommonValidation.clipRange` and presenter range logic | Shared Compose module | Bounds test fails |
-| Loop only selection | Controller observes position against current range | ExoPlayer full-media repeat would include excluded video | User-approved loop behaviour | Android preview module | Position bridge/loop test fails |
+| Loop only selection | Source-level media clipping plus one-period repeat | ExoPlayer full-media repeat would include excluded video; UI polling is too late | User-approved loop behaviour; official Media3 clipping API | Android preview module | Clipped-period/repeat device test fails |
 | Done produces existing output | Presenter keeps existing `createClip(ready.range)` | Player must not bypass exporter/lease | Current code uses exactly this call | Presenter integration | Existing integration regression fails |
 | Optional Compose and future iOS | Internal expect/actual seam only | Public frozen API must not change | Existing Compose iOS targets and iOS core contract | Compose platform layer | iOS compile fails or public API diff changes |
 | API 23+ and no leak | Correct API lifecycle/release path | Video decoder/surface is scarce | Official lifecycle guidance; API 23 test required | Android preview module | API 23 test or release assertion fails |
@@ -208,11 +253,11 @@ No open prerequisite is a reason to start production code. VUI-03 through VUI-07
 | State owner | Input | Transition | Output | Failure/recovery | Verification | Unresolved dependency |
 | --- | --- | --- | --- | --- | --- |
 | Presenter | `source`, `editor` | Existing open/probe/frame collection completes | `Ready(metadata, frames, full range)` | Existing typed terminal/retry state | Existing common/device tests | None |
-| Android preview actual | Ready source + metadata | Create/prepare main-thread ExoPlayer; attach Compose surface | Preview ready, paused at range start | Release; internal retry state | Android instrumentation | VUI-03 |
-| Common selector | Frames, range, playhead, scroll | Draw track/overlays; map gestures to time | Range/seek intents | Ignore stale/invalid input; clamp centrally | Common Compose tests | VUI-04 |
-| Preview controller | Play/Pause/seek/range intent | Update canonical bounded position and player command | Bounded playhead/status | Pause/release/retry | Unit + Android device loop test | VUI-03 |
+| Android preview actual | Complete `PreviewBinding` | Create main-thread clipped Media3 item; attach Compose surface; repeat its one clipped period | `Ready` then clip-relative position mapped to source time | Release; sanitized revision-scoped retry state | Android instrumentation | VUI-03 |
+| Common selector | Frames, canonical range/playhead/scroll | Draw track/overlays; map gestures to complete snapshot commands | `PreviewCommand` only | Ignore stale/invalid input; clamp centrally | Common Compose tests | VUI-04 |
+| Preview controller | `PreviewCommand` generation/revision | Acknowledge only active binding; source-level clipped player enforces bounds | `PreviewEvent` with matching generation/revision | Pause/release/retry; stale event ignored | Unit + Android device clip/repeat test | VUI-03 |
 | Presenter | Done | Existing exporter receives selected range | Frozen `ClipResult` | Existing typed failure path | End-to-end output inspection | None |
-| Lifecycle coordinator | Source change/Back/disposal | Release preview then close session | No active decoder/session | Idempotent close | Leak/release device test | VUI-03 |
+| Lifecycle coordinator | Source change/Back/disposal | Send terminal Release; await matching `Released` or bounded recorded fallback; then close session | No active decoder/session | Idempotent terminal fence | Leak/release device test | VUI-03 |
 | iOS actual | Same internal call site | Compile unavailable/no-op preview implementation | No Android type leak | Internal unavailable state | iOS compile test | VUI-06 |
 
 The forward pass has no contradictory state owner: range/export remain presenter-owned; native playback remains Android-owned; visual selection stays common.
@@ -246,7 +291,7 @@ Each chunk must independently pass its completion gate. A later chunk cannot rep
 
 * **Scope:** Common internal `ClipRangeSelector`, pure range/playhead/scroll geometry, and presenter state extension.
 * **Responsibilities:** Align thumbnails, handles, dim overlays, time labels, playhead, semantics, clamping, and user intents. Keep 24-frame bounded memory model.
-* **Interfaces:** Internal common `PreviewSnapshot`, `PreviewCommand`, and selector callbacks. Existing public `ClipEditorScreen` signature unchanged.
+* **Interfaces:** Exact internal `PreviewGeneration`, `PreviewRevision`, `PreviewBinding`, `PreviewCommand`, and `PreviewEvent` declarations in §4; selector callbacks. Existing public `ClipEditorScreen` signature unchanged.
 * **Dependencies:** Existing `ThumbnailFrame`, `VideoMetadata`, `ClipRange`, Compose foundation/material3.
 * **Acceptance criteria:** Pure tests prove time/pixel inverse mapping at scroll offsets, handle non-crossing/minimum duration, playhead range clamp, and selected/outside semantics. Compose tests locate all controls by test tag.
 * **Test strategy:** RED common unit/Compose test before implementation; screenshot/golden-style semantics state where available; all existing Compose tests green.
@@ -256,11 +301,11 @@ Each chunk must independently pass its completion gate. A later chunk cannot rep
 ### V2 — Android internal Media3 preview adapter
 
 * **Scope:** Android Compose actual for the internal preview seam and Android-only dependency declarations.
-* **Responsibilities:** Main-thread ExoPlayer creation, Compose-native surface attachment, source preparation, bounded seek/play/pause/range loop, sanitized event state, and idempotent release.
-* **Interfaces:** Implements V1 internal common preview seam only. Exposes no Media3/Android type outside `androidMain`.
+* **Responsibilities:** Main-thread ExoPlayer creation, Compose-native surface attachment, source-level clipping for every binding, `REPEAT_MODE_ONE` on that clipped period, source/clip time conversion, sanitized revision-scoped events, and idempotent release fence.
+* **Interfaces:** Implements the exact V1 internal common preview seam in §4 only. Exposes no Media3/Android type outside `androidMain`.
 * **Dependencies:** Pinned `media3-exoplayer` and `media3-ui-compose` 1.10.1; Android lifecycle/Compose runtime.
-* **Acceptance criteria:** Player renders accepted fixture, starts paused at start, does not play past end, loops selection, and releases on disposal/source replacement. No public ABI diff.
-* **Test strategy:** Android instrumentation with a real local fixture; loop and release tests; failure mapping test with controllable controller seam where feasible.
+* **Acceptance criteria:** Player renders accepted fixture, starts paused at clip start, is given clipping configuration equal to selected source range, repeats only that clipped period, reports source position within range, and releases on disposal/source replacement. No public ABI diff.
+* **Test strategy:** Android instrumentation with a real local fixture; inspect applied clipping configuration and repeat mode, loop/release tests, stale-revision test, failure mapping test with controllable controller seam where feasible.
 * **Rollback strategy:** Remove Android actual/dependency and retain common selector behind unavailable preview state; core remains operational.
 * **Integration strategy:** Wire only through `ClipEditorScreen` after V1 tests pass; use original existing export integration tests unchanged.
 
@@ -342,7 +387,7 @@ Each chunk must independently pass its completion gate. A later chunk cannot rep
 | Player prepare/runtime error | Sanitized retry state; release player | No platform exception; no output lease created |
 | Start/end handle invalid move | Clamp; keep UI responsive | Existing valid range invariant |
 | Playhead tap outside selection | Clamp to nearest selected boundary | No export change |
-| Player reaches trim end | Seek selected start and continue | No source/export mutation |
+| Player reaches trim end | Media3 repeats the source-level clipped period | No source/export mutation; no UI-poll overshoot path |
 | Source changes during playback | Release old player, ignore stale events, prepare new | Old session closes; no host file deletion |
 | Back/disposal | Pause/release then existing close | No output unless user previously chose Done; existing lease semantics |
 | Done/export failure | Disable player while exporting; show typed result | Existing typed `ClipResult`; partial output cleanup unchanged |

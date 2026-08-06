@@ -9,6 +9,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertTouchWidthIsEqualTo
+import androidx.compose.ui.test.cancel
 import androidx.compose.ui.test.click
 import androidx.compose.ui.test.down
 import androidx.compose.ui.test.moveBy
@@ -187,6 +188,100 @@ class ClipRangeSelectorTest {
         assertEquals(8.seconds, canonicalObservedDuringDrag?.endExclusive)
         assertTrue(canonical.endExclusive < 8.seconds)
         assertEquals(1, port.commands.filterIsInstance<PreviewCommand.ReplaceRange>().size)
+    }
+
+    @OptIn(ExperimentalTestApi::class)
+    @Test
+    fun startHandlePointerDrag_keepsCanonicalRangeUntilRelease_andEmitsOneReplacement() = runComposeUiTest {
+        val port = SelectorRecordingPreviewPort()
+        val metadata = VideoMetadata(10.seconds, 100, 100, false)
+        var canonical by mutableStateOf(ClipRange(2.seconds, 8.seconds))
+        var provisional by mutableStateOf<ClipRange?>(null)
+        var canonicalObservedDuringDrag: ClipRange? = null
+
+        setContent {
+            val visual = provisional ?: canonical
+            ClipRangeSelector(
+                frames = emptyList(),
+                metadata = metadata,
+                range = visual,
+                playhead = visual.start,
+                modifier = Modifier.width(400.dp),
+                onRangeGestureStart = { provisional = canonical },
+                onRangeChange = { boundary, value ->
+                    val current = provisional ?: canonical
+                    provisional = when (boundary) {
+                        RangeBoundary.Start -> current.copy(start = clampRangeBoundary(value, current.endExclusive, metadata.duration, boundary))
+                        RangeBoundary.End -> current.copy(endExclusive = clampRangeBoundary(value, current.start, metadata.duration, boundary))
+                    }
+                    canonicalObservedDuringDrag = canonical
+                },
+                onRangeGestureEnd = {
+                    canonical = requireNotNull(provisional)
+                    provisional = null
+                    port.dispatch(PreviewCommand.ReplaceRange(testBinding(canonical, metadata)))
+                },
+                onRangeGestureCancel = { provisional = null },
+            )
+        }
+
+        onNodeWithTag("clip-start-handle").performTouchInput {
+            down(Offset(2f, center.y))
+            moveBy(Offset(40f, 0f))
+            up()
+        }
+        waitForIdle()
+
+        assertEquals(2.seconds, canonicalObservedDuringDrag?.start)
+        assertTrue(canonical.start > 2.seconds)
+        assertEquals(1, port.commands.filterIsInstance<PreviewCommand.ReplaceRange>().size)
+    }
+
+    @OptIn(ExperimentalTestApi::class)
+    @Test
+    fun cancelledHandlePointerGesture_discardsProvisionalRangeWithoutReplacement() = runComposeUiTest {
+        val port = SelectorRecordingPreviewPort()
+        val metadata = VideoMetadata(10.seconds, 100, 100, false)
+        var canonical by mutableStateOf(ClipRange(2.seconds, 8.seconds))
+        var provisional by mutableStateOf<ClipRange?>(null)
+        var cancelled = false
+        var cancelBoundary: (() -> Unit)? = null
+
+        setContent {
+            val visual = provisional ?: canonical
+            ClipRangeSelector(
+                frames = emptyList(),
+                metadata = metadata,
+                range = visual,
+                playhead = visual.start,
+                modifier = Modifier.width(400.dp),
+                onRangeGestureStart = { provisional = canonical },
+                onRangeChange = { boundary, value ->
+                    val current = provisional ?: canonical
+                    provisional = current.copy(endExclusive = clampRangeBoundary(value, current.start, metadata.duration, boundary))
+                },
+                onRangeGestureEnd = { port.dispatch(PreviewCommand.ReplaceRange(testBinding(requireNotNull(provisional), metadata))) },
+                onRangeGestureCancel = ({
+                    cancelled = true
+                    provisional = null
+                }).also { cancelBoundary = it },
+            )
+        }
+
+        onNodeWithTag("clip-end-handle").performTouchInput {
+            down(center)
+            moveBy(Offset(-40f, 0f), delayMillis = 200)
+            cancel()
+        }
+        waitForIdle()
+
+        assertTrue(provisional != null)
+        requireNotNull(cancelBoundary).invoke()
+
+        assertTrue(cancelled)
+        assertEquals(ClipRange(2.seconds, 8.seconds), canonical)
+        assertEquals(null, provisional)
+        assertEquals(0, port.commands.filterIsInstance<PreviewCommand.ReplaceRange>().size)
     }
 
     @Test

@@ -200,14 +200,7 @@ internal class Media3ClipMediaEngine(
 
                     override fun onError(composition: Composition, result: ExportResult, exception: ExportException) {
                         clearActive()
-                        val engineResult = when (exception.errorCode) {
-                            ExportException.ERROR_CODE_DECODER_INIT_FAILED,
-                            ExportException.ERROR_CODE_DECODING_FORMAT_UNSUPPORTED,
-                            ExportException.ERROR_CODE_ENCODER_INIT_FAILED,
-                            ExportException.ERROR_CODE_ENCODING_FORMAT_UNSUPPORTED,
-                            -> EngineExportResult.Unsupported(UnsupportedCode.DEVICE_ENCODER_UNAVAILABLE, exception.message)
-                            else -> EngineExportResult.Failed(VideoEditFailure(FailureCode.EXPORT_FAILED, true, exception.message))
-                        }
+                        val engineResult = media3ExportFailure(exception.errorCode, exception.message)
                         if (continuation.isActive) continuation.resume(engineResult)
                     }
                 })
@@ -241,6 +234,13 @@ internal class Media3ClipMediaEngine(
         const val MAXIMUM_INPUT_BYTES: Long = 512L * 1024L * 1024L
         const val MAXIMUM_INPUT_DURATION_MS: Long = 300_000L
     }
+}
+
+/** Preserves capability semantics: only encoder initialization means encoder unavailable. */
+internal fun media3ExportFailure(errorCode: Int, diagnostic: String?): EngineExportResult = when (errorCode) {
+    ExportException.ERROR_CODE_ENCODER_INIT_FAILED ->
+        EngineExportResult.Unsupported(UnsupportedCode.DEVICE_ENCODER_UNAVAILABLE, diagnostic)
+    else -> EngineExportResult.Failed(VideoEditFailure(FailureCode.EXPORT_FAILED, true, diagnostic))
 }
 
 private fun MediaFormat.mime(): String = getString(MediaFormat.KEY_MIME).orEmpty()

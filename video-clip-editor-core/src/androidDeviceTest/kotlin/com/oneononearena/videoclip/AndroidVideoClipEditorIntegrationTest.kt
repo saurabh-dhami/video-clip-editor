@@ -15,8 +15,12 @@ import com.oneononearena.videoclip.internal.engine.EngineStreamTopology
 import com.oneononearena.videoclip.internal.engine.EngineVideoCodec
 import java.io.File
 import java.io.RandomAccessFile
+import java.security.MessageDigest
 import kotlin.time.Duration.Companion.milliseconds
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.test.runTest
@@ -105,6 +109,31 @@ class AndroidVideoClipEditorIntegrationTest {
         }
     }
 
+    @Test
+    fun cancelled_session_export_discards_partial_and_never_publishes_final_file() = runTest {
+        val context = ApplicationProvider.getApplicationContext<android.content.Context>()
+        val source = copyFixture(context)
+        val sourceHash = sha256(source)
+        val engine = BlockingExportEngine()
+        try {
+            val session = openSession(createAndroidVideoClipEditor(context, VideoClipEditorConfiguration(), engine), source)
+            val result = async { session.createClip(ClipRange(0.milliseconds, 1_000.milliseconds)) }
+            val partial = File(engine.exportStarted.await())
+
+            session.close()
+
+            assertEquals(
+                ClipResult.Failed(VideoEditFailure(FailureCode.EXPORT_CANCELLED, true, "Session closed")),
+                result.await(),
+            )
+            assertFalse(partial.exists())
+            assertFalse(File(partial.parentFile, "${partial.nameWithoutExtension}.mp4").exists())
+            assertEquals(sourceHash, sha256(source))
+        } finally {
+            source.delete()
+        }
+    }
+
     private class RecordingClipMediaEngine : ClipMediaEngine {
         var probeCalls = 0
         var framesCalls = 0
@@ -135,6 +164,29 @@ class AndroidVideoClipEditorIntegrationTest {
         }
     }
 
+    private class BlockingExportEngine : ClipMediaEngine {
+        val exportStarted = CompletableDeferred<String>()
+        private val allowExportToComplete = CompletableDeferred<Unit>()
+
+        override suspend fun probe(source: EngineSource): EngineProbeResult = EngineProbeResult.Success(
+            metadata = VideoMetadata(10_000.milliseconds, 640, 480, false),
+            topology = EngineStreamTopology(EngineVideoCodec.AVC, null, false),
+        )
+
+        override fun frames(source: EngineSource, request: EngineFrameRequest): Flow<EngineFrameEvent> = emptyFlow()
+
+        override suspend fun export(request: EngineExportRequest): EngineExportResult {
+            File(request.outputPath).writeBytes(byteArrayOf(1))
+            exportStarted.complete(request.outputPath)
+            allowExportToComplete.await()
+            return EngineExportResult.Success
+        }
+
+        override suspend fun cancelActiveExport() {
+            allowExportToComplete.complete(Unit)
+        }
+    }
+
     private fun copyFixture(context: android.content.Context): File {
         val target = File(context.cacheDir, "android-adapter-${System.nanoTime()}.mp4")
         InstrumentationRegistry.getInstrumentation().context.assets.open("fixtures/avc-aac-10s-30fps.mp4").use { input ->
@@ -148,4 +200,8 @@ class AndroidVideoClipEditorIntegrationTest {
         assertTrue("Expected open session, got $result", result is OpenSessionResult.Open)
         return (result as OpenSessionResult.Open).session
     }
+
+    private fun sha256(file: File): String = MessageDigest.getInstance("SHA-256")
+        .digest(file.readBytes())
+        .joinToString("") { "%02x".format(it.toInt() and 0xff) }
 }

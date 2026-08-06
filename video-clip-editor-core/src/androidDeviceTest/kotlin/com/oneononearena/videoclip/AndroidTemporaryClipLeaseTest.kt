@@ -33,7 +33,7 @@ class AndroidTemporaryClipLeaseTest {
             assertEquals(TempDeleteResult.Cleared, lease.clearTemporaryFile())
             assertFalse(File(lease.file.absolutePath).exists())
             assertEquals(TempDeleteResult.AlreadyCleared, lease.clearTemporaryFile())
-            assertEquals(TempDeleteResult.AlreadyCleared, session.clearIssuedLease(foreign, "not-issued"))
+            assertTrue(session.clearIssuedLease(foreign, "not-issued") is TempDeleteResult.Failed)
             assertTrue(foreign.exists())
         } finally {
             foreign.delete()
@@ -84,32 +84,68 @@ class AndroidTemporaryClipLeaseTest {
     }
 
     @Test
-    fun clears_an_issued_regular_file_and_reports_idempotent_result() {
-        val target = File.createTempFile("video-editor-lease", ".mp4")
+    fun unissued_source_host_copy_foreign_file_and_directory_are_refused_without_deletion() = runTest {
+        val context = ApplicationProvider.getApplicationContext<android.content.Context>()
+        val store = AndroidOwnedTempFileStore(context)
+        val session = store.createSession()
+        val source = File(context.cacheDir, "video-editor-source-${System.nanoTime()}.mp4").apply { writeBytes(byteArrayOf(1)) }
+        val hostCopy = File(context.filesDir, "video-editor-host-copy-${System.nanoTime()}.mp4").apply { writeBytes(byteArrayOf(2)) }
+        val foreign = File.createTempFile("video-editor-foreign", ".mp4")
+        val directory = File(context.cacheDir, "video-editor-directory-${System.nanoTime()}").apply { mkdir() }
         try {
-            assertEquals(TempDeleteResult.Cleared, AndroidLeaseDeletionPolicy.clear(target))
-            assertFalse(target.exists())
-            assertEquals(TempDeleteResult.AlreadyCleared, AndroidLeaseDeletionPolicy.clear(target))
+            listOf(source, hostCopy, foreign, directory).forEach { target ->
+                assertTrue(session.clearIssuedLease(target, "unissued") is TempDeleteResult.Failed)
+                assertTrue(target.exists())
+            }
         } finally {
-            target.delete()
+            source.delete()
+            hostCopy.delete()
+            foreign.delete()
+            directory.delete()
+            session.close()
         }
     }
 
     @Test
-    fun rejects_terminal_symbolic_link_without_deleting_its_target() {
-        val target = File.createTempFile("video-editor-target", ".mp4")
-        val link = File(target.parentFile, "video-editor-link-${System.nanoTime()}.mp4")
+    fun issued_store_lease_refuses_same_path_regular_file_replacement_without_deleting_replacement() = runTest {
+        val context = ApplicationProvider.getApplicationContext<android.content.Context>()
+        val store = AndroidOwnedTempFileStore(context)
+        val session = store.createSession()
+        val destination = session.createDestination()
+        destination.partial.writeBytes(byteArrayOf(1))
+        val lease = session.publish(destination)
+        val output = File(lease.file.absolutePath)
         try {
-            Os.symlink(target.absolutePath, link.absolutePath)
+            assertTrue(output.delete())
+            output.writeBytes(byteArrayOf(9, 9))
 
-            val result = AndroidLeaseDeletionPolicy.clear(link)
-
-            assertTrue(result is TempDeleteResult.Failed)
-            assertTrue(target.exists())
-            assertTrue(link.exists())
+            assertTrue(lease.clearTemporaryFile() is TempDeleteResult.Failed)
+            assertTrue(output.exists())
+            assertEquals(2, output.length())
         } finally {
-            link.delete()
-            target.delete()
+            output.delete()
+            session.close()
+        }
+    }
+
+    @Test
+    fun issued_store_lease_refuses_same_path_directory_without_deleting_directory() = runTest {
+        val context = ApplicationProvider.getApplicationContext<android.content.Context>()
+        val store = AndroidOwnedTempFileStore(context)
+        val session = store.createSession()
+        val destination = session.createDestination()
+        destination.partial.writeBytes(byteArrayOf(1))
+        val lease = session.publish(destination)
+        val output = File(lease.file.absolutePath)
+        try {
+            assertTrue(output.delete())
+            assertTrue(output.mkdir())
+
+            assertTrue(lease.clearTemporaryFile() is TempDeleteResult.Failed)
+            assertTrue(output.isDirectory)
+        } finally {
+            output.delete()
+            session.close()
         }
     }
 

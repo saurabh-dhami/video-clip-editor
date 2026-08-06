@@ -9,6 +9,7 @@ import java.util.UUID
  * opaque lease, but cannot nominate an arbitrary path for deletion.
  */
 internal class AndroidOwnedTempFileStore(context: Context) {
+    private val cacheRoot = context.cacheDir.canonicalFile
     internal val root = File(context.cacheDir, ROOT_DIRECTORY_NAME)
 
     private val lock = Any()
@@ -16,9 +17,18 @@ internal class AndroidOwnedTempFileStore(context: Context) {
 
     fun createSession(): AndroidOwnedTempSession = synchronized(lock) {
         if (!root.isDirectory && !root.mkdirs()) throw TempStoreCreateException(root)
+        val canonicalRoot = root.canonicalFile
+        if (canonicalRoot.parentFile != cacheRoot || canonicalRoot.name != ROOT_DIRECTORY_NAME) {
+            throw TempStoreCreateException(root)
+        }
         val sessionRoot = File(root, UUID.randomUUID().toString())
         if (!sessionRoot.mkdir()) throw TempStoreCreateException(sessionRoot)
-        val state = SessionState(sessionRoot)
+        val canonicalSessionRoot = sessionRoot.canonicalFile
+        if (canonicalSessionRoot.parentFile != canonicalRoot || canonicalSessionRoot.name != sessionRoot.name) {
+            sessionRoot.delete()
+            throw TempStoreCreateException(sessionRoot)
+        }
+        val state = SessionState(canonicalRoot, canonicalSessionRoot, sessionRoot)
         sessions[sessionRoot.absolutePath] = state
         AndroidOwnedTempSession(this, state)
     }
@@ -27,8 +37,8 @@ internal class AndroidOwnedTempFileStore(context: Context) {
         check(!state.closed) { "Temporary session already closed" }
         val id = UUID.randomUUID().toString()
         val destination = AndroidOwnedExportDestination(
-            partial = File(state.root, "$id.partial"),
-            final = File(state.root, "$id.mp4"),
+            partial = File(state.outputRoot, "$id.partial"),
+            final = File(state.outputRoot, "$id.mp4"),
         )
         state.pending[destination.partial.absolutePath] = destination
         destination
@@ -43,7 +53,16 @@ internal class AndroidOwnedTempFileStore(context: Context) {
             throw TempStoreRenameException(destination.final)
         }
         val opaqueId = UUID.randomUUID().toString()
-        state.issued[destination.final.absolutePath] = opaqueId
+        val identity = AndroidLeaseDeletionPolicy.captureIdentity(
+            target = destination.final,
+            opaqueId = opaqueId,
+            libraryRoot = state.libraryRoot,
+            sessionParent = state.root,
+        ) ?: run {
+            destination.final.delete()
+            throw TempStoreRenameException(destination.final)
+        }
+        state.issued[destination.final.absolutePath] = identity
         AndroidTemporaryClipLease(destination.final, opaqueId) {
             clearIssuedLease(state, destination.final, opaqueId)
         }
@@ -57,9 +76,14 @@ internal class AndroidOwnedTempFileStore(context: Context) {
     }
 
     private fun clearIssuedLease(state: SessionState, target: File, opaqueId: String): TempDeleteResult = synchronized(lock) {
-        if (state.issued[target.absolutePath] != opaqueId) return@synchronized TempDeleteResult.AlreadyCleared
-        AndroidLeaseDeletionPolicy.clear(target).also { result ->
-            if (result is TempDeleteResult.Cleared || result is TempDeleteResult.AlreadyCleared) {
+        val identity = state.issued[target.absolutePath]
+        if (identity == null || identity.opaqueId != opaqueId) {
+            return@synchronized TempDeleteResult.Failed(
+                VideoEditFailure(FailureCode.TEMP_DELETE_FAILED, true, "Unissued temporary path"),
+            )
+        }
+        AndroidLeaseDeletionPolicy.clearVerified(target, identity).also { result ->
+            if (result is TempDeleteResult.Cleared) {
                 state.issued.remove(target.absolutePath)
                 deleteSessionIfEmpty(state)
             }
@@ -71,9 +95,6 @@ internal class AndroidOwnedTempFileStore(context: Context) {
         state.closed = true
         state.pending.values.forEach { it.partial.delete() }
         state.pending.clear()
-        state.root.listFiles()?.forEach { child ->
-            if (child.absolutePath !in state.issued) child.delete()
-        }
         deleteSessionIfEmpty(state)
     }
 
@@ -101,9 +122,11 @@ internal class AndroidOwnedTempFileStore(context: Context) {
     }
 
     internal class SessionState(
+        val libraryRoot: File,
         val root: File,
+        val outputRoot: File,
         val pending: MutableMap<String, AndroidOwnedExportDestination> = mutableMapOf(),
-        val issued: MutableMap<String, String> = mutableMapOf(),
+        val issued: MutableMap<String, IssuedLeaseIdentity> = mutableMapOf(),
         var closed: Boolean = false,
     )
 
@@ -120,3 +143,13 @@ internal data class AndroidOwnedExportDestination(
 internal class TempStoreCreateException(val target: File) : Exception(target.absolutePath)
 
 internal class TempStoreRenameException(val target: File) : Exception(target.absolutePath)
+
+internal data class IssuedLeaseIdentity(
+    val opaqueId: String,
+    val libraryRootCanonicalPath: String,
+    val sessionParentCanonicalPath: String,
+    val finalBasename: String,
+    val device: Long,
+    val inode: Long,
+    val size: Long,
+)

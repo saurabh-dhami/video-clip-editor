@@ -263,33 +263,87 @@ internal class AndroidTemporaryClipLease(
 }
 
 /**
- * Deletes only an issued regular-file entry. `lstat` inspects the terminal entry without following
- * links; `remove` then removes that entry without traversing a target. Both APIs are available on
- * Android API 21+, unlike `File.toPath`.
+ * Issues and deletes only a verified lease identity. `lstat` never follows the terminal entry;
+ * its device/inode pair must still equal the values recorded at publication before `remove` runs.
  */
 internal object AndroidLeaseDeletionPolicy {
-    fun clear(target: File): TempDeleteResult {
+    fun captureIdentity(
+        target: File,
+        opaqueId: String,
+        libraryRoot: File,
+        sessionParent: File,
+    ): IssuedLeaseIdentity? {
+        if (!matchesLocation(target, libraryRoot.canonicalPathOrNull(), sessionParent.canonicalPathOrNull(), target.name)) {
+            return null
+        }
         return try {
-            when (Os.lstat(target.absolutePath).st_mode and OsConstants.S_IFMT) {
-                OsConstants.S_IFLNK -> deleteFailure(target, "Refusing symbolic link")
-                OsConstants.S_IFREG -> removeRegularFile(target)
-                else -> deleteFailure(target, "Refusing non-regular file")
+            val stat = Os.lstat(target.absolutePath)
+            if ((stat.st_mode and OsConstants.S_IFMT) != OsConstants.S_IFREG) {
+                null
+            } else {
+                IssuedLeaseIdentity(
+                    opaqueId = opaqueId,
+                    libraryRootCanonicalPath = libraryRoot.canonicalPath,
+                    sessionParentCanonicalPath = sessionParent.canonicalPath,
+                    finalBasename = target.name,
+                    device = stat.st_dev,
+                    inode = stat.st_ino,
+                    size = stat.st_size,
+                )
             }
         } catch (error: ErrnoException) {
-            if (error.errno == OsConstants.ENOENT) TempDeleteResult.AlreadyCleared else deleteFailure(target, error.message)
+            null
         } catch (error: SecurityException) {
-            deleteFailure(target, error.message)
+            null
         }
     }
 
-    private fun removeRegularFile(target: File): TempDeleteResult = try {
-        Os.remove(target.absolutePath)
-        TempDeleteResult.Cleared
-    } catch (error: ErrnoException) {
-        if (error.errno == OsConstants.ENOENT) TempDeleteResult.AlreadyCleared else deleteFailure(target, error.message)
-    } catch (error: SecurityException) {
-        deleteFailure(target, error.message)
+    fun clearVerified(target: File, identity: IssuedLeaseIdentity): TempDeleteResult {
+        if (!matchesLocation(
+                target,
+                identity.libraryRootCanonicalPath,
+                identity.sessionParentCanonicalPath,
+                identity.finalBasename,
+            )
+        ) {
+            return refused(target, "Lease containment mismatch")
+        }
+        return try {
+            val stat = Os.lstat(target.absolutePath)
+            when {
+                (stat.st_mode and OsConstants.S_IFMT) != OsConstants.S_IFREG ->
+                    refused(target, "Refusing non-regular terminal entry")
+                stat.st_dev != identity.device || stat.st_ino != identity.inode || stat.st_size != identity.size ->
+                    refused(target, "Lease identity changed")
+                else -> {
+                    Os.remove(target.absolutePath)
+                    TempDeleteResult.Cleared
+                }
+            }
+        } catch (error: ErrnoException) {
+            refused(target, error.message)
+        } catch (error: SecurityException) {
+            refused(target, error.message)
+        }
     }
+
+    private fun matchesLocation(
+        target: File,
+        libraryRootCanonicalPath: String?,
+        sessionParentCanonicalPath: String?,
+        finalBasename: String,
+    ): Boolean {
+        val parentPath = target.parentFile?.canonicalPathOrNull() ?: return false
+        if (target.name != finalBasename || parentPath != sessionParentCanonicalPath) return false
+        val sessionParent = File(sessionParentCanonicalPath)
+        return sessionParent.parentFile?.canonicalPathOrNull() == libraryRootCanonicalPath
+    }
+
+    private fun File.canonicalPathOrNull(): String? = runCatching { canonicalPath }.getOrNull()
+
+    private fun refused(target: File, diagnostic: String?) = TempDeleteResult.Failed(
+        VideoEditFailure(FailureCode.TEMP_DELETE_FAILED, true, diagnostic ?: target.name),
+    )
 }
 
 private sealed interface SourceProbeResult {
@@ -308,6 +362,3 @@ private fun EngineFrameEvent.toFrameStripEvent(): FrameStripEvent = when (this) 
 }
 
 private fun tempCreateFailure(root: File) = VideoEditFailure(FailureCode.TEMP_CREATE_FAILED, true, root.absolutePath)
-private fun deleteFailure(target: File, diagnostic: String?) = TempDeleteResult.Failed(
-    VideoEditFailure(FailureCode.TEMP_DELETE_FAILED, true, diagnostic ?: target.name),
-)

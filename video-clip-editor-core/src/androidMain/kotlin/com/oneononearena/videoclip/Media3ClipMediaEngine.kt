@@ -201,6 +201,8 @@ internal class Media3ClipMediaEngine(
                     override fun onError(composition: Composition, result: ExportResult, exception: ExportException) {
                         clearActive()
                         val engineResult = when (exception.errorCode) {
+                            ExportException.ERROR_CODE_DECODER_INIT_FAILED,
+                            ExportException.ERROR_CODE_DECODING_FORMAT_UNSUPPORTED,
                             ExportException.ERROR_CODE_ENCODER_INIT_FAILED,
                             ExportException.ERROR_CODE_ENCODING_FORMAT_UNSUPPORTED,
                             -> EngineExportResult.Unsupported(UnsupportedCode.DEVICE_ENCODER_UNAVAILABLE, exception.message)

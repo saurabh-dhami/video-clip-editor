@@ -6,6 +6,7 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.yield
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -14,14 +15,12 @@ import java.io.File
 @RunWith(AndroidJUnit4::class)
 class AndroidTemporaryClipLeaseTest {
     @Test
-    fun safe_delete_fallback_never_removes_a_pathname_without_dirfd_unlink_support() {
+    fun clears_an_issued_regular_file_and_reports_idempotent_result() {
         val target = File.createTempFile("video-editor-lease", ".mp4")
         try {
-            assertEquals(
-                TempDeleteResult.Failed(VideoEditFailure(FailureCode.TEMP_DELETE_FAILED, true, target.name)),
-                AndroidLeaseDeletionPolicy.clear(target),
-            )
-            assertTrue(target.exists())
+            assertEquals(TempDeleteResult.Cleared, AndroidLeaseDeletionPolicy.clear(target))
+            assertFalse(target.exists())
+            assertEquals(TempDeleteResult.AlreadyCleared, AndroidLeaseDeletionPolicy.clear(target))
         } finally {
             target.delete()
         }

@@ -18,6 +18,8 @@ import androidx.media3.transformer.Transformer
 import java.io.ByteArrayOutputStream
 import java.io.File
 import java.io.IOException
+import java.nio.file.Files
+import java.nio.file.LinkOption.NOFOLLOW_LINKS
 import java.util.UUID
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
@@ -97,6 +99,9 @@ private class AndroidVideoClipEditor(
     }
 
     private suspend fun probeSource(file: File): SourceProbeResult = withContext(Dispatchers.IO) {
+        if (file.length() > MAXIMUM_INPUT_BYTES) {
+            return@withContext SourceProbeResult.Unsupported(UnsupportedCode.INPUT_TOO_LARGE, file.length().toString())
+        }
         val extractor = MediaExtractor()
         val retriever = MediaMetadataRetriever()
         try {
@@ -110,16 +115,29 @@ private class AndroidVideoClipEditor(
                 return@withContext SourceProbeResult.Unsupported(UnsupportedCode.UNSUPPORTED_CONTAINER, containerMime)
             }
             val formats = (0 until extractor.trackCount).map { extractor.getTrackFormat(it) }
-            val video = formats.firstOrNull { it.mime().startsWith("video/") }
-                ?: return@withContext SourceProbeResult.Unsupported(UnsupportedCode.UNSUPPORTED_CONTAINER, "No video track")
+            val videoTracks = formats.filter { it.mime().startsWith("video/") }
+            if (videoTracks.size != 1) {
+                return@withContext SourceProbeResult.Unsupported(UnsupportedCode.UNSUPPORTED_VIDEO_CODEC, "Expected exactly one video track")
+            }
+            val video = videoTracks.single()
             if (video.mime() != MimeTypes.VIDEO_H264) return@withContext SourceProbeResult.Unsupported(UnsupportedCode.UNSUPPORTED_VIDEO_CODEC, video.mime())
             if (video.isHdr()) return@withContext SourceProbeResult.Unsupported(UnsupportedCode.HDR_UNSUPPORTED, null)
-            val audio = formats.firstOrNull { it.mime().startsWith("audio/") }
+            val audioTracks = formats.filter { it.mime().startsWith("audio/") }
+            if (audioTracks.size > 1) {
+                return@withContext SourceProbeResult.Unsupported(UnsupportedCode.UNSUPPORTED_AUDIO_CODEC, "Expected at most one audio track")
+            }
+            if (formats.any { !it.mime().startsWith("video/") && !it.mime().startsWith("audio/") }) {
+                return@withContext SourceProbeResult.Unsupported(UnsupportedCode.UNSUPPORTED_CONTAINER, "Unsupported auxiliary track")
+            }
+            val audio = audioTracks.singleOrNull()
             if (audio != null && audio.mime() != MimeTypes.AUDIO_AAC) {
                 return@withContext SourceProbeResult.Unsupported(UnsupportedCode.UNSUPPORTED_AUDIO_CODEC, audio.mime())
             }
             val durationMs = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION)?.toLongOrNull()
                 ?: return@withContext SourceProbeResult.Failed(metadataFailure("Missing duration"))
+            if (durationMs > MAXIMUM_INPUT_DURATION_MS) {
+                return@withContext SourceProbeResult.Unsupported(UnsupportedCode.INPUT_TOO_LONG, durationMs.toString())
+            }
             val encodedWidth = video.getInteger(MediaFormat.KEY_WIDTH)
             val encodedHeight = video.getInteger(MediaFormat.KEY_HEIGHT)
             val rotation = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_VIDEO_ROTATION)?.toIntOrNull() ?: 0
@@ -132,6 +150,11 @@ private class AndroidVideoClipEditor(
             retriever.release()
             extractor.release()
         }
+    }
+
+    private companion object {
+        const val MAXIMUM_INPUT_BYTES: Long = 512L * 1024L * 1024L
+        const val MAXIMUM_INPUT_DURATION_MS: Long = 300_000L
     }
 }
 
@@ -152,7 +175,10 @@ private class AndroidClipEditorSession(
 
     override fun frames(request: FrameStripRequest): Flow<FrameStripEvent> = callbackFlow {
         val worker = launch {
-            if (!frameEmissionGate.register(coroutineContext[Job]!!)) return@launch
+            if (closed || !frameEmissionGate.register(coroutineContext[Job]!!)) {
+                send(FrameStripEvent.InvalidRequest(ValidationCode.SESSION_CLOSED, null))
+                return@launch
+            }
             CommonValidation.frameRequest(request, configuration)?.let {
                 send(FrameStripEvent.InvalidRequest(it, null))
                 return@launch
@@ -238,7 +264,12 @@ private class AndroidClipEditorSession(
     private suspend fun clearIssuedLease(target: File, opaqueId: String): TempDeleteResult = synchronized(lifecycleLock) {
         val record = issuedLeases[target.absolutePath]
         if (record?.opaqueId != opaqueId) return@synchronized TempDeleteResult.AlreadyCleared
-        AndroidLeaseDeletionPolicy.clear(target)
+        AndroidLeaseDeletionPolicy.clear(target).also { result ->
+            if (result is TempDeleteResult.Cleared || result is TempDeleteResult.AlreadyCleared) {
+                issuedLeases.remove(target.absolutePath)
+                if (sessionRoot.listFiles().isNullOrEmpty()) sessionRoot.delete()
+            }
+        }
     }
 
     private suspend fun extractFrames(count: Int): List<ThumbnailFrame> = withContext(Dispatchers.IO) {
@@ -377,21 +408,32 @@ internal class AndroidTemporaryClipLease(
     private var cleared = false
 
     override suspend fun clearTemporaryFile(): TempDeleteResult = clearMutex.withLock {
-        if (cleared) TempDeleteResult.AlreadyCleared else onCleared().also { if (it is TempDeleteResult.Cleared) cleared = true }
+        if (cleared) TempDeleteResult.AlreadyCleared else onCleared().also {
+            if (it is TempDeleteResult.Cleared || it is TempDeleteResult.AlreadyCleared) cleared = true
+        }
     }
 }
 
 private data class LeaseRecord(val opaqueId: String)
 
 /**
- * Android's public Os API has neither openat nor unlinkat. A descriptor can identify an issued
- * inode, but pathname removal after that check can still unlink a replacement inode. Keep the
- * issued output intact and return a typed retryable failure instead of risking that deletion.
+ * Deletes only the final file entry. `Files.deleteIfExists` does not traverse a terminal symbolic
+ * link; a link at the issued output path is rejected and its target is left untouched.
  */
 internal object AndroidLeaseDeletionPolicy {
-    fun clear(target: File): TempDeleteResult = TempDeleteResult.Failed(
-        VideoEditFailure(FailureCode.TEMP_DELETE_FAILED, true, target.name),
-    )
+    fun clear(target: File): TempDeleteResult = try {
+        val path = target.toPath()
+        when {
+            Files.notExists(path, NOFOLLOW_LINKS) -> TempDeleteResult.AlreadyCleared
+            Files.isSymbolicLink(path) -> deleteFailure(target, "Refusing symbolic link")
+            Files.deleteIfExists(path) -> TempDeleteResult.Cleared
+            else -> TempDeleteResult.AlreadyCleared
+        }
+    } catch (error: IOException) {
+        deleteFailure(target, error.message)
+    } catch (error: SecurityException) {
+        deleteFailure(target, error.message)
+    }
 }
 
 private class DeviceEncoderUnavailableException(cause: ExportException) : Exception(cause.message, cause)
@@ -424,3 +466,6 @@ private fun Bitmap.useAsThumbnail(requested: kotlin.time.Duration, actual: kotli
 
 private fun tempCreateFailure(root: File) = VideoEditFailure(FailureCode.TEMP_CREATE_FAILED, true, root.absolutePath)
 private fun metadataFailure(diagnostic: String?) = VideoEditFailure(FailureCode.METADATA_READ_FAILED, true, diagnostic)
+private fun deleteFailure(target: File, diagnostic: String?) = TempDeleteResult.Failed(
+    VideoEditFailure(FailureCode.TEMP_DELETE_FAILED, true, diagnostic ?: target.name),
+)

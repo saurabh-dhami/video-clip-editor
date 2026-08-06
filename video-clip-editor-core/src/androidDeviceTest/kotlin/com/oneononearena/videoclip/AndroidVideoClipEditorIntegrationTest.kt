@@ -3,9 +3,21 @@ package com.oneononearena.videoclip
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
+import com.oneononearena.videoclip.internal.engine.ClipMediaEngine
+import com.oneononearena.videoclip.internal.engine.EngineAudioCodec
+import com.oneononearena.videoclip.internal.engine.EngineExportRequest
+import com.oneononearena.videoclip.internal.engine.EngineExportResult
+import com.oneononearena.videoclip.internal.engine.EngineFrameEvent
+import com.oneononearena.videoclip.internal.engine.EngineFrameRequest
+import com.oneononearena.videoclip.internal.engine.EngineProbeResult
+import com.oneononearena.videoclip.internal.engine.EngineSource
+import com.oneononearena.videoclip.internal.engine.EngineStreamTopology
+import com.oneononearena.videoclip.internal.engine.EngineVideoCodec
 import java.io.File
 import java.io.RandomAccessFile
 import kotlin.time.Duration.Companion.milliseconds
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
@@ -69,6 +81,57 @@ class AndroidVideoClipEditorIntegrationTest {
             )
         } finally {
             source.delete()
+        }
+    }
+
+    @Test
+    fun injected_engine_routes_probe_frames_export_and_close_cancellation() = runTest {
+        val context = ApplicationProvider.getApplicationContext<android.content.Context>()
+        val source = File(context.cacheDir, "engine-injection-${System.nanoTime()}.mp4").apply { writeBytes(byteArrayOf(0)) }
+        val engine = RecordingClipMediaEngine()
+        try {
+            val session = openSession(createAndroidVideoClipEditor(context, VideoClipEditorConfiguration(), engine), source)
+
+            assertEquals(listOf(FrameStripEvent.Complete), session.frames(FrameStripRequest(1)).toList())
+            assertTrue(session.createClip(ClipRange(0.milliseconds, 1_000.milliseconds)) is ClipResult.Success)
+            session.close()
+
+            assertEquals(1, engine.probeCalls)
+            assertEquals(1, engine.framesCalls)
+            assertEquals(1, engine.exportCalls)
+            assertEquals(1, engine.cancelCalls)
+        } finally {
+            source.delete()
+        }
+    }
+
+    private class RecordingClipMediaEngine : ClipMediaEngine {
+        var probeCalls = 0
+        var framesCalls = 0
+        var exportCalls = 0
+        var cancelCalls = 0
+
+        override suspend fun probe(source: EngineSource): EngineProbeResult {
+            probeCalls += 1
+            return EngineProbeResult.Success(
+                metadata = VideoMetadata(10_000.milliseconds, 640, 480, true),
+                topology = EngineStreamTopology(EngineVideoCodec.AVC, EngineAudioCodec.AAC, false),
+            )
+        }
+
+        override fun frames(source: EngineSource, request: EngineFrameRequest): Flow<EngineFrameEvent> {
+            framesCalls += 1
+            return flowOf(EngineFrameEvent.Complete)
+        }
+
+        override suspend fun export(request: EngineExportRequest): EngineExportResult {
+            exportCalls += 1
+            File(request.outputPath).writeBytes(byteArrayOf(0))
+            return EngineExportResult.Success
+        }
+
+        override suspend fun cancelActiveExport() {
+            cancelCalls += 1
         }
     }
 

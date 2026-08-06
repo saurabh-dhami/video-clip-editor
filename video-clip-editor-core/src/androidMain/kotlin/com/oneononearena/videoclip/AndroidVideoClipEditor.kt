@@ -19,6 +19,10 @@ import androidx.media3.transformer.ExportException
 import androidx.media3.transformer.ExportResult
 import androidx.media3.transformer.Transformer
 import com.oneononearena.videoclip.internal.engine.ClipMediaEngine
+import com.oneononearena.videoclip.internal.engine.EngineExportRequest
+import com.oneononearena.videoclip.internal.engine.EngineExportResult
+import com.oneononearena.videoclip.internal.engine.EngineFrameEvent
+import com.oneononearena.videoclip.internal.engine.EngineFrameRequest
 import com.oneononearena.videoclip.internal.engine.EngineProbeResult
 import com.oneononearena.videoclip.internal.engine.EngineSource
 import java.io.ByteArrayOutputStream
@@ -32,6 +36,7 @@ import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.buffer
 import kotlinx.coroutines.flow.callbackFlow
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.joinAll
@@ -104,7 +109,17 @@ private class AndroidVideoClipEditor(
             is SourceProbeResult.Success -> {
                 val root = File(temporaryRoot, UUID.randomUUID().toString())
                 if (!root.mkdirs()) return OpenSessionResult.Failed(tempCreateFailure(root))
-                OpenSessionResult.Open(AndroidClipEditorSession(sourceFile, root, probe.metadata, configuration, context))
+                OpenSessionResult.Open(
+                    AndroidClipEditorSession(
+                        sourceFile,
+                        EngineSource(sourceFile.absolutePath),
+                        root,
+                        probe.metadata,
+                        configuration,
+                        context,
+                        engine,
+                    ),
+                )
             }
         }
     }
@@ -177,10 +192,12 @@ private fun EngineProbeResult.toSourceProbeResult(): SourceProbeResult = when (t
 
 private class AndroidClipEditorSession(
     private val source: File,
+    private val engineSource: EngineSource,
     private val sessionRoot: File,
     override val metadata: VideoMetadata,
     private val configuration: VideoClipEditorConfiguration,
     private val context: Context,
+    private val engine: ClipMediaEngine?,
 ) : ClipEditorSession {
     private val exportMutex = Mutex()
     private val frameEmissionGate = FrameEmissionGate()
@@ -198,6 +215,15 @@ private class AndroidClipEditorSession(
             }
             CommonValidation.frameRequest(request, configuration)?.let {
                 send(FrameStripEvent.InvalidRequest(it, null))
+                return@launch
+            }
+            engine?.let { injectedEngine ->
+                injectedEngine.frames(
+                    engineSource,
+                    EngineFrameRequest(request.frameCount, configuration.maximumThumbnailDimensionPx),
+                ).collect { event ->
+                    send(event.toFrameStripEvent())
+                }
                 return@launch
             }
             val frames = runCatching { extractFrames(request.frameCount) }.getOrElse {
@@ -243,6 +269,12 @@ private class AndroidClipEditorSession(
             } catch (unavailable: DeviceEncoderUnavailableException) {
                 partial.delete()
                 ClipResult.Unsupported(UnsupportedCode.DEVICE_ENCODER_UNAVAILABLE, unavailable.message)
+            } catch (unsupported: EngineUnsupportedException) {
+                partial.delete()
+                ClipResult.Unsupported(unsupported.code, unsupported.diagnostic)
+            } catch (failed: EngineFailedException) {
+                partial.delete()
+                ClipResult.Failed(failed.failure)
             } catch (cancelled: CancellationException) {
                 partial.delete()
                 ClipResult.Failed(VideoEditFailure(FailureCode.EXPORT_CANCELLED, true, cancelled.message))
@@ -256,6 +288,7 @@ private class AndroidClipEditorSession(
     }
 
     override suspend fun close() {
+        engine?.cancelActiveExport()
         val active = synchronized(lifecycleLock) {
             closed = true
             activeTransformer to activeCancellation
@@ -312,7 +345,15 @@ private class AndroidClipEditorSession(
         }
     }
 
-    private suspend fun export(range: ClipRange, partial: File): ExportResult = suspendCancellableCoroutine { continuation ->
+    private suspend fun export(range: ClipRange, partial: File): ExportResult? {
+        engine?.let { injectedEngine ->
+            return when (val result = injectedEngine.export(EngineExportRequest(engineSource, range, partial.absolutePath))) {
+                EngineExportResult.Success -> null
+                is EngineExportResult.Unsupported -> throw EngineUnsupportedException(result.code, result.diagnostic)
+                is EngineExportResult.Failed -> throw EngineFailedException(result.failure)
+            }
+        }
+        return suspendCancellableCoroutine { continuation ->
         AndroidMainLooperDispatcher.post {
             var cleanup: (() -> Unit)? = null
             try {
@@ -374,6 +415,7 @@ private class AndroidClipEditorSession(
                 partial.delete()
                 if (continuation.isActive) continuation.resumeWith(Result.failure(error))
             }
+        }
         }
     }
 }
@@ -464,11 +506,22 @@ internal object AndroidLeaseDeletionPolicy {
 }
 
 private class DeviceEncoderUnavailableException(cause: ExportException) : Exception(cause.message, cause)
+private class EngineUnsupportedException(val code: UnsupportedCode, val diagnostic: String?) : Exception(diagnostic)
+private class EngineFailedException(val failure: VideoEditFailure) : Exception(failure.diagnostic)
 
 private sealed interface SourceProbeResult {
     data class Success(val metadata: VideoMetadata) : SourceProbeResult
     data class Unsupported(val code: UnsupportedCode, val diagnostic: String?) : SourceProbeResult
     data class Failed(val failure: VideoEditFailure) : SourceProbeResult
+}
+
+private fun EngineFrameEvent.toFrameStripEvent(): FrameStripEvent = when (this) {
+    is EngineFrameEvent.Frame -> FrameStripEvent.Frame(value)
+    is EngineFrameEvent.Progress -> FrameStripEvent.Progress(emitted, total)
+    EngineFrameEvent.Complete -> FrameStripEvent.Complete
+    is EngineFrameEvent.InvalidRequest -> FrameStripEvent.InvalidRequest(code, diagnostic)
+    is EngineFrameEvent.Unsupported -> FrameStripEvent.Unsupported(code, diagnostic)
+    is EngineFrameEvent.Failed -> FrameStripEvent.Failed(failure)
 }
 
 private fun MediaFormat.mime(): String = getString(MediaFormat.KEY_MIME).orEmpty()

@@ -1,5 +1,7 @@
 package com.oneononearena.videoclip.compose
 
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
 import com.oneononearena.videoclip.ClipRange
 import com.oneononearena.videoclip.VideoMetadata
 import com.oneononearena.videoclip.VideoSourcePath
@@ -39,3 +41,12 @@ internal interface PreviewPort {
     val events: Flow<PreviewEvent>
     fun dispatch(command: PreviewCommand)
 }
+
+@Composable
+internal expect fun rememberPlatformPreviewPort(): PreviewPort
+
+@Composable
+internal expect fun PlatformPreviewSurface(
+    port: PreviewPort,
+    modifier: Modifier = Modifier,
+)

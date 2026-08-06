@@ -15,9 +15,16 @@ class AndroidSourcePolicyTest {
 
     @Test
     fun rejects_source_under_temporary_root_including_sibling_like_names() {
-        val root = File("/tmp/editor")
-        assertEquals(ValidationCode.SOURCE_INSIDE_TEMP_ROOT, AndroidSourcePolicy.validate("/tmp/editor/session/source.mp4", root))
-        assertEquals(null, AndroidSourcePolicy.validate("/tmp/editor-other/source.mp4", root))
+        val root = File.createTempFile("video-editor-root", "").apply { delete(); mkdir() }
+        val sibling = File(root.parentFile, "${root.name}-sibling.mp4")
+        try {
+            check(sibling.createNewFile())
+            assertEquals(ValidationCode.SOURCE_INSIDE_TEMP_ROOT, AndroidSourcePolicy.validate("${root.absolutePath}/session/source.mp4", root))
+            assertEquals(null, AndroidSourcePolicy.validate(sibling.absolutePath, root))
+        } finally {
+            sibling.delete()
+            root.delete()
+        }
     }
 
     @Test

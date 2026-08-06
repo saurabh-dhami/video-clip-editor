@@ -1,5 +1,10 @@
 package com.oneononearena.videoclip.compose
 
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.test.ExperimentalTestApi
+import androidx.compose.ui.test.v2.runComposeUiTest
 import com.oneononearena.videoclip.ClipEditorSession
 import com.oneononearena.videoclip.ClipRange
 import com.oneononearena.videoclip.ClipResult
@@ -16,6 +21,7 @@ import kotlin.coroutines.coroutineContext
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
+import kotlin.test.assertTrue
 import kotlin.time.Duration.Companion.milliseconds
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
@@ -25,6 +31,30 @@ import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.test.runTest
 
 class ClipEditorPresenterTest {
+    @OptIn(ExperimentalTestApi::class)
+    @Test
+    fun disposingClipEditorScreenClosesOpenedSession() = runComposeUiTest {
+        val session = FakeSession(flow { emit(FrameStripEvent.Complete) })
+        var visible by mutableStateOf(true)
+
+        setContent {
+            if (visible) {
+                ClipEditorScreen(
+                    source = VideoSourcePath("/video.mp4"),
+                    editor = FakeEditor(session),
+                    onResult = {},
+                    onCancel = {},
+                )
+            }
+        }
+        waitForIdle()
+
+        runOnIdle { visible = false }
+
+        waitUntil("ClipEditorScreen disposal must close its session") { session.closed.isCompleted }
+        assertTrue(session.closed.isCompleted)
+    }
+
     @Test
     fun `frames become ready only after complete`() = runTest {
         val presenter = ClipEditorPresenter(this, {})
@@ -231,12 +261,16 @@ private class FakeSession(private val events: Flow<FrameStripEvent>) : ClipEdito
     override val metadata = VideoMetadata(10_000.milliseconds, 100, 100, false)
     var createCalls = 0
     var closeCalls = 0
+    val closed = kotlinx.coroutines.CompletableDeferred<Unit>()
     override fun frames(request: FrameStripRequest): Flow<FrameStripEvent> = events
     override suspend fun createClip(range: ClipRange): ClipResult {
         createCalls++
         return ClipResult.Failed(VideoEditFailure(com.oneononearena.videoclip.FailureCode.EXPORT_FAILED, false, null))
     }
-    override suspend fun close() { closeCalls++ }
+    override suspend fun close() {
+        closeCalls++
+        closed.complete(Unit)
+    }
 }
 
 private class LowerFrameLimitSession(

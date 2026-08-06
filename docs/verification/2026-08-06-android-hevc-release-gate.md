@@ -77,7 +77,7 @@ The final physical run exercised decoder repair `8391171`. Its raw artifacts are
 
   The path was absolute and within the test app's library-owned cache root while leased. The full raw JUnit XML, instrumentation stream, and HEVC log are tracked evidence, not merely ephemeral build-output citations.
 
-This closes the required Samsung gate. It does not establish compatibility for every Android device; devices without a usable codec must still return the typed `DEVICE_ENCODER_UNAVAILABLE` result.
+This closes the required Samsung gate. It does not establish compatibility for every Android device: missing AVC/HEVC decoder capability returns `OpenSessionResult.Unsupported(UNSUPPORTED_VIDEO_CODEC, mime)` during open-session preflight; encoder initialization unavailability returns `DEVICE_ENCODER_UNAVAILABLE` during export; other export failures return typed `EXPORT_FAILED`.
 
 ## API-23 emulator gate — passed
 

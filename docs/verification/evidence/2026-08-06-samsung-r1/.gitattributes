@@ -1,3 +1,3 @@
-TEST-SM-S928B-16-video-clip-editor-core.xml -text
-samsung-instrumentation-test-results.log -text
-hevc-round-trip.log -text
+TEST-SM-S928B-16-video-clip-editor-core.xml -text whitespace=-trailing-space,-blank-at-eof
+samsung-instrumentation-test-results.log -text whitespace=-trailing-space,-blank-at-eof
+hevc-round-trip.log -text whitespace=-trailing-space,-blank-at-eof

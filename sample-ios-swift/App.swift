@@ -6,7 +6,8 @@ struct SampleIosSwiftApp: App {
     init() {
         let facade = IosClipEditorFactory.shared.create()
         facade.openSession(sourcePath: "/tmp/input.mp4") { result in
-            precondition(result.code == .iosEngineUnavailable)
+            let expected = IosOpenSessionCode.iosEngineUnavailable
+            precondition(result.code == expected)
         }
     }
 

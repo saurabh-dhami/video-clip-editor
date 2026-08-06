@@ -33,6 +33,29 @@ import org.junit.runner.RunWith
 @RunWith(AndroidJUnit4::class)
 class AndroidVideoClipEditorIntegrationTest {
     @Test
+    fun factoryFlowKeepsHostCopyAfterClearingLibraryLease() = runTest {
+        val context = ApplicationProvider.getApplicationContext<android.content.Context>()
+        val source = copyFixture(context)
+        val hostCopy = File(context.filesDir, "host-copy-${System.nanoTime()}.mp4")
+        try {
+            val session = openSession(createAndroidVideoClipEditor(context), source)
+            val result = session.createClip(ClipRange(2_000.milliseconds, 7_000.milliseconds))
+            assertTrue("Expected successful clip, got $result", result is ClipResult.Success)
+            val success = result as ClipResult.Success
+
+            File(success.output.file.absolutePath).copyTo(hostCopy)
+            assertEquals(TempDeleteResult.Cleared, success.output.clearTemporaryFile())
+
+            assertTrue(hostCopy.isFile)
+            assertFalse(File(success.output.file.absolutePath).exists())
+            session.close()
+        } finally {
+            hostCopy.delete()
+            source.delete()
+        }
+    }
+
+    @Test
     fun factory_export_issues_then_clears_temporary_lease() = runTest {
         val context = ApplicationProvider.getApplicationContext<android.content.Context>()
         val source = copyFixture(context)

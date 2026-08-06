@@ -13,4 +13,14 @@ class IosVideoClipEditorTest {
         assertIs<OpenSessionResult.Unsupported>(result)
         assertEquals(UnsupportedCode.IOS_ENGINE_UNAVAILABLE, result.code)
     }
+
+    @Test
+    fun legacyFacadeReturnsItsFrozenTypedUnavailableResult() {
+        var result: IosOpenSessionResult? = null
+
+        IosClipEditorFactory.create().openSession("/private/video.mp4") { result = it }
+
+        val unavailable = assertIs<IosOpenSessionResult.IosEngineUnavailable>(result)
+        assertEquals(IosOpenSessionCode.IOS_ENGINE_UNAVAILABLE, unavailable.code)
+    }
 }

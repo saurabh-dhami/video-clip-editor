@@ -1,0 +1,51 @@
+<?xml version='1.0' encoding='UTF-8' ?>
+<testsuites tests="20" failures="0" errors="0" skipped="0" time="3.437" timestamp="2026-08-06T11:58:53" hostname="localhost">
+  <testsuite name="com.oneononearena.videoclip.Media3DecoderCapabilityPreflightTest" tests="3" failures="0" errors="0" skipped="0" time="0.105" timestamp="2026-08-06T11:58:53" hostname="localhost">
+    <properties>
+      <property name="device" value="SM-S928B - 16" />
+      <property name="flavor" value="" />
+      <property name="project" value=":video-clip-editor-core" />
+    </properties>
+    <testcase name="unavailableHevcDecoder_returnsUnsupportedBeforeSessionOrExportStarts" classname="com.oneononearena.videoclip.Media3DecoderCapabilityPreflightTest" time="0.072" />
+    <testcase name="unavailableAvcDecoder_returnsUnsupportedBeforeSessionOrExportStarts" classname="com.oneononearena.videoclip.Media3DecoderCapabilityPreflightTest" time="0.001" />
+    <testcase name="availableAvcDecoder_keepsExistingOpenSessionPath" classname="com.oneononearena.videoclip.Media3DecoderCapabilityPreflightTest" time="0.032" />
+  </testsuite>
+  <testsuite name="com.oneononearena.videoclip.HevcClipRoundTripTest" tests="1" failures="0" errors="0" skipped="0" time="1.073" timestamp="2026-08-06T11:58:53" hostname="localhost">
+    <properties>
+      <property name="device" value="SM-S928B - 16" />
+      <property name="flavor" value="" />
+      <property name="project" value=":video-clip-editor-core" />
+    </properties>
+    <testcase name="productionFactoryClipsSdrHevcToOwnedH264AacMp4WithoutMutatingSource" classname="com.oneononearena.videoclip.HevcClipRoundTripTest" time="1.073" />
+  </testsuite>
+  <testsuite name="com.oneononearena.videoclip.AndroidVideoClipEditorIntegrationTest" tests="6" failures="0" errors="0" skipped="0" time="1.449" timestamp="2026-08-06T11:58:53" hostname="localhost">
+    <properties>
+      <property name="device" value="SM-S928B - 16" />
+      <property name="flavor" value="" />
+      <property name="project" value=":video-clip-editor-core" />
+    </properties>
+    <testcase name="factoryFlowKeepsHostCopyAfterClearingLibraryLease" classname="com.oneononearena.videoclip.AndroidVideoClipEditorIntegrationTest" time="0.727" />
+    <testcase name="factory_export_issues_then_clears_temporary_lease" classname="com.oneononearena.videoclip.AndroidVideoClipEditorIntegrationTest" time="0.687" />
+    <testcase name="injected_engine_routes_probe_frames_export_and_close_cancellation" classname="com.oneononearena.videoclip.AndroidVideoClipEditorIntegrationTest" time="0.002" />
+    <testcase name="cancelled_session_export_discards_partial_and_never_publishes_final_file" classname="com.oneononearena.videoclip.AndroidVideoClipEditorIntegrationTest" time="0.031" />
+    <testcase name="frames_called_after_close_emits_session_closed_terminal_event" classname="com.oneononearena.videoclip.AndroidVideoClipEditorIntegrationTest" time="0.001" />
+    <testcase name="factory_rejects_sparse_input_larger_than_512_mib_before_media_probe" classname="com.oneononearena.videoclip.AndroidVideoClipEditorIntegrationTest" time="0.001" />
+  </testsuite>
+  <testsuite name="com.oneononearena.videoclip.AndroidTemporaryClipLeaseTest" tests="10" failures="0" errors="0" skipped="0" time="0.063" timestamp="2026-08-06T11:58:53" hostname="localhost">
+    <properties>
+      <property name="device" value="SM-S928B - 16" />
+      <property name="flavor" value="" />
+      <property name="project" value=":video-clip-editor-core" />
+    </properties>
+    <testcase name="unissued_source_host_copy_foreign_file_and_directory_are_refused_without_deletion" classname="com.oneononearena.videoclip.AndroidTemporaryClipLeaseTest" time="0.031" />
+    <testcase name="issued_store_lease_refuses_same_path_regular_file_replacement_without_deleting_replacement" classname="com.oneononearena.videoclip.AndroidTemporaryClipLeaseTest" time="0.0" />
+    <testcase name="post_rename_identity_capture_failure_removes_only_the_new_library_output" classname="com.oneononearena.videoclip.AndroidTemporaryClipLeaseTest" time="0.001" />
+    <testcase name="issued_store_lease_clears_only_its_owned_output_and_is_idempotent" classname="com.oneononearena.videoclip.AndroidTemporaryClipLeaseTest" time="0.0" />
+    <testcase name="post_rename_identity_capture_never_removes_a_replacement_file" classname="com.oneononearena.videoclip.AndroidTemporaryClipLeaseTest" time="0.0" />
+    <testcase name="issued_store_lease_remains_clearable_after_the_session_closes" classname="com.oneononearena.videoclip.AndroidTemporaryClipLeaseTest" time="0.0" />
+    <testcase name="issued_store_lease_refuses_same_path_directory_without_deleting_directory" classname="com.oneononearena.videoclip.AndroidTemporaryClipLeaseTest" time="0.001" />
+    <testcase name="issued_store_lease_refuses_terminal_symbolic_link_without_deleting_foreign_target" classname="com.oneononearena.videoclip.AndroidTemporaryClipLeaseTest" time="0.001" />
+    <testcase name="canonicalization_failure_at_session_creation_maps_to_typed_open_failure" classname="com.oneononearena.videoclip.AndroidTemporaryClipLeaseTest" time="0.001" />
+    <testcase name="failed_clear_does_not_make_concurrent_clear_report_already_cleared" classname="com.oneononearena.videoclip.AndroidTemporaryClipLeaseTest" time="0.028" />
+  </testsuite>
+</testsuites>

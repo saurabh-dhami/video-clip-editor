@@ -13,6 +13,8 @@
 | Demo launch | `adb -s emulator-5556 shell am start -W -n com.oneononearena.videoclip.demo/.DemoActivity` | `Status: ok`; process `23215`; top resumed activity was `DemoActivity`. | 0.6 s (cold launch 629 ms) |
 | Samsung focused instrumentation | `ANDROID_HOME=/Users/sandeepdhami/Library/Android/sdk ./gradlew :video-clip-editor-core:connectedAndroidDeviceTest` | `BUILD SUCCESSFUL`; `SM-S928B - 16` test log records `OK (17 tests)`. | 2.424 s test runtime |
 | API-23 device instrumentation | `env ANDROID_HOME=/Users/sandeepdhami/Library/Android/sdk ANDROID_SERIAL=emulator-5554 ./gradlew :video-clip-editor-core:connectedAndroidDeviceTest --rerun-tasks` | `Starting 43 tests on ClipEditor_API23(AVD) - 6.0`; `Finished 43 tests`; `BUILD SUCCESSFUL in 14s`. XML: 43 tests, 0 failures, 0 errors, 0 skipped. | 14 s Gradle wall; 6.692 s XML aggregate; 5.902 s instrumentation log |
+| Final Samsung decoder/HEVC/lease proof | `env ANDROID_HOME=/Users/sandeepdhami/Library/Android/sdk ANDROID_SERIAL=RZCX519T5FL ./gradlew :video-clip-editor-core:connectedAndroidDeviceTest -Pandroid.testInstrumentationRunnerArguments.class=com.oneononearena.videoclip.Media3DecoderCapabilityPreflightTest,com.oneononearena.videoclip.HevcClipRoundTripTest,com.oneononearena.videoclip.AndroidVideoClipEditorIntegrationTest,com.oneononearena.videoclip.AndroidTemporaryClipLeaseTest --rerun-tasks` | 20 tests on `SM-S928B - 16`; `BUILD SUCCESSFUL in 10s`; raw JUnit XML: 0 failures/errors/skips. | 10 s Gradle wall; 3.437 s XML; 2.715 s instrumentation |
+| Post-repair API-23 full suite | Current full `ClipEditor_API23` suite after decoder repair `8391171`. | 46/46 passed. | Current post-repair result |
 
 The first Android command without `ANDROID_HOME` failed before compilation because the worktree has no `local.properties` and the SDK variables were unset. The SDK directory existed. Supplying the verified SDK path only to the process resolved that environment defect; no repository file changed.
 
@@ -62,17 +64,18 @@ RZCX519T5FL            device usb:2-1.2 product:e3qxins model:SM_S928B device:e3
 SM-S928B
 ```
 
-Physical result artifact: `video-clip-editor-core/build/outputs/androidTest-results/connected/androidMain/SM-S928B - 16/testlog/test-results.log`.
+The final physical run exercised decoder repair `8391171`. Its raw artifacts are retained under `docs/verification/evidence/2026-08-06-samsung-r1/`, with original artifact paths and SHA-256 hashes in that directory's `README.md`.
 
-- The physical suite reports `OK (17 tests)` in `2.424` seconds, including the HEVC production-factory round trip, the AVC host-flow fixture, and temporary-lease cleanup cases.
-- `AndroidVideoClipEditorIntegrationTest.factoryFlowKeepsHostCopyAfterClearingLibraryLease` passed with the AVC/AAC fixture `avc-aac-10s-30fps.mp4`.
-- `HevcClipRoundTripTest.productionFactoryClipsSdrHevcToOwnedH264AacMp4WithoutMutatingSource` passed. Its durable physical log line is:
+- The final focused suite reports `OK (20 tests)` in `2.715` seconds; JUnit XML aggregate time is 3.437 seconds, with 0 failures, 0 errors, and 0 skipped. The Gradle command completed in 10 seconds.
+- `Media3DecoderCapabilityPreflightTest` passed all three cases: unavailable HEVC and AVC decoders return typed unsupported before session/export starts, while an available AVC decoder retains the normal session-open path.
+- `AndroidVideoClipEditorIntegrationTest.factoryFlowKeepsHostCopyAfterClearingLibraryLease` passed with the AVC/AAC fixture `avc-aac-10s-30fps.mp4`; all six integration tests and all ten temporary-lease tests passed.
+- `HevcClipRoundTripTest.productionFactoryClipsSdrHevcToOwnedH264AacMp4WithoutMutatingSource` passed. Its final durable physical log line is:
 
   ```text
-  HEVC_OUTPUT path=/data/user/0/com.oneononearena.videoclip.test/cache/video-clip-editor/1317a7e3-0808-4534-a6e2-f7cbfb46f2e7/208afc2c-c5dc-4a68-be57-522757726d1e.mp4 videoMime=video/avc audioMime=audio/mp4a-latm cleanup=Cleared existsAfterCleanup=false
+  HEVC_OUTPUT path=/data/user/0/com.oneononearena.videoclip.test/cache/video-clip-editor/acac8789-008d-4d0b-ba4e-ee4b668974f7/9803d95d-77bd-4083-bb15-fbdc105f3993.mp4 videoMime=video/avc audioMime=audio/mp4a-latm cleanup=Cleared existsAfterCleanup=false
   ```
 
-  The path was absolute and within the test app's library-owned cache root while leased. The test then verified the cleared file did not remain. The log resides at `video-clip-editor-core/build/outputs/androidTest-results/connected/androidMain/SM-S928B - 16/logcat-com.oneononearena.videoclip.HevcClipRoundTripTest-productionFactoryClipsSdrHevcToOwnedH264AacMp4WithoutMutatingSource.txt`.
+  The path was absolute and within the test app's library-owned cache root while leased. The full raw JUnit XML, instrumentation stream, and HEVC log are tracked evidence, not merely ephemeral build-output citations.
 
 This closes the required Samsung gate. It does not establish compatibility for every Android device; devices without a usable codec must still return the typed `DEVICE_ENCODER_UNAVAILABLE` result.
 
@@ -96,13 +99,15 @@ Fresh result XML: `video-clip-editor-core/build/outputs/androidTest-results/conn
 
 This replaces the earlier host-capacity hold. No emulator, repository, or host files were deleted to obtain this result.
 
+After decoder repair `8391171`, the current full API23 suite passed 46/46. This supersedes the earlier 43-test pre-repair API23 result.
+
 ## Frozen API and scope
 
 - Reproducible scoped API proof: `git diff --quiet 92f78412796113f2abe27f55be0125e9373c9f1c HEAD -- video-clip-editor-core/src/commonMain/kotlin/com/oneononearena/videoclip/VideoClipEditorContract.kt video-clip-editor-core/src/iosMain/kotlin/com/oneononearena/videoclip/IosClipEditorFactory.kt video-clip-editor-compose/src/commonMain/kotlin/com/oneononearena/videoclip/compose/ClipEditorScreen.kt` exited `0` (no diff).
 - Android public factory proof: the baseline and current signature are identical: `public fun createAndroidVideoClipEditor(context: Context, configuration: VideoClipEditorConfiguration = VideoClipEditorConfiguration()): VideoClipEditor`. Internal overloads are implementation detail and intentionally excluded from the frozen public surface.
 - `git diff --check 92f78412796113f2abe27f55be0125e9373c9f1c HEAD` passed.
 - The standalone diff contains no OneOnOneArena path.
-- The only pre-existing untracked worktree artifacts are documentation under `docs/superpowers/specs/` and JVM `java_pid*.hprof` files. The HPROF files are not part of this gate and must not be committed or deleted by it.
+- The only unrelated untracked worktree artifact is `docs/superpowers/specs/2026-08-06-kmp-video-clip-editor-hevc-v1-design.md`; it is outside this evidence commit. The tracked raw Samsung evidence is intentionally under `docs/verification/evidence/2026-08-06-samsung-r1/`.
 
 ## Release decision
 

@@ -1,0 +1,1548 @@
+08-06 17:28:50.277 30318 30335 I TestRunner: started: productionFactoryClipsSdrHevcToOwnedH264AacMp4WithoutMutatingSource(com.oneononearena.videoclip.HevcClipRoundTripTest)
+08-06 17:28:50.280  2710  3798 D NetdEventListenerService: DNS Requested by 202, 10260(com.android.vending), SUCCESS, 37ms
+08-06 17:28:50.292 30318 30345 V NuMediaExtractor: NuMediaExtractor constructor
+08-06 17:28:50.292 30318 30345 V MediaMetadataRetriever: constructor
+08-06 17:28:50.292  2159 24118 V MetadataRetrieverClient: MetadataRetrieverClient constructor pid(30318)
+08-06 17:28:50.292  2159 24118 V MediaPlayerService: Create new media retriever from pid 30318
+08-06 17:28:50.297  2148 26415 I MediaExtractorFactory: Created an extractor 'SECMPEG4Extractor' with confidence 0.41
+08-06 17:28:50.299 30318 30345 V MediaMetadataRetriever: setDataSource(106, 0, 576460752303423487)
+08-06 17:28:50.299  2159 24118 V MetadataRetrieverClient: setDataSource fd=18, offset=0, length=576460752303423487
+08-06 17:28:50.299  2159 24118 V MetadataRetrieverClient: st_dev  = 65089
+08-06 17:28:50.299  2159 24118 V MetadataRetrieverClient: st_mode = 33152
+08-06 17:28:50.299  2159 24118 V MetadataRetrieverClient: st_uid  = 10503
+08-06 17:28:50.299  2159 24118 V MetadataRetrieverClient: st_gid  = 20503
+08-06 17:28:50.299  2159 24118 V MetadataRetrieverClient: st_size = 984513
+08-06 17:28:50.299  2159 24118 V MetadataRetrieverClient: calculated length = 984513
+08-06 17:28:50.299  2159 24118 V MetadataRetrieverClient: player type = 4
+08-06 17:28:50.300  2159 24118 D StagefrightMetadataRetriever: FileSource remote
+08-06 17:28:50.301  2148 26415 I MediaExtractorFactory: Created an extractor 'SECMPEG4Extractor' with confidence 0.41
+08-06 17:28:50.301  2159 24118 V MetadataRetrieverClient: setDataSource(fd) return(0)
+08-06 17:28:50.301 30318 30345 V MediaMetadataRetriever: setDataSource(fd) return(0)
+08-06 17:28:50.302 30318 30345 V MediaMetadataRetriever: extractMetadata(12)
+08-06 17:28:50.302  2159 24118 V MetadataRetrieverClient: extractMetadata
+08-06 17:28:50.303  2159 24118 I libsfextcp: IsSupportHEVCProfileMain10()
+08-06 17:28:50.303  2159 24118 I libsfextcp:  : support
+08-06 17:28:50.303  2159 24118 I libsfextcp: GetMaxResolution(120)
+08-06 17:28:50.303  2159 24118 I libsfextcp: name(c2.qti.hevc.decoder) width(8192) height(4320) isSoftware(0)
+08-06 17:28:50.305 30318 30345 W AudioCapabilities: Unsupported mediaType audio/x-ape
+08-06 17:28:50.305 30318 30345 W AudioCapabilities: Unsupported mediaType audio/x-ima
+08-06 17:28:50.305 30318 30345 W AudioCapabilities: Unsupported mediaType audio/mpeg-L1
+08-06 17:28:50.305 30318 30345 W AudioCapabilities: Unsupported mediaType audio/mpeg-L2
+08-06 17:28:50.306 30318 30345 W VideoCapabilities: Unsupported mime video/wvc1
+08-06 17:28:50.306 30318 30345 W VideoCapabilities: Unsupported mime video/x-ms-wmv
+08-06 17:28:50.314 30318 30345 W VideoCapabilities: Unsupported mime image/vnd.android.heic
+08-06 17:28:50.314 30318 30345 W VideoCapabilities: Unrecognized profile/level 32768/256 for video/mp4v-es
+08-06 17:28:50.319 30318 30345 W AudioCapabilities: Unsupported mediaType audio/x-ape
+08-06 17:28:50.319 30318 30345 W AudioCapabilities: Unsupported mediaType audio/x-ima
+08-06 17:28:50.319 30318 30345 W AudioCapabilities: Unsupported mediaType audio/mpeg-L1
+08-06 17:28:50.319 30318 30345 W AudioCapabilities: Unsupported mediaType audio/mpeg-L2
+08-06 17:28:50.320 30318 30345 W VideoCapabilities: Unsupported mime video/wvc1
+08-06 17:28:50.320 30318 30345 W VideoCapabilities: Unsupported mime video/x-ms-wmv
+08-06 17:28:50.328 30318 30345 W VideoCapabilities: Unsupported mime image/vnd.android.heic
+08-06 17:28:50.328 30318 30345 W VideoCapabilities: Unrecognized profile/level 32768/256 for video/mp4v-es
+08-06 17:28:50.334 30318 30345 W AudioCapabilities: Unsupported mime audio/x-ape
+08-06 17:28:50.334 30318 30345 W AudioCapabilities: Unsupported mime audio/x-ima
+08-06 17:28:50.335 30318 30345 W AudioCapabilities: Unsupported mime audio/mpeg-L1
+08-06 17:28:50.335 30318 30345 W AudioCapabilities: Unsupported mime audio/mpeg-L2
+08-06 17:28:50.335 30318 30345 W VideoCapabilities: Unsupported mime video/wvc1
+08-06 17:28:50.336 30318 30345 W VideoCapabilities: Unsupported mime video/x-ms-wmv
+08-06 17:28:50.355 30318 30345 W VideoCapabilities: Unsupported mime image/vnd.android.heic
+08-06 17:28:50.356 30318 30345 W VideoCapabilities: Unrecognized profile/level 32768/256 for video/mp4v-es
+08-06 17:28:50.364 30318 30345 W VideoCapabilities: Unsupported mime video/wvc1
+08-06 17:28:50.374 30318 30345 W VideoCapabilities: Unsupported mime image/vnd.android.heic
+08-06 17:28:50.376 30318 30345 V MediaMetadataRetriever: extractMetadata(9)
+08-06 17:28:50.376  2159 24118 V MetadataRetrieverClient: extractMetadata
+08-06 17:28:50.377 30318 30345 V MediaMetadataRetriever: extractMetadata(24)
+08-06 17:28:50.377  2159 24118 V MetadataRetrieverClient: extractMetadata
+08-06 17:28:50.377 30318 30345 V MediaMetadataRetriever: destructor
+08-06 17:28:50.377 30318 30345 V MediaMetadataRetriever: disconnect
+08-06 17:28:50.377  2159 24118 V MetadataRetrieverClient: disconnect from pid 30318
+08-06 17:28:50.377 30318 30345 V NuMediaExtractor: NuMediaExtractor destructor
+08-06 17:28:50.377  2159 24118 V MetadataRetrieverClient: MetadataRetrieverClient destructor
+08-06 17:28:50.377  2159 24118 V MetadataRetrieverClient: disconnect from pid 30318
+08-06 17:28:50.382 30318 30345 V MediaMetadataRetriever: constructor
+08-06 17:28:50.382  2159 24118 V MetadataRetrieverClient: MetadataRetrieverClient constructor pid(30318)
+08-06 17:28:50.382  2159 24118 V MediaPlayerService: Create new media retriever from pid 30318
+08-06 17:28:50.382 30318 30345 V NuMediaExtractor: NuMediaExtractor constructor
+08-06 17:28:50.383 30318 30345 V MediaMetadataRetriever: setDataSource(104, 0, 576460752303423487)
+08-06 17:28:50.383  2159 24118 V MetadataRetrieverClient: setDataSource fd=18, offset=0, length=576460752303423487
+08-06 17:28:50.383  2159 24118 V MetadataRetrieverClient: st_dev  = 65089
+08-06 17:28:50.383  2159 24118 V MetadataRetrieverClient: st_mode = 33152
+08-06 17:28:50.383  2159 24118 V MetadataRetrieverClient: st_uid  = 10503
+08-06 17:28:50.383  2159 24118 V MetadataRetrieverClient: st_gid  = 20503
+08-06 17:28:50.383  2159 24118 V MetadataRetrieverClient: st_size = 984513
+08-06 17:28:50.383  2159 24118 V MetadataRetrieverClient: calculated length = 984513
+08-06 17:28:50.383  2159 24118 V MetadataRetrieverClient: player type = 4
+08-06 17:28:50.384  2159 24118 D StagefrightMetadataRetriever: FileSource remote
+08-06 17:28:50.385  2148 26415 I MediaExtractorFactory: Created an extractor 'SECMPEG4Extractor' with confidence 0.41
+08-06 17:28:50.385  2159 24118 V MetadataRetrieverClient: setDataSource(fd) return(0)
+08-06 17:28:50.385 30318 30345 V MediaMetadataRetriever: setDataSource(fd) return(0)
+08-06 17:28:50.389  2148 26415 I MediaExtractorFactory: Created an extractor 'SECMPEG4Extractor' with confidence 0.41
+08-06 17:28:50.390 30318 30345 V MediaMetadataRetriever: extractMetadata(9)
+08-06 17:28:50.390  2159 24118 V MetadataRetrieverClient: extractMetadata
+08-06 17:28:50.391  2159 24118 I libsfextcp: IsSupportHEVCProfileMain10()
+08-06 17:28:50.391  2159 24118 I libsfextcp:  : support
+08-06 17:28:50.391  2159 24118 I libsfextcp: GetMaxResolution(120)
+08-06 17:28:50.391  2159 24118 I libsfextcp: name(c2.qti.hevc.decoder) width(8192) height(4320) isSoftware(0)
+08-06 17:28:50.392  2148 26415 D MediaBufferGroup: creating MemoryDealer
+08-06 17:28:50.392 30318 30345 V NuMediaExtractor: selectTrack, track[0]: video/hevc
+08-06 17:28:50.403 30318 30345 V MediaMetadataRetriever: getFrameAtTime: time(0 us) option(2) colorFormat(1) metaOnly(0)
+08-06 17:28:50.403  2159 24118 V MetadataRetrieverClient: extractMetadata
+08-06 17:28:50.404  2159 24118 V MetadataRetrieverClient: getFrameAtTime: time(0 us) option(2) colorFormat(1), metaOnly(0)
+08-06 17:28:50.405  2159 24118 I libsfextcp: IsSupportHEVCProfileMain10()
+08-06 17:28:50.405  2159 24118 I libsfextcp:  : support
+08-06 17:28:50.405  2159 24118 I libsfextcp: GetMaxResolution(120)
+08-06 17:28:50.405  2159 24118 I libsfextcp: name(c2.qti.hevc.decoder) width(8192) height(4320) isSoftware(0)
+08-06 17:28:50.406  2148 26415 D MediaBufferGroup: creating MemoryDealer
+08-06 17:28:50.410  2148 26415 I STHMBCD : create for 120
+08-06 17:28:50.410  2148 26415 I STHMBCD : decode (480x360:500)
+08-06 17:28:50.411  2148 26415 I sthmbc_h265: codec selection(0:0:0)
+08-06 17:28:50.411  2148 26415 I sthmbc_h265: selected codec index(0)
+08-06 17:28:50.442  2148 26415 D libhevcd_ppi_thumb: error in libhevcd_get_vui: 0x3df
+08-06 17:28:50.442  2148 26415 I sthmbc_util: update additional info. in VUI.(6:5)
+08-06 17:28:50.455  2148 26415 I STHMBCD : delete for 120
+08-06 17:28:50.456  2159 24118 I SecFrameDecoder: success to get video frame. timeUs = 0
+08-06 17:28:50.463 30318 30345 V MediaMetadataRetriever: getFrameAtTime: time(4266666 us) option(2) colorFormat(1) metaOnly(0)
+08-06 17:28:50.463  2159 24118 V MetadataRetrieverClient: extractMetadata
+08-06 17:28:50.463  2159 24118 V MetadataRetrieverClient: getFrameAtTime: time(4266666 us) option(2) colorFormat(1), metaOnly(0)
+08-06 17:28:50.464  2159 24118 I libsfextcp: IsSupportHEVCProfileMain10()
+08-06 17:28:50.464  2159 24118 I libsfextcp:  : support
+08-06 17:28:50.464  2159 24118 I libsfextcp: GetMaxResolution(120)
+08-06 17:28:50.464  2159 24118 I libsfextcp: name(c2.qti.hevc.decoder) width(8192) height(4320) isSoftware(0)
+08-06 17:28:50.464  2148  3881 D MediaBufferGroup: creating MemoryDealer
+08-06 17:28:50.465  2148  3881 I STHMBCD : create for 120
+08-06 17:28:50.465  2148  3881 I STHMBCD : decode (480x360:500)
+08-06 17:28:50.466  2148  3881 I sthmbc_h265: codec selection(0:0:0)
+08-06 17:28:50.466  2148  3881 I sthmbc_h265: selected codec index(0)
+08-06 17:28:50.474  2148  3881 D libhevcd_ppi_thumb: error in libhevcd_get_vui: 0x3df
+08-06 17:28:50.474  2148  3881 I sthmbc_util: update additional info. in VUI.(6:5)
+08-06 17:28:50.475  2148  3881 I STHMBCD : delete for 120
+08-06 17:28:50.475  2159 24118 I SecFrameDecoder: success to get video frame. timeUs = 4266666
+08-06 17:28:50.479 30318 30345 V MediaMetadataRetriever: getFrameAtTime: time(6400000 us) option(2) colorFormat(1) metaOnly(0)
+08-06 17:28:50.479  2159 24118 V MetadataRetrieverClient: extractMetadata
+08-06 17:28:50.479  2159 24118 V MetadataRetrieverClient: getFrameAtTime: time(6400000 us) option(2) colorFormat(1), metaOnly(0)
+08-06 17:28:50.480  2159 24118 I libsfextcp: IsSupportHEVCProfileMain10()
+08-06 17:28:50.480  2159 24118 I libsfextcp:  : support
+08-06 17:28:50.480  2159 24118 I libsfextcp: GetMaxResolution(120)
+08-06 17:28:50.480  2159 24118 I libsfextcp: name(c2.qti.hevc.decoder) width(8192) height(4320) isSoftware(0)
+08-06 17:28:50.480  2148 26415 D MediaBufferGroup: creating MemoryDealer
+08-06 17:28:50.481  2148  2148 I STHMBCD : create for 120
+08-06 17:28:50.481  2148  2148 I STHMBCD : decode (480x360:500)
+08-06 17:28:50.481  2148  2148 I sthmbc_h265: codec selection(0:0:0)
+08-06 17:28:50.481  2148  2148 I sthmbc_h265: selected codec index(0)
+08-06 17:28:50.488  2148  2148 D libhevcd_ppi_thumb: error in libhevcd_get_vui: 0x3df
+08-06 17:28:50.488  2148  2148 I sthmbc_util: update additional info. in VUI.(6:5)
+08-06 17:28:50.489  2148  2148 I STHMBCD : delete for 120
+08-06 17:28:50.489  2159 24118 I SecFrameDecoder: success to get video frame. timeUs = 6400000
+08-06 17:28:50.493 30318 30345 V NuMediaExtractor: NuMediaExtractor destructor
+08-06 17:28:50.494 30318 30345 V MediaMetadataRetriever: destructor
+08-06 17:28:50.494 30318 30345 V MediaMetadataRetriever: disconnect
+08-06 17:28:50.495  2159 24118 V MetadataRetrieverClient: disconnect from pid 30318
+08-06 17:28:50.495  2159 24118 V MetadataRetrieverClient: MetadataRetrieverClient destructor
+08-06 17:28:50.495  2159 24118 V MetadataRetrieverClient: disconnect from pid 30318
+08-06 17:28:50.533 30318 30318 I TransformerInternal: Init d49094 [AndroidXMedia3/1.10.1] [e3q, SM-S928B, samsung, 36]
+08-06 17:28:50.549 30318 30318 I ExoPlayerImpl: Init fbf1083 [AndroidXMedia3/1.10.1] [e3q, SM-S928B, samsung, 36]
+08-06 17:28:50.566 30318 30358 D AudioSystem: onNewServiceWithAdapter: media.audio_flinger service obtained 0xb4000071a2e873b0
+08-06 17:28:50.567 30318 30358 D AudioSystem: getService: IAudioFlingerService retrieved: 0xb400007112e51af0  IAudioFlinger cached: 0xb4000071a2e873b0
+08-06 17:28:50.621 30318 30358 E ashmem  : Pinning is deprecated since Android Q. Please use trim or other methods.
+08-06 17:28:50.660 30318 30360 I AdrenoGLES-0: QUALCOMM build                   : f6b5df5188, I29aebc4401
+08-06 17:28:50.660 30318 30360 I AdrenoGLES-0: Build Date                       : 09/19/25
+08-06 17:28:50.660 30318 30360 I AdrenoGLES-0: OpenGL ES Shader Compiler Version: E031.45.02.26
+08-06 17:28:50.660 30318 30360 I AdrenoGLES-0: Local Branch                     :
+08-06 17:28:50.660 30318 30360 I AdrenoGLES-0: Remote Branch                    : refs/tags/AU_LINUX_ANDROID_LA.VENDOR.14.3.0.11.00.00.974.010
+08-06 17:28:50.660 30318 30360 I AdrenoGLES-0: Remote Branch                    : NONE
+08-06 17:28:50.660 30318 30360 I AdrenoGLES-0: Reconstruct Branch               : NOTHING
+08-06 17:28:50.660 30318 30360 I AdrenoGLES-0: Build Config                     : S P 16.1.2 AArch64
+08-06 17:28:50.660 30318 30360 I AdrenoGLES-0: Driver Path                      : /vendor/lib64/egl/libGLESv2_adreno.so
+08-06 17:28:50.660 30318 30360 I AdrenoGLES-0: Driver Version                   : 0762.41
+08-06 17:28:50.661 30318 30360 I AdrenoGLES-0: Process Name                     : com.oneononearena.videoclip.test
+08-06 17:28:50.666 30318 30360 I AdrenoGLES-0: PFP: 0x01520181, ME: 0x01520023
+08-06 17:28:50.669 30318 30360 E Adreno-AppProfiles: QSPM AIDL service doesn't exist
+08-06 17:28:50.671 30318 30360 I AdrenoUtils: <ReadGpuID:357>: Reading chip ID through GSL
+08-06 17:28:50.674 30318 30360 E BufferQueueProducer: Unable to open libpenguin.so: dlopen failed: library "libpenguin.so" not found.
+08-06 17:28:50.674 30318 30360 E .videoclip.test: Unable to open libpenguin.so: dlopen failed: library "libpenguin.so" not found.
+08-06 17:28:50.675 30318 30360 W libc    : Access denied finding property "vendor.display.enable_optimal_refresh_rate"
+08-06 17:28:50.675 30318 30360 W libc    : Access denied finding property "vendor.display.enable_optimal_refresh_rate"
+08-06 17:28:50.678 30318 30358 D MediaCodecInfo: NoSupport [codec.profileLevel, hvc1.1.6.L186, video/hevc] [c2.android.hevc.decoder, video/hevc] [e3q, SM-S928B, samsung, 36]
+08-06 17:28:50.681 30318 30361 I CCodec  : state->set(ALLOCATING)
+08-06 17:28:50.681 30318 30362 D RuntimeProperty: ro.soc.model: SM8650
+08-06 17:28:50.681 30318 30362 D RuntimeProperty: ro.board.platform: pineapple
+08-06 17:28:50.682 30318 30362 I CCodec  : allocate(c2.qti.hevc.decoder)
+08-06 17:28:50.682 30318 30362 D CCodec  : allocate(c2.qti.hevc.decoder)
+08-06 17:28:50.750 30318 30362 I ApexCodecsLazy: ApexCodecs loaded
+08-06 17:28:50.750 30318 30362 I Codec2Client: Available Codec2 services: "default" "default0" "software" "__ApexCodecs__"
+08-06 17:28:50.752 30318 30362 I CCodec  : setting up 'default' as default (vendor) store
+08-06 17:28:50.754  1747 14856 I QC2CompStore: addIdToList add Id[312] to list
+08-06 17:28:50.765  1747 14856 I vendor.qti.media.c2@1.0-service: missing struct descriptor #Param::CoreIndex(--002) for field mastering of struct #Param::CoreIndex(--180a)
+08-06 17:28:50.766  1747 14856 I vendor.qti.media.c2@1.0-service: missing struct descriptor #Param::CoreIndex(-V8002) for field portConfigs of struct #Param::CoreIndex(FV19100)
+08-06 17:28:50.766  1747 14856 I vendor.qti.media.c2@1.0-service: missing struct descriptor #Param::CoreIndex(-V8002) for field portConfigs of struct #Param::CoreIndex(FV1a100)
+08-06 17:28:50.766  1747 14856 I vendor.qti.media.c2@1.0-service: missing struct descriptor #Param::CoreIndex(-V8002) for field portConfigs of struct #Param::CoreIndex(FV19100)
+08-06 17:28:50.766  1747 14856 I vendor.qti.media.c2@1.0-service: missing struct descriptor #Param::CoreIndex(-V8002) for field portConfigs of struct #Param::CoreIndex(FV1a100)
+08-06 17:28:50.766  1747 14856 I QC2Comp : [cmphvcD_312] KPI_L1: init: ms=0
+08-06 17:28:50.766  1747 14856 I QC2Comp : [c2.qti.hevc.decoder] KPI_L1: Create: ms=12
+08-06 17:28:50.766  1747 14856 I QC2CompStore: Created component(c2.qti.hevc.decoder) id(312) sStore[0xb4000078258042f0]
+08-06 17:28:50.766  1747 14856 I vendor.qti.media.c2@1.0-service: missing struct descriptor #Param::CoreIndex(--002) for field mastering of struct #Param::CoreIndex(--180a)
+08-06 17:28:50.766  1747 14856 I vendor.qti.media.c2@1.0-service: missing struct descriptor #Param::CoreIndex(--002) for field mastering of struct #Param::CoreIndex(--180a)
+08-06 17:28:50.767  1747 14856 I vendor.qti.media.c2@1.0-service: VendorExternalAIFRCRequestSetter set to 0 0
+08-06 17:28:50.767  1747 14856 I vendor.qti.media.c2@1.0-service: StrictValueWithNoDeps is called old.v.value is 2141391876 me.v.value is 2141391876
+08-06 17:28:50.768  1747 14856 I vendor.qti.media.c2@1.0-service: StrictValueWithNoDeps is called old.v.value is 30 me.v.value is 30
+08-06 17:28:50.768  1747 14856 I vendor.qti.media.c2@1.0-service: missing struct descriptor #Param::CoreIndex(--002) for field mastering of struct #Param::CoreIndex(--180a)
+08-06 17:28:50.768  1747 14856 I vendor.qti.media.c2@1.0-service: missing struct descriptor #Param::CoreIndex(--002) for field mastering of struct #Param::CoreIndex(--180a)
+08-06 17:28:50.768  1747 14856 I vendor.qti.media.c2@1.0-service: C2StreamVendorRenderEngineHDRToneMapRequestInfoset to 0
+08-06 17:28:50.768  1747 14856 W QC2Interface: [hvcD_312] Failed to query parameters
+08-06 17:28:50.768  1747 14856 I vendor.qti.media.c2@1.0-service: StrictValueWithNoDeps is called old.v.value is 2141391876 me.v.value is 0
+08-06 17:28:50.768  1747 14856 I vendor.qti.media.c2@1.0-service: StrictValueWithNoDeps is called old.v.value is 30 me.v.value is 1
+08-06 17:28:50.768  1747 14856 I vendor.qti.media.c2@1.0-service: [FRC-IsFilteringEnabled] entry
+08-06 17:28:50.768  1747 14856 I vendor.qti.media.c2@1.0-service: [FRC-IsFilteringEnabled] frcReqInfo.value is 0
+08-06 17:28:50.770 30318 30362 I CCodec  : Created component [c2.qti.hevc.decoder] for [c2.qti.hevc.decoder]
+08-06 17:28:50.770 30318 30362 I CCodec  : [c2.qti.hevc.decoder] state->set(ALLOCATED)
+08-06 17:28:50.770  1747  2635 W QC2Interface: [hvcD_312] Failed to query parameters
+08-06 17:28:50.770 30318 30362 D CCodecConfig: read media type: video/hevc
+08-06 17:28:50.772 30318 30362 D ReflectedParamUpdater: ignored struct field vendor.output.configs.portConfigs
+08-06 17:28:50.773 30318 30362 D ReflectedParamUpdater: ignored struct field vendor.output.configs.portConfigs
+08-06 17:28:50.773 30318 30362 D ReflectedParamUpdater: extent() != 1 for single value type: vendor.qti-ext-transcode-info-stats.stats_info
+08-06 17:28:50.777 30318 30362 D ReflectedParamUpdater: extent() != 1 for single value type: output.buffers.pool-ids.values
+08-06 17:28:50.778 30318 30362 D ReflectedParamUpdater: ignored struct field vendor.input.configs.portConfigs
+08-06 17:28:50.778 30318 30362 D ReflectedParamUpdater: extent() != 1 for single value type: output.subscribed-indices.values
+08-06 17:28:50.779 30318 30362 D ReflectedParamUpdater: ignored struct field vendor.input.configs.portConfigs
+08-06 17:28:50.780 30318 30362 D CCodecConfig: ignoring local param raw.size (0xd2001800) as it is already supported
+08-06 17:28:50.780 30318 30362 D CCodecConfig: ignoring local param default.color (0x5200180b) as it is already supported
+08-06 17:28:50.780 30318 30362 D CCodecConfig: ignoring local param raw.hdr-static-info (0xd200180a) as it is already supported
+08-06 17:28:50.781  1747  2642 W QC2Interface: [hvcD_312] Failed to query parameters
+08-06 17:28:50.781  1747  2642 I vendor.qti.media.c2@1.0-service: StrictValueWithNoDeps is called old.v.value is 2141391876 me.v.value is 0
+08-06 17:28:50.781  1747  2642 I vendor.qti.media.c2@1.0-service: [FRC-IsFilteringEnabled] entry
+08-06 17:28:50.781  1747  2642 I vendor.qti.media.c2@1.0-service: [FRC-IsFilteringEnabled] frcReqInfo.value is 0
+08-06 17:28:50.781 30318 30362 I CCodec  : [c2.qti.hevc.decoder] config->initialize() : 0
+08-06 17:28:50.781  1747  2642 W QC2Interface: [hvcD_312] Failed to query parameters
+08-06 17:28:50.781 30318 30362 I CCodecConfig: query failed after returning 18 values (BAD_INDEX)
+08-06 17:28:50.781 30318 30362 D CCodecConfig: c2 config diff is Dict {
+08-06 17:28:50.781 30318 30362 D CCodecConfig:   c2::i32 algo.priority.value = -4
+08-06 17:28:50.781 30318 30362 D CCodecConfig:   c2::float algo.rate.value = 1
+08-06 17:28:50.781 30318 30362 D CCodecConfig:   c2::u32 algo.secure-mode.value = 0
+08-06 17:28:50.781 30318 30362 D CCodecConfig:   c2::float coded.frame-rate.value = 1
+08-06 17:28:50.781 30318 30362 D CCodecConfig:   c2::u32 coded.pl.level = 0
+08-06 17:28:50.781 30318 30362 D CCodecConfig:   c2::u32 coded.pl.profile = 24576
+08-06 17:28:50.781 30318 30362 D CCodecConfig:   c2::u32 coded.vui.color.matrix = 255
+08-06 17:28:50.781 30318 30362 D CCodecConfig:   c2::u32 coded.vui.color.primaries = 0
+08-06 17:28:50.781 30318 30362 D CCodecConfig:   c2::u32 coded.vui.color.range = 0
+08-06 17:28:50.781 30318 30362 D CCodecConfig:   c2::u32 coded.vui.color.transfer = 255
+08-06 17:28:50.781 30318 30362 D CCodecConfig:   c2::u32 default.color.matrix = 0
+08-06 17:28:50.781 30318 30362 D CCodecConfig:   c2::u32 default.color.primaries = 0
+08-06 17:28:50.781 30318 30362 D CCodecConfig:   c2::u32 default.color.range = 0
+08-06 17:28:50.781 30318 30362 D CCodecConfig:   c2::u32 default.color.transfer = 0
+08-06 17:28:50.781 30318 30362 D CCodecConfig:   c2::u32 input.buffers.max-size.value = 8388608
+08-06 17:28:50.781 30318 30362 D CCodecConfig:   c2::u32 input.delay.value = 0
+08-06 17:28:50.781 30318 30362 D CCodecConfig:   string input.media-type.value = "video/hevc"
+08-06 17:28:50.781 30318 30362 D CCodecConfig:   c2::u32 output.delay.value = 6
+08-06 17:28:50.781 30318 30362 D CCodecConfig:   Buffer output.hdr10-plus-info.value = {
+08-06 17:28:50.781 30318 30362 D CCodecConfig:   }
+08-06 17:28:50.781 30318 30362 D CCodecConfig:   string output.media-type.value = "video/raw"
+08-06 17:28:50.781 30318 30362 D CCodecConfig:   c2::u32 raw.color.matrix = 0
+08-06 17:28:50.781 30318 30362 D CCodecConfig:   c2::u32 raw.color.primaries = 0
+08-06 17:28:50.781 30318 30362 D CCodecConfig:   c2::u32 raw.color.range = 0
+08-06 17:28:50.781 30318 30362 D CCodecConfig:   c2::u32 raw.color.transfer = 0
+08-06 17:28:50.781 30318 30362 D CCodecConfig:   c2::float raw.hdr-static-info.mastering.blue.x = 0
+08-06 17:28:50.781 30318 30362 D CCodecConfig:   c2::float raw.hdr-static-info.mastering.blue.y = 0
+08-06 17:28:50.781 30318 30362 D CCodecConfig:   c
+08-06 17:28:50.781 30318 30362 W ColorUtils: expected specified color aspects (0:0:0:0)
+08-06 17:28:50.781 30318 30362 I CCodec  : [c2.qti.hevc.decoder] config->queryConfiguration()
+08-06 17:28:50.781 30318 30362 I CCodec  : [c2.qti.hevc.decoder] mCallback->onComponentAllocated() IN
+08-06 17:28:50.782 30318 30362 I CCodec  : [c2.qti.hevc.decoder] mCallback->onComponentAllocated() OUT
+08-06 17:28:50.786 30318 30358 W libc    : Access denied finding property "vendor.display.enable_optimal_refresh_rate"
+08-06 17:28:50.787 30318 30358 I MediaCodec: media_quality service unavailable, skipping updatePictureProfile
+08-06 17:28:50.788 30318 30361 D SurfaceUtils: connecting to surface 0xb400007152e39350, reason connectToSurface
+08-06 17:28:50.788 30318 30361 I MediaCodec: [c2.qti.hevc.decoder] setting surface generation to 31045633
+08-06 17:28:50.788 30318 30361 D SurfaceUtils: disconnecting from surface 0xb400007152e39350, reason connectToSurface(reconnect)
+08-06 17:28:50.788 30318 30361 D SurfaceUtils: connecting to surface 0xb400007152e39340, reason connectToSurface(reconnect-with-listener)
+08-06 17:28:50.788 30318 30361 D SurfaceUtils: legacy buffer drop disabled: target sdk (36)
+08-06 17:28:50.789 30318 30362 D CCodec  : [c2.qti.hevc.decoder] buffers are bound to CCodec for this session
+08-06 17:28:50.789 30318 30362 I CCodec  : appPid(30318) width(480) height(360)
+08-06 17:28:50.789 30318 30362 D CCodecConfig: no c2 equivalents for log-session-id
+08-06 17:28:50.789 30318 30362 D CCodecConfig: no c2 equivalents for exo-pixel-width-height-ratio-float
+08-06 17:28:50.789 30318 30362 D CCodecConfig: no c2 equivalents for allow-frame-drop
+08-06 17:28:50.789 30318 30362 D CCodecConfig: no c2 equivalents for importance
+08-06 17:28:50.789 30318 30362 D CCodecConfig: no c2 equivalents for language
+08-06 17:28:50.789 30318 30362 D CCodecConfig: no c2 equivalents for is-autoselect
+08-06 17:28:50.789 30318 30362 D CCodecConfig: no c2 equivalents for is-default
+08-06 17:28:50.789 30318 30362 D CCodecConfig: no c2 equivalents for track-id
+08-06 17:28:50.789 30318 30362 D CCodecConfig: no c2 equivalents for is-forced-subtitle
+08-06 17:28:50.789 30318 30362 D CCodecConfig: no c2 equivalents for codecs-string
+08-06 17:28:50.789 30318 30362 D CCodecConfig: no c2 equivalents for encoder-delay
+08-06 17:28:50.789 30318 30362 D CCodecConfig: no c2 equivalents for encoder-padding
+08-06 17:28:50.789 30318 30362 D CCodecConfig: no c2 equivalents for native-window
+08-06 17:28:50.789 30318 30362 D CCodecConfig: no c2 equivalents for native-window-generation
+08-06 17:28:50.789 30318 30362 D CCodecConfig: no c2 equivalents for flags
+08-06 17:28:50.789  1747  2642 W QC2Interface: [hvcD_312] Failed to query parameters
+08-06 17:28:50.789  1747  2642 I vendor.qti.media.c2@1.0-service: StrictValueWithNoDeps is called old.v.value is 2141391876 me.v.value is 0
+08-06 17:28:50.789  1747  2642 I vendor.qti.media.c2@1.0-service: StrictValueWithNoDeps is called old.v.value is 1 me.v.value is 30
+08-06 17:28:50.790  1747  2642 I vendor.qti.media.c2@1.0-service: [FRC-IsFilteringEnabled] entry
+08-06 17:28:50.790  1747  2642 I vendor.qti.media.c2@1.0-service: [FRC-IsFilteringEnabled] frcReqInfo.value is 0
+08-06 17:28:50.790 30318 30362 D CCodecConfig: c2 config diff is   c2::float coded.frame-rate.value = 30
+08-06 17:28:50.790 30318 30362 D CCodecConfig:   c2::u32 coded.pl.level = 24588
+08-06 17:28:50.790 30318 30362 D CCodecConfig:   c2::u32 raw.size.height = 360
+08-06 17:28:50.790 30318 30362 D CCodecConfig:   c2::u32 raw.size.width = 480
+08-06 17:28:50.790  1747  2642 W QC2Interface: [hvcD_312] Failed to query parameters
+08-06 17:28:50.790 30318 30362 W Codec2Client: query -- param skipped: index = 1107298332.
+08-06 17:28:50.790 30318 30362 D CCodec  : client requested max input size 53275, which is smaller than what component recommended (8388608); overriding with component recommendation.
+08-06 17:28:50.790 30318 30362 W CCodec  : This behavior is subject to change. It is recommended that app developers double check whether the requested max input size is in reasonable range.
+08-06 17:28:50.790 30318 30362 D CCodec  : encoding statistics level = 0
+08-06 17:28:50.790 30318 30362 D CCodec  : setup formats input: AMessage(what = 0x00000000) = {
+08-06 17:28:50.790 30318 30362 D CCodec  :   int32_t feature-secure-playback = 0
+08-06 17:28:50.790 30318 30362 D CCodec  :   int32_t frame-rate = 30
+08-06 17:28:50.790 30318 30362 D CCodec  :   int32_t height = 360
+08-06 17:28:50.790 30318 30362 D CCodec  :   int32_t max-input-size = 8388608
+08-06 17:28:50.790 30318 30362 D CCodec  :   string mime = "video/hevc"
+08-06 17:28:50.790 30318 30362 D CCodec  :   int32_t priority = 4
+08-06 17:28:50.790 30318 30362 D CCodec  :   int32_t profile = 1
+08-06 17:28:50.790 30318 30362 D CCodec  :   int32_t width = 480
+08-06 17:28:50.790 30318 30362 D CCodec  :   Rect crop(0, 0, 479, 359)
+08-06 17:28:50.790 30318 30362 D CCodec  :   int32_t level = 16777216
+08-06 17:28:50.790 30318 30362 D CCodec  : }
+08-06 17:28:50.790 30318 30362 D CCodec  : setup formats output: AMessage(what = 0x00000000) = {
+08-06 17:28:50.790 30318 30362 D CCodec  :   int32_t android._color-format = 0
+08-06 17:28:50.790 30318 30362 D CCodec  :   int32_t android._video-scaling = 1
+08-06 17:28:50.790 30318 30362 D CCodec  :   int32_t android._dataspace = 259
+08-06 17:28:50.790 30318 30362 D CCodec  :   int32_t color-standard = 4
+08-06 17:28:50.790 30318 30362 D CCodec  :   int32_t color-range = 2
+08-06 17:28:50.790 30318 30362 D CCodec  :   int32_t color-transfer = 3
+08-06 17:28:50.790 30318 30362 D CCodec  :   int32_t sar-height = 1
+08-06 17:28:50.790 30318 30362 D CCodec  :   int32_t rotation-degrees = 0
+08-06 17:28:50.790 30318 30362 D CCodec  :   Buffer hdr-static-info = {
+08-06 17:28:50.790 30318 30362 D CCodec  :     00000000:  00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00  ................
+08-06 17:28:50.790 30318 30362 D CCodec  :     00000010:  00 00 00 00 00 00 00 00  00                       .........
+08-06 17:28:50.790 30318 30362 D CCodec  :   }
+08-06 17:28:50.790 30318 30362 D CCodec  :   int32_t sar-width = 1
+08-06 17:28:50.790 30318 30362 D CCodec  :   Rect crop(0, 0, 479, 359)
+08-06 17:28:50.790 30318 30362 D CCodec  :   int32_t width = 480
+08-06 17:28:50.790 30318 30362 D CCodec  :   int32_t feature-secure-playback = 0
+08-06 17:28:50.790 30318 30362 D CCodec  :   int32_t frame-rate = 30
+08-06 17:28:50.790 30318 30362 D CCodec  :   Buffer hdr10-plus-info = {
+08-06 17:28:50.790 30318 30362 D CCodec  :   }
+08-06 17:28:50.790 30318 30362 D CCodec  :   int32_t height = 360
+08-06 17:28:50.790 30318 30362 D CCodec  :   int32_t max-height = 4320
+08-06 17:28:50.790 30318 30362 D CCodec  :   int32_t max-width = 8192
+08-06 17:28:50.790 30318 30362 D CCodec  :   string mime = "video/raw"
+08-06 17:28:50.790 30318 30362 D CCodec  :   int32_t priority = 4
+08-06 17:28:50.790 30318 30362 D CCodec  :   int32_t color-format = 2130708361
+08-06 17:28:50.790 30318 30362 D CCodec  :   int32_t p-extraBC = 6
+08-06 17:28:50.790 30318 30362 D CCodec  : }
+08-06 17:28:50.790  1747  2642 W QC2Interface: [hvcD_312] Failed to query parameters
+08-06 17:28:50.790 30318 30362 I CCodecConfig: query failed after returning 18 values (BAD_INDEX)
+08-06 17:28:50.790  1747  2642 W QC2Interface: [hvcD_312] Failed to query parameters
+08-06 17:28:50.791 30318 30362 E .videoclip.test: Failed to query component interface for required system resources: 6
+08-06 17:28:50.794  2710  4502 D SehCodecSolutionService: updateMediaStatisticsData: (action=1@1986621044;category=2@1986621044;label=1936222261@1986621044)
+08-06 17:28:50.794  2710  4502 D CodecSolution_MediaStatisticsData: MediaStatisticsData: action=1@1986621044;category=2@1986621044;label=1936222261@1986621044
+08-06 17:28:50.794  2710  4502 D CodecSolution_MediaStatisticsData: Category.valueOf: 2
+08-06 17:28:50.795  2710  4502 D CodecSolution_MediaStatisticsData: Action.valueOf: 1
+08-06 17:28:50.795  2710  4502 D CodecSolution_MediaStatisticsData: Label.valueOf: 0x73686835
+08-06 17:28:50.795  2710  4502 D CodecSolution_MediaStatisticsData: category: VDEC
+08-06 17:28:50.795  2710  4502 D CodecSolution_MediaStatisticsData: action: INSTANTIATE
+08-06 17:28:50.795  2710  4502 D CodecSolution_MediaStatisticsData: label: SEC_HW_H265
+08-06 17:28:50.795  2710  2710 D SehCodecSolutionService: handleMessage : 900
+08-06 17:28:50.795  2710  2710 D SehCodecSolutionService: event : VDEC
+08-06 17:28:50.795  2710  2710 D CodecSolution_Logging: dma : true, feature: VDEC, extra: SEC_HW_H265, value: -1
+08-06 17:28:50.795  2710  2710 D CodecSolution_Logging: insert diagmon log
+08-06 17:28:50.795  2710  2710 D CodecSolution_Logging: permission granted
+08-06 17:28:50.795 30318 30361 I CCodec  : [c2.qti.hevc.decoder] state->set(STARTING)
+08-06 17:28:50.795  1747  2642 I vendor.qti.media.c2@1.0-service: [FRC-IsFilteringEnabled] entry
+08-06 17:28:50.795  1747  2642 I vendor.qti.media.c2@1.0-service: [FRC-IsFilteringEnabled] frcReqInfo.value is 0
+08-06 17:28:50.795  1747  2642 I QC2Comp : [hvcD_312] CPU perf resource value pair found: [1082130688, 4095, ]
+08-06 17:28:50.796  1747  2642 I QC2Registry: Build pipelined codec for session
+08-06 17:28:50.796  1747  2642 I QC2Registry: Getting stages for pipelined codec
+08-06 17:28:50.802  1747  2642 I QC2Registry: Requested codec is pipelined. Create codec list
+08-06 17:28:50.802  1747  2642 I QC2Registry: GetEnabledFilters for c2.qti.hevc.decoder
+08-06 17:28:50.802  1747  2642 I QC2Registry: Pipeline Index = a0009102
+08-06 17:28:50.802  1747  2642 I QC2Registry: Filter sec2.imageformat.filter can't be pipelined
+08-06 17:28:50.802  1747  2642 I QC2Registry: Pipeline Index = a000a103
+08-06 17:28:50.802  1747  2642 I QC2Registry: Filter c2.qti.filter.imagetransform can't be pipelined
+08-06 17:28:50.802  1747  2642 I QC2Registry: Created 0 filters for pipelined codec c2.qti.hevc.decoder
+08-06 17:28:50.802  1747  2642 E QC2Comp : [hvcD_312] configureIntf failed 95
+08-06 17:28:50.806  1747  2642 I QC2V4l2Codec: [v4lhvcD_312] KPI_L1: init: ms=3
+08-06 17:28:50.806  1747 30371 E QC2V4l2Codec: [v4lhvcD_312]  ? is not a supported pixel format!
+08-06 17:28:50.809  2448  2535 I cn_CronetUrlRequestContext: destroyNativeStreamLocked android.net.http.internal.org.chromium.net.impl.CronetBidirectionalStream@6ac2487
+08-06 17:28:50.809  1747 30371 D BufferPoolAccessor2.0: bufferpool2 0xb4000078a583e558 : 30(491520 size) total buffers - 30(491520 size) used buffers - 0/30 (recycle/alloc) - 0/0 (fetch/transfer)
+08-06 17:28:50.810  1747 30371 D BufferPoolAccessor2.0: bufferpool2 0xb4000078a5841838 : 30(491520 size) total buffers - 30(491520 size) used buffers - 0/30 (recycle/alloc) - 0/0 (fetch/transfer)
+08-06 17:28:50.810  1747 30371 D BufferPoolAccessor2.0: bufferpool2 0xb4000078a5832a08 : 40(655360 size) total buffers - 40(655360 size) used buffers - 0/40 (recycle/alloc) - 0/0 (fetch/transfer)
+08-06 17:28:50.810  2448  2448 E Finsky  : [2] Failed to load an Item com.android.vending, missing shared fields: [4], missing type-specific fields: [0, 0, 0, 0, 0, 0, 0, 0, 64]
+08-06 17:28:50.811  2448  2448 E Finsky  : [2] Failed to load an Item com.jio.media.ondemand, no data available.
+08-06 17:28:50.811 26233 26688 D BufferPoolAccessor2.0: bufferpool2 0xb4000071f2e2b518 : 0(0 size) total buffers - 0(0 size) used buffers - 0/10 (recycle/alloc) - 10/691 (fetch/transfer)
+08-06 17:28:50.812 26233 26688 D BufferPoolAccessor2.0: Destruction - bufferpool2 0xb4000071f2e2b518 cached: 0/0M, 0/0% in use; allocs: 10, 0% recycled; transfers: 691, 99% unfetched
+08-06 17:28:50.812  2448  2448 E Finsky  : [2] Required items [com.android.vending, com.jio.media.ondemand]
+08-06 17:28:50.812  2448  2448 E Finsky  : [2] Requested items [[com.android.vending, com.jio.media.ondemand]]
+08-06 17:28:50.812  2448  2448 E Finsky  : [2] Retrieved items []
+08-06 17:28:50.813 26233 26688 D BufferPoolAccessor2.0: bufferpool2 0xb4000071f2e4aae8 : 0(0 size) total buffers - 0(0 size) used buffers - 0/10 (recycle/alloc) - 10/28480 (fetch/transfer)
+08-06 17:28:50.813  1747  2642 I QC2V4l2Codec: [v4lhvcD_312] KPI_L1: start: ms=6
+08-06 17:28:50.813  1747  2642 W QC2Interface: [hvcD_312] Failed to query parameters
+08-06 17:28:50.814  1747  2642 I QC2Comp : [hvcD_312] KPI_L1: start: ms=18
+08-06 17:28:50.814  1747  2642 W QC2Interface: [hvcD_312] Failed to query parameters
+08-06 17:28:50.815 30318 30362 W Codec2Client: query -- param skipped: index = 1342179345.
+08-06 17:28:50.815 30318 30362 W Codec2Client: query -- param skipped: index = 2415921170.
+08-06 17:28:50.815 30318 30362 W Codec2Client: query -- param skipped: index = 1610614798.
+08-06 17:28:50.815 30318 30362 I CCodecBufferChannel: [c2.qti.hevc.decoder#183] start: outputDelayValue changed from 6 to 12.
+08-06 17:28:50.815  1747  2642 W QC2Interface: [hvcD_312] Failed to query parameters
+08-06 17:28:50.815 30318 30362 D CCodecBufferChannel: [c2.qti.hevc.decoder#183] Query input allocators returned 0 params => BAD_INDEX (6)
+08-06 17:28:50.815 30318 30362 D C2Store : debug.c2.use_dmabufheaps set, forcing DMABUF Heaps
+08-06 17:28:50.815 30318 30362 D C2Store : Using DMABUF Heaps
+08-06 17:28:50.816 22567 27122 I FusedLocation: (REDACTED) location delivery to %s blocked - too close
+08-06 17:28:50.816 26233 26688 D BufferPoolAccessor2.0: Destruction - bufferpool2 0xb4000071f2e4aae8 cached: 0/0M, 0/0% in use; allocs: 10, 0% recycled; transfers: 28480, 100% unfetched
+08-06 17:28:50.816 30318 30362 D CCodecBufferChannel: [c2.qti.hevc.decoder#183] Created input block pool with allocatorID 16 => poolID 17 - OK (0)
+08-06 17:28:50.816 30318 30362 I CCodecBufferChannel: [c2.qti.hevc.decoder#183] start: max output delay 19
+08-06 17:28:50.816  1747  2642 W QC2Interface: [hvcD_312] Failed to query parameters
+08-06 17:28:50.816 30318 30362 D CCodecBufferChannel: [c2.qti.hevc.decoder#183] Query output allocators returned 0 params => BAD_INDEX (6)
+08-06 17:28:50.816  1747  2642 W QC2Interface: [hvcD_312] Failed to query parameters
+08-06 17:28:50.816 30318 30362 D CCodecBufferChannel: [c2.qti.hevc.decoder#183] Query output surface allocator returned 0 params => BAD_INDEX (6)
+08-06 17:28:50.817 30318 30362 I CCodecBufferChannel: [c2.qti.hevc.decoder#183] Created output block pool with allocatorID 18 => poolID 10504 - OK
+08-06 17:28:50.817 22567 27122 I FusedLocation: (REDACTED) location delivery to %s blocked - too close
+08-06 17:28:50.817  1747 30371 I QC2Buf  : use shared ref tracker
+08-06 17:28:50.817  1747 30371 I QC2Buf  : Reconfig: clearing from 0 bufs. Peak mem=0 MB
+08-06 17:28:50.817  1747 30371 I QC2Buf  : Reconfig: clearing from 0 bufs. Peak mem=0 MB
+08-06 17:28:50.818 30318 30362 D CCodecBufferChannel: [c2.qti.hevc.decoder#183] Configured output block pool ids 10504 => OK
+08-06 17:28:50.818 30318 30362 D Codec2-OutputBufferQueue: C2SurfaceSyncMemory created 20(20)
+08-06 17:28:50.818 22567 27122 I FusedLocation: (REDACTED) location delivery to %s blocked - too close
+08-06 17:28:50.818 30318 30362 D Codec2-OutputBufferQueue: remote graphic buffer migration 0/0
+08-06 17:28:50.818  1747  2642 W QC2Interface: [hvcD_312] Few parameters failed to configure
+08-06 17:28:50.818 30318 30362 D Codec2Client: setOutputSurface -- failed to set consumer usage (6/BAD_INDEX)
+08-06 17:28:50.818 30318 30362 D Codec2Client: setOutputSurface -- generation=31045633 consumer usage=0x900 sync
+08-06 17:28:50.819  1747  2642 D C2BqBuffer: local generation change 31045633 , bqId: 130214818480128 migrated buffers # 0
+08-06 17:28:50.819 30318 30362 D Codec2Client: Surface configure completed
+08-06 17:28:50.819 30318 30362 I CCodec  : [c2.qti.hevc.decoder] state->set(RUNNING)
+08-06 17:28:50.819  1747  2642 I QC2CompStore: Setting heap usage to system
+08-06 17:28:50.821 30318 30362 I CCodecBufferChannel: [c2.qti.hevc.decoder#183] 4 initial input buffers available
+08-06 17:28:50.821  1747  2642 W QC2Interface: [hvcD_312] Failed to query parameters
+08-06 17:28:50.821  2159 24118 I ResourceManagerService: addMediaInfo pid 30318 (width 480 height 360), allocated hw codec count 4
+08-06 17:28:50.822  2159 24118 I ResourceManagerService: getMediaResourceInfo (PID : 1621, clientID : -5476376664185545568, non-secure-codec/hw-video-codec:[]:1, 854x480 (fps:15) - sw codec : no, encoder : no componentName = c2.qti.avc.decoder bitrate = 17000000)
+08-06 17:28:50.822  2159 24118 I ResourceManagerService: getMediaResourceInfo (PID : 29201, clientID : -5476376664186774176, non-secure-codec/hw-video-codec:[]:1, 720x900 (fps:25) - sw codec : no, encoder : no componentName = c2.qti.av1.decoder bitrate = 17000000)
+08-06 17:28:50.822  2159 24118 I ResourceManagerService: getMediaResourceInfo (PID : 29201, clientID : -5476376664186622112, non-secure-codec/hw-video-codec:[]:1, 1280x720 (fps:1) - sw codec : no, encoder : no componentName = c2.qti.avc.decoder bitrate = 17000000)
+08-06 17:28:50.822  2159 24118 I ResourceManagerService: getMediaResourceInfo (PID : 30318, clientID : -5476376664187144544, non-secure-codec/hw-video-codec:[]:1, 480x360 (fps:30) - sw codec : no, encoder : no componentName = c2.qti.hevc.decoder bitrate = 961160)
+08-06 17:28:50.822  6628  6761 I SemMediaResourceHelper: onAdd
+08-06 17:28:50.822  5136  5205 I GmsPassiveListener_FLP: onGmsLocationChanged, provider=fused / speed=0.0 / time=1786017530816 / elapsed=200941832699046
+08-06 17:28:50.822  8526  8578 I SemMediaResourceHelper: onAdd
+08-06 17:28:50.822  8526  8578 I DrmMediaResourceHelper: onAdd size = 4
+08-06 17:28:50.822  2710  4003 D SLocation: PositionManager - Passive handleLocationChanged [F, A : 100.00, T : 1786017530816, ET : 200941832, h : 29/17]
+08-06 17:28:50.822  2710  4003 D SLocation: PositionManager - receive fused location
+08-06 17:28:50.822  2710  4003 W SLocation: GeopointGeofenceManger - refresh wifi to receive loc
+08-06 17:28:50.823  2710  4003 D SLocation: GeopointGeofenceManger - Location reported : fix method = 14 / 100.0
+08-06 17:28:50.823 18934 19002 I Rubin   : [518] Z5.a.onLocationChanged(SourceFile:63) : Passive location updated
+08-06 17:28:50.823  2710  4003 D SLocation: LocationBuffer - receivedLocation - op[interval(min 60000, max 300000), waitTime 36000000, numOfUpdates 20, minDistance 200.0]dist : 0.0 diffTime : 600001 accept time condition
+08-06 17:28:50.823  2710  4003 D SLocation: LocationBuffer - input buffer, size : 4
+08-06 17:28:50.823  2710  4003 D SLocation: BatchManager - received batch location buffered = true
+08-06 17:28:50.823  2710  4003 D SLocation: LastLocations - update latest location [F, A : 100.00, T : 1786017530816, ET : 200941832, h : 29/17]
+08-06 17:28:50.823  2710  4003 D SLocation: ARDistanceLibManager - request distance diff to AR Distance Library
+08-06 17:28:50.823  2710  4003 D SLocation: SLocationCoreSem - send to coreSem, packet length : 1 / [34]
+08-06 17:28:50.823  2710  4003 D SemContextLocationCoreAttribute: setAttribute() mode : 0 action : 23
+08-06 17:28:50.823  2710  4003 D SemContextService: lock : changeParameters
+08-06 17:28:50.823  2159  4568 W ResourceManagerServiceUtils: Ignoring request to add new resource entry with value <= 0
+08-06 17:28:50.823  2710  4003 D SemContext.CaeProvider.LocationCoreImpl: setAttribute() mode : 0 action : 23
+08-06 17:28:50.823  2710  4003 W CAE     : setCAProperty(ContextAwareService.java:509) - [setProperty 01] Mutex is locked for SLOCATION_RUNNER
+08-06 17:28:50.823  2710  4003 I CAE     : setPropertyValue(SLocationRunner.java:116) - SLocationRunner setProperty header : 34, len : 1
+08-06 17:28:50.823 18934 19013 I Rubin   : [527] com.samsung.android.rubin.inferenceengine.contextanalytics.engine.loggers.LocationLogger.flush(SourceFile:5) : flush
+08-06 17:28:50.823  2710  3590 D SensorService: setSContextDataLocked ints length 2 , byte length 4
+08-06 17:28:50.823  2710  3590 D SensorService: setSContextDataLocked 223717c1
+08-06 17:28:50.824  1727  1844 I HYPER-HAL: [RequestManager.cpp]releaseLocked(): Released ID : 22161182
+08-06 17:28:50.824  1717  1717 I sensors-hal: inject_sensor_data:407, handle 1502 send inject
+08-06 17:28:50.824  1717  1717 I sensors-hal: sendContextData:290, sensor hal 4, (0xc1, 0x17, 0x37, 0x22)
+08-06 17:28:50.824  1717  1717 E sensors-hal: sendContextData:133, slocationcore h 193 m 23 s 55
+08-06 17:28:50.824  1717  1717 I sensors-hal: sendUserData:119, slocationcore sendUserData
+08-06 17:28:50.824  1717  1717 E sensors-hal: create_send_context_data:64, slocationcore create_send_context_data
+08-06 17:28:50.824  1717  1717 I sensors-hal: send_context_data:694, slocationcore, 4986366670857974562, 1320970896291267344, msgid:700, 1
+08-06 17:28:50.824  1717  1717 I sensors-hal: send_sync_sensor_request:508, send sync request
+08-06 17:28:50.824  1717  1717 I sensors-hal: send_sync_sensor_request:518, send_sync_sensor_request before send_request for slocationcore with SUID low=4986366670857974562 high=1320970896291267344
+08-06 17:28:50.824  1717  1717 I sensors-hal: send_sync_sensor_request:537, wait for notification of response
+08-06 17:28:50.825  1717  3588 I sensors-hal: qsh_conn_resp_cb:935, resp_value = 0 for slocationcore
+08-06 17:28:50.825  1717  1717 I sensors-hal: send_sync_sensor_request:543, takes 1 ms to receive the response with 0
+08-06 17:28:50.825 30318 30361 I MediaCodec: setCodecState state(0), called in 6, domain 1, 1
+08-06 17:28:50.825  1717  3588 I sensors-hal: qsh_conn_event_cb:895, event[0] sensor:slocationcore  Wakeup, msg_id=1025, ts=3858189903361
+08-06 17:28:50.825  1717  3588 E sensors-hal: handle_sns_client_event:78, slocationcore_event: msgid:1025
+08-06 17:28:50.825  1747 30371 I QC2CompStore: Setting heap usage to system
+08-06 17:28:50.826  2710  4003 W CAE     : setCAProperty(ContextAwareService.java:515) - [setProperty 02] Mutex is unlocked for SLOCATION_RUNNER
+08-06 17:28:50.826  2710  4003 D SemContextService: unlock : changeParameters
+08-06 17:28:50.826  2710  4003 D SemContextManager:   .changeParameters : listener = X.k@c89df81, service=SLocation Core
+08-06 17:28:50.826  2710  4003 D SLocation: SLocationCoreSem - send to coreSem, packet length : 23 / [2, 17, 162, 115, 226, 47, 206, 190, 25, 0, 0, 0, 100, 2, 0, 0, 1, 159, 214, 240, 195, 192, 0]
+08-06 17:28:50.826  2710  4003 D SemContextLocationCoreAttribute: setAttribute() mode : 0 action : 23
+08-06 17:28:50.826  2710  4003 D SemContextService: lock : changeParameters
+08-06 17:28:50.826  2710  4003 D SemContext.CaeProvider.LocationCoreImpl: setAttribute() mode : 0 action : 23
+08-06 17:28:50.826  2710  4003 W CAE     : setCAProperty(ContextAwareService.java:509) - [setProperty 01] Mutex is locked for SLOCATION_RUNNER
+08-06 17:28:50.826  2710  4003 I CAE     : setPropertyValue(SLocationRunner.java:116) - SLocationRunner setProperty header : 2, len : 23
+08-06 17:28:50.826  6628  6761 I SemMediaResourceHelper: onState
+08-06 17:28:50.826  1717  3588 I sensors-hal: qsh_conn_event_cb:895, event[0] sensor:slocationcore  Wakeup, msg_id=1025, ts=3858189903746
+08-06 17:28:50.826  1717  3588 E sensors-hal: handle_sns_client_event:78, slocationcore_event: msgid:1025
+08-06 17:28:50.826  6628  6761 I SemDvfsHyPerManager: acquire hyper - TABaseBoost/6628@29, type = -999
+08-06 17:28:50.826  1717  3588 I sensors-hal: qsh_conn_event_cb:895, event[0] sensor:slocationcore  Wakeup, msg_id=1025, ts=3858189904016
+08-06 17:28:50.826  1717  3588 E sensors-hal: handle_sns_client_event:78, slocationcore_event: msgid:1025
+08-06 17:28:50.827  8526  8578 I SemMediaResourceHelper: onState
+08-06 17:28:50.827  8526  8578 I DrmMediaResourceHelper: onStateChanged size = 4
+08-06 17:28:50.827  8526  8578 I DrmMediaResourceHelper: resource type: 2,,,isSecured :  falseIsEncoder : falsegetCodecState : 0getpid : 1621
+08-06 17:28:50.827  8526  8578 I DrmMediaResourceHelper: resource type: 2,,,isSecured :  falseIsEncoder : falsegetCodecState : 0getpid : 29201
+08-06 17:28:50.827  8526  8578 I DrmMediaResourceHelper: resource type: 2,,,isSecured :  falseIsEncoder : falsegetCodecState : 0getpid : 29201
+08-06 17:28:50.827  8526  8578 I DrmMediaResourceHelper: resource type: 2,,,isSecured :  falseIsEncoder : falsegetCodecState : 0getpid : 30318
+08-06 17:28:50.827  2710  3590 D SensorService: setSContextDataLocked ints length 8 , byte length 26
+08-06 17:28:50.827  2710  3590 D SensorService: setSContextDataLocked 23717c1
+08-06 17:28:50.827  1727  1844 I HYPER-HAL: [RequestManager.cpp]acquire(): Acquired ID : 22161182  [6628 / 29]    HINT :      list : [TABoost / 1]
+08-06 17:28:50.827  2710  3586 D CAE     : onGetSensorHubData(SensorHubParserProvider.java:92) - onGetSensorHubData Event [event buffer len :56], AP_WAKEUP
+08-06 17:28:50.827  1717  1717 I sensors-hal: inject_sensor_data:407, handle 1502 send inject
+08-06 17:28:50.827  1717  1717 I sensors-hal: sendContextData:290, sensor hal 26, (0xc1, 0x17, 0x37, 0x2)
+08-06 17:28:50.827  2710  3586 I CAE     : parse(SensorHubParserProvider.java:188) - buffer size = 56
+08-06 17:28:50.827  1717  1717 E sensors-hal: sendContextData:133, slocationcore h 193 m 23 s 55
+08-06 17:28:50.827  1717  1717 I sensors-hal: sendUserData:119, slocationcore sendUserData
+08-06 17:28:50.827  2710  3586 I CAE     : parse(SensorHubParserProvider.java:199) - 1, 1, 55, 0, 51, 5, 7, 2, 0, 0, 0, 0, 2, -120, -16, -24, 15, 5, 0, 0, 0, -56, 2, -120, -16, -24, 5, 1, 0, 0, 0, 100, 2, -120, -16, -24, 7, 2, 0, 0, 0, 10, 2, -119, 23, -8, 16, 10, 0, 0, 0, -56, 2, -115, -96, 32,
+08-06 17:28:50.827  1717  1717 E sensors-hal: create_send_context_data:64, slocationcore create_send_context_data
+08-06 17:28:50.827  2710  3586 I CAE     : parse(SLocationRunner.java:88) - SLocationRunner parse start : 3
+08-06 17:28:50.827  1717  1717 I sensors-hal: send_context_data:694, slocationcore, 4986366670857974562, 1320970896291267344, msgid:700, 1
+08-06 17:28:50.827  1717  1717 I sensors-hal: send_sync_sensor_request:508, send sync request
+08-06 17:28:50.827  1717  1717 I sensors-hal: send_sync_sensor_request:518, send_sync_sensor_request before send_request for slocationcore with SUID low=4986366670857974562 high=1320970896291267344
+08-06 17:28:50.827  2710  3586 D CAE     : display(ContextProvider.java:375) - ================= SLOCATION_RUNNER =================
+08-06 17:28:50.827  2710  3586 I CAE     : display(ContextProvider.java:391) - ExtraDataArray=[1, 1, 55, 0, 51, 5, 7, 2, 0, 0, 0, 0, 2, -120, -16, -24, 15, 5, 0, 0, 0, -56, 2, -120, -16, -24, 5, 1, 0, 0, 0, 100, 2, -120, -16, -24, 7, 2, 0, 0, 0, 10, 2, -119, 23, -8, 16, 10, 0, 0, 0, -56, 2, -115, -96, 32]
+08-06 17:28:50.827  1717  1717 I sensors-hal: send_sync_sensor_request:537, wait for notification of response
+08-06 17:28:50.828  2710  3586 I CAE     : parse(SLocationRunner.java:96) - SLocationRunner parse end:56
+08-06 17:28:50.828  2710  3586 D CAE     : onGetSensorHubData(SensorHubParserProvider.java:92) - onGetSensorHubData Event [event buffer len :38], AP_WAKEUP
+08-06 17:28:50.828  2710  3586 I CAE     : parse(SensorHubParserProvider.java:188) - buffer size = 38
+08-06 17:28:50.828  2710  3586 I CAE     : parse(SensorHubParserProvider.java:199) - 1, 1, 55, 0, 33, 33, 0, 0, 0, 0, 0, 0, 1, -97, -42, -54, -105, 8, 17, -94, 115, 32, 47, -50, -66, 64, 0, 0, 0, 3, 2, -120, -16, -24, 0, 0, 0, 2,
+08-06 17:28:50.828  2710  3586 I CAE     : parse(SLocationRunner.java:88) - SLocationRunner parse start : 3
+08-06 17:28:50.828  2710  3586 D CAE     : display(ContextProvider.java:375) - ================= SLOCATION_RUNNER =================
+08-06 17:28:50.828  2710  3586 I CAE     : display(ContextProvider.java:391) - ExtraDataArray=[1, 1, 55, 0, 33, 33, 0, 0, 0, 0, 0, 0, 1, -97, -42, -54, -105, 8, 17, -94, 115, 32, 47, -50, -66, 64, 0, 0, 0, 3, 2, -120, -16, -24, 0, 0, 0, 2]
+08-06 17:28:50.828  2710  3586 I CAE     : parse(SLocationRunner.java:96) - SLocationRunner parse end:38
+08-06 17:28:50.828  2710  3586 D CAE     : onGetSensorHubData(SensorHubParserProvider.java:92) - onGetSensorHubData Event [event buffer len :10], AP_WAKEUP
+08-06 17:28:50.828  2710  3586 I CAE     : parse(SensorHubParserProvider.java:188) - buffer size = 10
+08-06 17:28:50.828  2710  3586 I CAE     : parse(SensorHubParserProvider.java:199) - 1, 1, 55, 0, 5, 2, 34, 0, 0, 0,
+08-06 17:28:50.828  2710  3586 I CAE     : parse(SLocationRunner.java:88) - SLocationRunner parse start : 3
+08-06 17:28:50.828  2710  3586 D CAE     : display(ContextProvider.java:375) - ================= SLOCATION_RUNNER =================
+08-06 17:28:50.828  2710  3586 I CAE     : display(ContextProvider.java:391) - ExtraDataArray=[1, 1, 55, 0, 5, 2, 34, 0, 0, 0]
+08-06 17:28:50.828 30318 30367 D CCodecBufferChannel: [c2.qti.hevc.decoder#183] Ignoring stale input buffer done callback: last flush index = 0, frameIndex = 0
+08-06 17:28:50.828  2710  3586 I CAE     : parse(SLocationRunner.java:96) - SLocationRunner parse end:10
+08-06 17:28:50.828  1717  3588 I sensors-hal: qsh_conn_resp_cb:935, resp_value = 0 for slocationcore
+08-06 17:28:50.828  1717  3588 I sensors-hal: qsh_conn_event_cb:895, event[0] sensor:slocationcore  Wakeup, msg_id=1025, ts=3858189963024
+08-06 17:28:50.828  1717  3588 E sensors-hal: handle_sns_client_event:78, slocationcore_event: msgid:1025
+08-06 17:28:50.828  2710  3583 D SemContextService: Service.updateContext() : service = SLocation Core
+08-06 17:28:50.828  2710  3583 D SemContextService: Service.updateContext() : service = SLocation Core
+08-06 17:28:50.828  2710  3583 D SemContextService: Service.updateContext() : service = SLocation Core
+08-06 17:28:50.828  1717  1717 I sensors-hal: send_sync_sensor_request:543, takes 0 ms to receive the response with 0
+08-06 17:28:50.829  2710  2710 D SemContextManager: onSemContextChanged() : event = SLocation Core
+08-06 17:28:50.829  2710  2710 D SLocation: SensorHubWrapper - SemContextChanged type = 47, packet received
+08-06 17:28:50.829  2710  2710 D SemContextManager: onSemContextChanged() : event = SLocation Core
+08-06 17:28:50.829  2710  2710 D SLocation: SensorHubWrapper - SemContextChanged type = 47, packet received
+08-06 17:28:50.829  2710  2710 D SemContextManager: onSemContextChanged() : event = SLocation Core
+08-06 17:28:50.829  2710  2710 D SLocation: SensorHubWrapper - SemContextChanged type = 47, packet received
+08-06 17:28:50.829  2710  3586 D CAE     : onGetSensorHubData(SensorHubParserProvider.java:92) - onGetSensorHubData Event [event buffer len :10], AP_WAKEUP
+08-06 17:28:50.830  2710  3586 I CAE     : parse(SensorHubParserProvider.java:188) - buffer size = 10
+08-06 17:28:50.830  2710  4003 W CAE     : setCAProperty(ContextAwareService.java:515) - [setProperty 02] Mutex is unlocked for SLOCATION_RUNNER
+08-06 17:28:50.830  2710  4003 D SemContextService: unlock : changeParameters
+08-06 17:28:50.830  2710  4003 D SemContextManager:   .changeParameters : listener = X.k@c89df81, service=SLocation Core
+08-06 17:28:50.830 19674 19687 I [CE]_ContextEngineReceiver: onReceive - action: com.samsung.android.ce.sensor.location.PASSIVE_INTENT
+08-06 17:28:50.830  2710  3586 I CAE     : parse(SensorHubParserProvider.java:199) - 1, 1, 55, 0, 5, 2, 2, 0, 0, 0,
+08-06 17:28:50.830  2710  4003 D SLocation: ReceiverPair - ignore direction of location due to wifi, id = 4, reason = 400
+08-06 17:28:50.830  2710  3586 I CAE     : parse(SLocationRunner.java:88) - SLocationRunner parse start : 3
+08-06 17:28:50.830  2710  4003 D SLocation: GeopointReceiver - cancel delay & hold gf id : 5
+08-06 17:28:50.830  2710  4003 D SLocation: GeopointReceiver - cancel delay & hold gf id : 94
+08-06 17:28:50.830  2710  3586 D CAE     : display(ContextProvider.java:375) - ================= SLOCATION_RUNNER =================
+08-06 17:28:50.830  2710  3586 I CAE     : display(ContextProvider.java:391) - ExtraDataArray=[1, 1, 55, 0, 5, 2, 2, 0, 0, 0]
+08-06 17:28:50.830  2710  4003 D SLocation: GeopointLastLocation - last location still available 14 / 9223372036854775807
+08-06 17:28:50.830  2710  4003 D SLocation: GeopointGeofenceObserver - location : [F, A : 100.00, T : 1786017530816, ET : 200941832, h : 29/17], radius : 1867053
+08-06 17:28:50.830  2710  3586 I CAE     : parse(SLocationRunner.java:96) - SLocationRunner parse end:10
+08-06 17:28:50.830  2710  4003 D SLocation: GeofenceCoreManager - received Extra Data from core, len : 51
+08-06 17:28:50.830  2710  4003 D SLocation: CommonCoreManager - received Extra Data from core, len : 51
+08-06 17:28:50.830  2710  4003 D SLocation: GeofenceCoreManager - received Extra Data from core, len : 33
+08-06 17:28:50.830  2710  4003 D SLocation: ARDistanceGetARDistance - convertSensorHubTimeToElapsedTime 198440017
+08-06 17:28:50.830  2710  4003 D SLocation: CommonCoreManager - received Extra Data from core, len : 33
+08-06 17:28:50.830  2710  4003 D SLocation: GeofenceCoreManager - received Extra Data from core, len : 5
+08-06 17:28:50.830  2710  4003 D SLocation: GeofenceCoreManager - handleCommandCallback - UNKNOWN_CALLBACK 34 SUCCESS
+08-06 17:28:50.830  2710  4003 D SLocation: ARDistanceLibManager - command callback received - CURRENT_LOCATION_REQUEST_DISTANCE ERROR CODE : ERROR_NONE
+08-06 17:28:50.830  2710  4003 D SLocation: CommonCoreManager - received Extra Data from core, len : 5
+08-06 17:28:50.830  2710  4003 W Settings: Setting airplane_mode_on has moved from android.provider.Settings.System to android.provider.Settings.Global, returning read-only value.
+08-06 17:28:50.830  2710  3583 D SemContextService: Service.updateContext() : service = SLocation Core
+08-06 17:28:50.831 22567 30073 I FrewleTileCacheManagerV: (REDACTED) Fetched %d AP models from cache
+08-06 17:28:50.832 19674 19687 I [CE]_SLocationManager: onReceive - [Passive Location] 20247613
+08-06 17:28:50.832  2710  2710 D SemContextManager: onSemContextChanged() : event = SLocation Core
+08-06 17:28:50.832  2710  2710 D SLocation: SensorHubWrapper - SemContextChanged type = 47, packet received
+08-06 17:28:50.833  2710  4003 D SLocation: AgingAccuracy - cell changed, use max distance for pvt
+08-06 17:28:50.833  2710  4003 W Settings: Setting airplane_mode_on has moved from android.provider.Settings.System to android.provider.Settings.Global, returning read-only value.
+08-06 17:28:50.833  2710  4003 D SLocation: FilteredLastLocation - notify all last locations, loc : 3
+08-06 17:28:50.833  2710  4003 D SLocation: GeofenceCoreManager - received Extra Data from core, len : 5
+08-06 17:28:50.833  2710  4003 D SLocation: GeofenceCoreManager - handleCommandCallback - UNKNOWN_CALLBACK 2 SUCCESS
+08-06 17:28:50.833  2710  4003 D SLocation: CommonCoreManager - received Extra Data from core, len : 5
+08-06 17:28:50.833  2710  4003 D SLocation: CommonCoreManager - handleCommandCallback - FUNC_TYPE : SET_LOCATION  ERROR_CODE : ERROR_NONE
+08-06 17:28:50.833  1747 30371 I QC2Buf  : Reconfig: clearing from 0 bufs. Peak mem=0 MB
+08-06 17:28:50.837 19674 19687 I [CE]_PrimaryLocationManager: checkInStayDurationNow - In CSD now? Y / In ASD now? Y
+08-06 17:28:50.837 19674 19687 I [CE]_PrimaryLocationManager: onNewLocation - State: 0 / 0
+08-06 17:28:50.837 19674 19687 I [CE]_PrimaryAreaManager: onNewlocation - State: 0 / 0
+08-06 17:28:50.837   864   864 I hwservicemanager: getTransport: Cannot find entry android.hardware.graphics.allocator@4.0::IAllocator/default in either framework or device VINTF manifest.
+08-06 17:28:50.840 19674 19687 I [CE]_ActivityDataManagerImpl: loadState - StayInfo loaded
+08-06 17:28:50.842 19674 19687 I [CE]_ActivityDataManagerImpl: Scan receiver - Stay detected - start time : 1786010206858, end time : 1786017530840, timestamp : 1786017530840
+08-06 17:28:50.843 19674 19687 I [CE]_RealtimeMovingContextProvider: onReceive - Not started
+08-06 17:28:50.843 30318 30362 D CCodecConfig: c2 config diff is   c2::u32 output.delay.value = 11
+08-06 17:28:50.843 30318 30362 I CCodecBufferChannel: [c2.qti.hevc.decoder#183] updating max output delay 19
+08-06 17:28:50.843 30318 30362 D Codec2-OutputBufferQueue: set max dequeue count 19 from update
+08-06 17:28:50.849  1747 30376 I QC2V4L2PollThread: [v4lhvcD_312] KPI_L1: Reconfig: ms=15
+08-06 17:28:50.851  1747  2642 I QC2CompStore: Setting heap usage to system
+08-06 17:28:50.855 30318 30362 D CCodecConfig: c2 config diff is   c2::u32 raw.color.matrix = 3
+08-06 17:28:50.855 30318 30362 D CCodecConfig:   c2::u32 raw.color.primaries = 3
+08-06 17:28:50.855 30318 30362 D CCodecConfig:   c2::u32 raw.color.range = 2
+08-06 17:28:50.855 30318 30362 D CCodecConfig:   c2::u32 raw.color.transfer = 3
+08-06 17:28:50.855 30318 30362 D CCodecConfig:   c2::u32 raw.crop.height = 360
+08-06 17:28:50.855 30318 30362 D CCodecConfig:   c2::u32 raw.crop.left = 0
+08-06 17:28:50.855 30318 30362 D CCodecConfig:   c2::u32 raw.crop.top = 0
+08-06 17:28:50.855 30318 30362 D CCodecConfig:   c2::u32 raw.crop.width = 480
+08-06 17:28:50.855 30318 30362 D CCodecBuffers: [c2.qti.hevc.decoder#183:2D-Output] popFromStashAndRegister: at 1000000000000us, output format changed to AMessage(what = 0x00000000) = {
+08-06 17:28:50.855 30318 30362 D CCodecBuffers:   int32_t android._color-format = 0
+08-06 17:28:50.855 30318 30362 D CCodecBuffers:   int32_t android._video-scaling = 1
+08-06 17:28:50.855 30318 30362 D CCodecBuffers:   int32_t android._dataspace = 258
+08-06 17:28:50.855 30318 30362 D CCodecBuffers:   int32_t color-standard = 2
+08-06 17:28:50.855 30318 30362 D CCodecBuffers:   int32_t color-range = 2
+08-06 17:28:50.855 30318 30362 D CCodecBuffers:   int32_t color-transfer = 3
+08-06 17:28:50.855 30318 30362 D CCodecBuffers:   int32_t sar-height = 1
+08-06 17:28:50.855 30318 30362 D CCodecBuffers:   int32_t rotation-degrees = 0
+08-06 17:28:50.855 30318 30362 D CCodecBuffers:   Buffer hdr-static-info = {
+08-06 17:28:50.855 30318 30362 D CCodecBuffers:     00000000:  00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00  ................
+08-06 17:28:50.855 30318 30362 D CCodecBuffers:     00000010:  00 00 00 00 00 00 00 00  00                       .........
+08-06 17:28:50.855 30318 30362 D CCodecBuffers:   }
+08-06 17:28:50.855 30318 30362 D CCodecBuffers:   int32_t sar-width = 1
+08-06 17:28:50.855 30318 30362 D CCodecBuffers:   Rect crop(0, 0, 479, 359)
+08-06 17:28:50.855 30318 30362 D CCodecBuffers:   int32_t width = 480
+08-06 17:28:50.855 30318 30362 D CCodecBuffers:   int32_t feature-secure-playback = 0
+08-06 17:28:50.855 30318 30362 D CCodecBuffers:   int32_t frame-rate = 30
+08-06 17:28:50.855 30318 30362 D CCodecBuffers:   Buffer hdr10-plus-info = {
+08-06 17:28:50.855 30318 30362 D CCodecBuffers:   }
+08-06 17:28:50.855 30318 30362 D CCodecBuffers:   int32_t height = 360
+08-06 17:28:50.855 30318 30362 D CCodecBuffers:   int32_t max-height = 4320
+08-06 17:28:50.855 30318 30362 D CCodecBuffers:   int32_t max-width = 8192
+08-06 17:28:50.855 30318 30362 D CCodecBuffers:   string mime = "video/raw"
+08-06 17:28:50.855 30318 30362 D CCodecBuffers:   int32_t priority = 4
+08-06 17:28:50.855 30318 30362 D CCodecBuffers:   int32_t color-format = 2130708361
+08-06 17:28:50.855 30318 30362 D CCodecBuffers:   int32_t p-extraBC = 6
+08-06 17:28:50.855 30318 30362 D CCodecBuffers: }
+08-06 17:28:50.857 22567 29040 I TFLite-in-PlayServices: Created interpreter.
+08-06 17:28:50.862 30318 30361 I MediaCodec: setCodecState state(1), called in 6, domain 1, 1
+08-06 17:28:50.863  6628  6761 I SemMediaResourceHelper: onState
+08-06 17:28:50.863  8526  8578 I SemMediaResourceHelper: onState
+08-06 17:28:50.863  8526  8578 I DrmMediaResourceHelper: onStateChanged size = 4
+08-06 17:28:50.863  8526  8578 I DrmMediaResourceHelper: resource type: 2,,,isSecured :  falseIsEncoder : falsegetCodecState : 0getpid : 1621
+08-06 17:28:50.863  8526  8578 I DrmMediaResourceHelper: resource type: 2,,,isSecured :  falseIsEncoder : falsegetCodecState : 0getpid : 29201
+08-06 17:28:50.863  8526  8578 I DrmMediaResourceHelper: resource type: 2,,,isSecured :  falseIsEncoder : falsegetCodecState : 0getpid : 29201
+08-06 17:28:50.863  8526  8578 I DrmMediaResourceHelper: resource type: 2,,,isSecured :  falseIsEncoder : falsegetCodecState : 1getpid : 30318
+08-06 17:28:50.864  1727  1844 I HYPER-HAL: [RequestManager.cpp]releaseLocked(): Released ID : 22161182
+08-06 17:28:50.865 22567 29040 I TFLite-in-PlayServices: Created interpreter.
+08-06 17:28:50.870 22567 29040 I SemanticLocation: (REDACTED) [Inferrer] %s%s
+08-06 17:28:50.888 30318 30360 I .videoclip.test: EglImage dataspace changed, need recreate
+08-06 17:28:50.889 30318 30360 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-06 17:28:50.894 30318 30392 I CCodec  : state->set(ALLOCATING)
+08-06 17:28:50.894 30318 30393 I CCodec  : allocate(c2.qti.avc.encoder)
+08-06 17:28:50.894 30318 30393 D CCodec  : allocate(c2.qti.avc.encoder)
+08-06 17:28:50.895 30318 30393 I CCodec  : setting up 'default' as default (vendor) store
+08-06 17:28:50.895  1747  1747 I QC2CompStore: addIdToList add Id[313] to list
+08-06 17:28:50.905 22567 29040 I SemanticLocation: (REDACTED) [OdlhCache] flushing %d segments
+08-06 17:28:50.910 20810 20810 D BoundBrokerSvc: onRebind: Intent { act=com.google.android.gms.semanticlocationhistory.zeroparty.service.START dat=chimera-action:/... xflg=0x4 cmp=com.google.android.gms/.chimera.GmsApiService }
+08-06 17:28:50.912  1747  1747 I vendor.qti.media.c2@1.0-service: missing struct descriptor #Param::CoreIndex(-Vc017) for field ubwcStats of struct #Param::CoreIndex(-Vc018)
+08-06 17:28:50.912  1747  1747 I vendor.qti.media.c2@1.0-service: missing struct descriptor #Param::CoreIndex(--1812) for field values of struct #Param::CoreIndex(F-11812)
+08-06 17:28:50.912  1747  1747 I vendor.qti.media.c2@1.0-service: missing struct descriptor #Param::CoreIndex(-V8002) for field portConfigs of struct #Param::CoreIndex(FV1a100)
+08-06 17:28:50.912  1747  1747 I vendor.qti.media.c2@1.0-service: missing struct descriptor #Param::CoreIndex(--002) for field mastering of struct #Param::CoreIndex(--180a)
+08-06 17:28:50.912  1747  1747 I vendor.qti.media.c2@1.0-service: missing struct descriptor #Param::CoreIndex(-V8002) for field portConfigs of struct #Param::CoreIndex(FV1a250)
+08-06 17:28:50.912  1747  1747 I vendor.qti.media.c2@1.0-service: missing struct descriptor #Param::CoreIndex(-V8002) for field portConfigs of struct #Param::CoreIndex(FV1b000)
+08-06 17:28:50.912  1747  1747 I vendor.qti.media.c2@1.0-service: missing struct descriptor #Param::CoreIndex(-V8002) for field portConfigs of struct #Param::CoreIndex(FV1a250)
+08-06 17:28:50.912  1747  1747 I vendor.qti.media.c2@1.0-service: missing struct descriptor #Param::CoreIndex(-V8002) for field portConfigs of struct #Param::CoreIndex(FV1c051)
+08-06 17:28:50.912  1747  1747 I vendor.qti.media.c2@1.0-service: missing struct descriptor #Param::CoreIndex(-V8002) for field portConfigs of struct #Param::CoreIndex(FV1a100)
+08-06 17:28:50.912  1747  1747 I vendor.qti.media.c2@1.0-service: missing struct descriptor #Param::CoreIndex(-V8002) for field portConfigs of struct #Param::CoreIndex(FV1b000)
+08-06 17:28:50.913  1747  1747 I vendor.qti.media.c2@1.0-service: missing struct descriptor #Param::CoreIndex(--004) for field values of struct #Param::CoreIndex(F-12004)
+08-06 17:28:50.913  1747  1747 W StandardCaps: IntraRefresh disabled: period=0.000000
+08-06 17:28:50.913  1747  1747 I QC2Comp : [cmpavcE_313] KPI_L1: init: ms=0
+08-06 17:28:50.913  1747  1747 I QC2Comp : [c2.qti.avc.encoder] KPI_L1: Create: ms=17
+08-06 17:28:50.913  1747  1747 I QC2CompStore: Created component(c2.qti.avc.encoder) id(313) sStore[0xb4000078258042f0]
+08-06 17:28:50.914 30318 30393 I CCodec  : Created component [c2.qti.avc.encoder] for [c2.qti.avc.encoder]
+08-06 17:28:50.914 30318 30393 I CCodec  : [c2.qti.avc.encoder] state->set(ALLOCATED)
+08-06 17:28:50.914  1747  2635 W QC2Interface: [avcE_313] Failed to query parameters
+08-06 17:28:50.914 30318 30393 D CCodecConfig: read media type: video/avc
+08-06 17:28:50.916 30318 30393 D ReflectedParamUpdater: extent() != 1 for single value type: output.subscribed-indices.values
+08-06 17:28:50.917 30318 30393 D ReflectedParamUpdater: extent() != 1 for single value type: vendor.qti-ext-transcode-info-stats.stats_info
+08-06 17:28:50.920 30318 30393 D ReflectedParamUpdater: ignored struct field vendor.output.configs.portConfigs
+08-06 17:28:50.920 30318 30393 D ReflectedParamUpdater: ignored struct field coding.gop.values
+08-06 17:28:50.921 30318 30393 D ReflectedParamUpdater: ignored struct field vendor.input.configs.portConfigs
+08-06 17:28:50.922 30318 30393 D ReflectedParamUpdater: ignored struct field vendor.output.configs.portConfigs
+08-06 17:28:50.922 30318 30393 D ReflectedParamUpdater: ignored struct field coding.qp.values
+08-06 17:28:50.922 30318 30393 D ReflectedParamUpdater: ignored struct field vendor.V4L2_INPUT_PORT_CONFIGS.portConfigs
+08-06 17:28:50.923 30318 30393 D ReflectedParamUpdater: ignored struct field vendor.input.configs.portConfigs
+08-06 17:28:50.923 30318 30393 D ReflectedParamUpdater: extent() != 1 for single value type: vendor.qti-ext-enc-info-metadata-cvp.reserved
+08-06 17:28:50.924 30318 30393 D ReflectedParamUpdater: extent() != 1 for single value type: vendor.qti-ext-enc-temporal-layer-bitrate.layerBitrates
+08-06 17:28:50.924 30318 30393 D ReflectedParamUpdater: ignored struct field vendor.input.configs.portConfigs
+08-06 17:28:50.925 30318 30393 D ReflectedParamUpdater: ignored struct field vendor.output.configs.portConfigs
+08-06 17:28:50.926 30318 30393 D ReflectedParamUpdater: extent() != 1 for single value type: output.buffers.pool-ids.values
+08-06 17:28:50.926 30318 30393 D CCodecConfig: ignoring local param raw.color (0xc2001809) as it is already supported
+08-06 17:28:50.926 30318 30393 D CCodecConfig: ignoring local param coded.average-qp (0xd200401b) as it is already supported
+08-06 17:28:50.926 30318 30393 D CCodecConfig: ignoring local param coded.picture-type (0xd2001810) as it is already supported
+08-06 17:28:50.926 20810  3961 I LocationHistory: (REDACTED) [API0] saving %d segments
+08-06 17:28:50.927 30318 30393 I CCodec  : [c2.qti.avc.encoder] config->initialize() : 0
+08-06 17:28:50.927  1747  2640 W QC2Interface: [avcE_313] Failed to query parameters
+08-06 17:28:50.927 30318 30393 I CCodecConfig: query failed after returning 24 values (BAD_INDEX)
+08-06 17:28:50.927 30318 30393 D CCodecConfig: c2 config diff is Dict {
+08-06 17:28:50.927 30318 30393 D CCodecConfig:   c2::u32 algo.bitrate-mode.value = 3
+08-06 17:28:50.927 30318 30393 D CCodecConfig:   c2::u32 algo.complexity.value = 50
+08-06 17:28:50.927 30318 30393 D CCodecConfig:   c2::i32 algo.priority.value = -4
+08-06 17:28:50.927 30318 30393 D CCodecConfig:   c2::float algo.rate.value = 1
+08-06 17:28:50.927 30318 30393 D CCodecConfig:   c2::u32 algo.secure-mode.value = 0
+08-06 17:28:50.927 30318 30393 D CCodecConfig:   c2::u32 coded.bitrate.value = 20000000
+08-06 17:28:50.927 30318 30393 D CCodecConfig:   c2::float coded.frame-rate.value = 30
+08-06 17:28:50.927 30318 30393 D CCodecConfig:   c2::u32 coded.hdr-format.value = 0
+08-06 17:28:50.927 30318 30393 D CCodecConfig:   c2::u32 coded.pl.level = 0
+08-06 17:28:50.927 30318 30393 D CCodecConfig:   c2::u32 coded.pl.profile = 20484
+08-06 17:28:50.927 30318 30393 D CCodecConfig:   c2::u32 coded.vui.color.matrix = 255
+08-06 17:28:50.927 30318 30393 D CCodecConfig:   c2::u32 coded.vui.color.primaries = 0
+08-06 17:28:50.927 30318 30393 D CCodecConfig:   c2::u32 coded.vui.color.range = 0
+08-06 17:28:50.927 30318 30393 D CCodecConfig:   c2::u32 coded.vui.color.transfer = 255
+08-06 17:28:50.927 30318 30393 D CCodecConfig:   c2::u32 coding.intra-refresh.mode = 0
+08-06 17:28:50.927 30318 30393 D CCodecConfig:   c2::float coding.intra-refresh.period = 0
+08-06 17:28:50.927 30318 30393 D CCodecConfig:   c2::u32 coding.request-sync-frame.value = 0
+08-06 17:28:50.927 30318 30393 D CCodecConfig:   c2::i64 coding.sync-frame-interval.value = 1000000
+08-06 17:28:50.927 30318 30393 D CCodecConfig:   Buffer coding.temporal-layering = {
+08-06 17:28:50.927 30318 30393 D CCodecConfig:     00000000:  10 00 00 00 07 20 01 52  00 00 00 00 00 00 00 00  ..... .R........
+08-06 17:28:50.927 30318 30393 D CCodecConfig:   }
+08-06 17:28:50.927 30318 30393 D CCodecConfig:   c2::u32 default.color.matrix = 0
+08-06 17:28:50.927 30318 30393 D CCodecConfig:   c2::u32 default.color.primaries = 0
+08-06 17:28:50.927 30318 30393 D CCodecConfig:   c2::u32 default.color.range = 0
+08-06 17:28:50.927 30318 30393 D CCodecConfig:   c2::u32 default.color.transfer = 0
+08-06 17:28:50.927 30318 30393 D CCodecConfig:   c2::u32 input.delay.value =
+08-06 17:28:50.927 30318 30393 W ColorUtils: expected specified color aspects (0:0:255:255)
+08-06 17:28:50.927 30318 30393 I CCodec  : [c2.qti.avc.encoder] config->queryConfiguration()
+08-06 17:28:50.927 30318 30393 I CCodec  : [c2.qti.avc.encoder] mCallback->onComponentAllocated() IN
+08-06 17:28:50.927 30318 30393 I CCodec  : [c2.qti.avc.encoder] mCallback->onComponentAllocated() OUT
+08-06 17:28:50.928 30318 30360 I MediaCodec: media_quality service unavailable, skipping updatePictureProfile
+08-06 17:28:50.936 26233 27000 I DrmUtils: found IDrmFactory. Instance name:[android.hardware.drm.IDrmFactory/clearkey]
+08-06 17:28:50.936 26233 27000 I DrmUtils: found IDrmFactory. Instance name:[android.hardware.drm.IDrmFactory/widevine]
+08-06 17:28:50.938   864   864 I hwservicemanager: getTransport: Cannot find entry android.hardware.drm@1.0::ICryptoFactory/default in either framework or device VINTF manifest.
+08-06 17:28:50.938 26233 27000 E CryptoHalHidl: Failed to find any crypto factories
+08-06 17:28:50.939  1763  1763 I WVCdm   : [cdm_engine.cpp(1089):IsSecurityLevelSupported] level = L1
+08-06 17:28:50.940  1763  1763 I WVCdm-DrmFactory: [app] calling virtual ::ndk::ScopedAStatus wvdrm::hardware::drm::widevine::WVDrmFactory::createCryptoPlugin(const ::aidl::android::hardware::drm::Uuid &, const std::vector<uint8_t> &, std::shared_ptr< ::aidl::android::hardware::drm::ICryptoPlugin> *)
+08-06 17:28:50.940 26233 27000 I CryptoHalAidl: Create ICryptoPluginAidl. UUID:[Uuid{uuid: [237, 239, 139, 169, 121, 214, 74, 206, 163, 200, 39, 220, 213, 29, 33, 237]}]
+08-06 17:28:50.940  1763  1763 I WVCdm   : [cdm_engine.cpp(955):QuerySessionStatus] session_id = sid208
+08-06 17:28:50.941 30318 30360 D CodecSeeding: Seed: codec c2.qti.avc.encoder, mediatype video/avc, overrideable 1
+08-06 17:28:50.941 30318 30360 D CodecProperties: setTuningValue(vq-target-bpp,0)
+08-06 17:28:50.941 30318 30360 D CodecProperties: setTuningValue(vq-target-bpp-1080p,1.90)
+08-06 17:28:50.941 30318 30360 D CodecProperties: setTuningValue(vq-target-bpp-720p,2.25)
+08-06 17:28:50.941 30318 30360 D CodecProperties: setTuningValue(vq-target-bpp-540p,2.65)
+08-06 17:28:50.941 30318 30360 D CodecProperties: setTuningValue(vq-target-bpp-480p,3.00)
+08-06 17:28:50.941 30318 30360 D CodecProperties: setTuningValue(vq-target-bpp-320x240,0)
+08-06 17:28:50.941 30318 30360 D CodecProperties: setTuningValue(vq-target-qpmax,-1)
+08-06 17:28:50.941 30318 30360 D CodecProperties: setTuningValue(vq-target-qpmax-1080p,45)
+08-06 17:28:50.941 30318 30360 D CodecProperties: setTuningValue(vq-target-qpmax-720p,43)
+08-06 17:28:50.941 30318 30360 D CodecProperties: setTuningValue(vq-target-qpmax-540p,42)
+08-06 17:28:50.941 30318 30360 D CodecProperties: setTuningValue(vq-target-qpmax-480p,38)
+08-06 17:28:50.941 30318 30360 D CodecProperties: setTuningValue(vq-bitrate-phaseout,1.75)
+08-06 17:28:50.941 30318 30360 D CodecProperties: setTuningValue(vq-boost-missing-qp,0.20)
+08-06 17:28:50.941 30318 30360 D CodecProperties: setFeatureValue(encoding-statistics,0)
+08-06 17:28:50.941 30318 30360 D CodecProperties: setFeatureValue(intra-refresh,0)
+08-06 17:28:50.941 30318 30360 D CodecProperties: setFeatureValue(video-minimum-quality,0)
+08-06 17:28:50.941 30318 30360 D CodecProperties: setFeatureValue(_vq_eligible.device,1)
+08-06 17:28:50.941 30318 30360 D CodecProperties: setFeatureValue(_quality.target,1)
+08-06 17:28:50.941 30318 30360 D CodecSeeding: Seed: codec c2.qti.avc.encoder, mediatype video/avc, overrideable 0
+08-06 17:28:50.941 30318 30360 D VQApply : minquality: codec claims to implement minquality=1
+08-06 17:28:50.941 30318 30360 D MediaCodec: shapeMediaFormat: deltas(1): AMessage(what = 0x00000000) = {
+08-06 17:28:50.941 30318 30360 D MediaCodec:     int32_t android._encoding-quality-level = 1
+08-06 17:28:50.941 30318 30360 D MediaCodec:   }
+08-06 17:28:50.942 30318 30393 D CCodec  : [c2.qti.avc.encoder] buffers are bound to CCodec for this session
+08-06 17:28:50.942 30318 30393 I CCodec  : appPid(30318) width(480) height(360)
+08-06 17:28:50.943 30318 30393 I CCodec  : Set content adaptive mode (0)
+08-06 17:28:50.943 30318 30393 D CCodecConfig: no c2 equivalents for log-session-id
+08-06 17:28:50.943 30318 30393 D CCodecConfig: no c2 equivalents for exo-pixel-width-height-ratio-float
+08-06 17:28:50.943 30318 30393 D CCodecConfig: no c2 equivalents for color-format
+08-06 17:28:50.943 30318 30393 D CCodecConfig: no c2 equivalents for importance
+08-06 17:28:50.943 30318 30393 D CCodecConfig: no c2 equivalents for color-standard
+08-06 17:28:50.943 30318 30393 D CCodecConfig: no c2 equivalents for is-autoselect
+08-06 17:28:50.943 30318 30393 D CCodecConfig: no c2 equivalents for is-default
+08-06 17:28:50.944 30318 30393 D CCodecConfig: no c2 equivalents for is-forced-subtitle
+08-06 17:28:50.944 30318 30393 D CCodecConfig: no c2 equivalents for codecs-string
+08-06 17:28:50.944 30318 30393 D CCodecConfig: no c2 equivalents for encoder-delay
+08-06 17:28:50.944 30318 30393 D CCodecConfig: no c2 equivalents for encoder-padding
+08-06 17:28:50.944 30318 30393 D CCodecConfig: no c2 equivalents for flags
+08-06 17:28:50.944 30318 30393 D CCodecConfig: no c2 equivalents for encoder
+08-06 17:28:50.946 20810  3961 I LocationHistory: [DataProvider] Opening SQLite [CONTEXT service_id=314 ]
+08-06 17:28:50.947 30318 30393 D CCodecConfig: c2 config diff is   c2::i32 algo.priority.value = -1
+08-06 17:28:50.947 30318 30393 D CCodecConfig:   c2::float algo.rate.value = 2.14748e+09
+08-06 17:28:50.947 30318 30393 D CCodecConfig:   c2::u32 coded.bitrate.value = 725760
+08-06 17:28:50.947 30318 30393 D CCodecConfig:   c2::u32 coded.hdr-format.value = 1
+08-06 17:28:50.947 30318 30393 D CCodecConfig:   c2::u32 coded.pl.level = 20497
+08-06 17:28:50.947 30318 30393 D CCodecConfig:   c2::u32 coded.vui.color.matrix = 1
+08-06 17:28:50.947 30318 30393 D CCodecConfig:   c2::u32 coded.vui.color.primaries = 1
+08-06 17:28:50.947 30318 30393 D CCodecConfig:   c2::u32 coded.vui.color.range = 2
+08-06 17:28:50.947 30318 30393 D CCodecConfig:   c2::u32 coded.vui.color.transfer = 3
+08-06 17:28:50.947 30318 30393 D CCodecConfig:   c2::u32 raw.color.matrix = 1
+08-06 17:28:50.947 30318 30393 D CCodecConfig:   c2::u32 raw.color.primaries = 1
+08-06 17:28:50.947 30318 30393 D CCodecConfig:   c2::u32 raw.color.range = 2
+08-06 17:28:50.947 30318 30393 D CCodecConfig:   c2::u32 raw.color.transfer = 3
+08-06 17:28:50.947 30318 30393 D CCodecConfig:   c2::u32 raw.pixel-format.value = 34
+08-06 17:28:50.947 30318 30393 D CCodecConfig:   c2::u32 raw.size.height = 360
+08-06 17:28:50.947 30318 30393 D CCodecConfig:   c2::u32 raw.size.width = 480
+08-06 17:28:50.947 30318 30393 D CCodecConfig:   c2::i32 vendor.qti-ext-enc-content-adaptive-mode.value = 0
+08-06 17:28:50.947  2710 29836 D BSOHChargingDataCollector:  BSOH Sys-servce ...
+08-06 17:28:50.947  2710 29836 D BSOHChargingDataCollector: performBatteryWork++
+08-06 17:28:50.947  2710 29836 D BSOHChargingDataCollector: performBatteryWork battery com.android.server.bsoh.device.PrimeBattery@cf13a4f
+08-06 17:28:50.947  2710 29836 D BSOHChargingDataCollector: primeBatt readVoltage from sysFsBattVolt,  path : /sys/class/power_supply/battery/batt_voltage_now
+08-06 17:28:50.948  1747  2640 W QC2Interface: [avcE_313] Failed to query parameters
+08-06 17:28:50.948 30318 30393 W Codec2Client: query -- param skipped: index = 3254781982.
+08-06 17:28:50.948 30318 30393 D CCodec  : Setting encoder options for disabling wrapping
+08-06 17:28:50.948 30318 30393 D CCodec  : encoding statistics level = 0
+08-06 17:28:50.949 30318 30393 D CCodec  : setup formats input: AMessage(what = 0x00000000) = {
+08-06 17:28:50.949 30318 30393 D CCodec  :   int32_t android._color-format = 2130708361
+08-06 17:28:50.949 30318 30393 D CCodec  :   Rect crop(0, 0, 479, 359)
+08-06 17:28:50.949 30318 30393 D CCodec  :   int32_t color-standard = 1
+08-06 17:28:50.949 30318 30393 D CCodec  :   int32_t color-range = 2
+08-06 17:28:50.949 30318 30393 D CCodec  :   int32_t color-transfer = 3
+08-06 17:28:50.949 30318 30393 D CCodec  :   int32_t width = 480
+08-06 17:28:50.949 30318 30393 D CCodec  :   int32_t android._dataspace = 260
+08-06 17:28:50.949 30318 30393 D CCodec  :   int32_t feature-secure-playback = 0
+08-06 17:28:50.949 30318 30393 D CCodec  :   int32_t frame-rate = 30
+08-06 17:28:50.949 30318 30393 D CCodec  :   int32_t height = 360
+08-06 17:28:50.949 30318 30393 D CCodec  :   int32_t intra-refresh-period = 0
+08-06 17:28:50.949 30318 30393 D CCodec  :   string mime = "video/raw"
+08-06 17:28:50.949 30318 30393 D CCodec  :   int32_t prepend-sps-pps-to-idr-frames = 0
+08-06 17:28:50.949 30318 30393 D CCodec  :   int32_t priority = 1
+08-06 17:28:50.949 30318 30393 D CCodec  :   Buffer hdr-static-info = {
+08-06 17:28:50.949 30318 30393 D CCodec  :     00000000:  00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00  ................
+08-06 17:28:50.949 30318 30393 D CCodec  :     00000010:  00 00 00 00 00 00 00 00  00                       .........
+08-06 17:28:50.949 30318 30393 D CCodec  :   }
+08-06 17:28:50.949 30318 30393 D CCodec  :   int64_t android._C2MemoryUsage = 4503599895872256
+08-06 17:28:50.949 30318 30393 D CCodec  :   int32_t color-format = 2130708361
+08-06 17:28:50.949 30318 30393 D CCodec  :   int32_t bytebuffer-wrapping-disable = 1
+08-06 17:28:50.949 30318 30393 D CCodec  : }
+08-06 17:28:50.949 30318 30393 D CCodec  : setup formats output: AMessage(what = 0x00000000) = {
+08-06 17:28:50.949 30318 30393 D CCodec  :   int32_t bitrate = 725760
+08-06 17:28:50.949 30318 30393 D CCodec  :   int32_t bitrate-mode = 1
+08-06 17:28:50.949 30318 30393 D CCodec  :   Rect crop(0, 0, 479, 359)
+08-06 17:28:50.949 30318 30393 D CCodec  :   int32_t width = 480
+08-06 17:28:50.949 30318 30393 D CCodec  :   int32_t color-standard = 1
+08-06 17:28:50.949 30318 30393 D CCodec  :   int32_t color-range = 2
+08-06 17:28:50.949 30318 30393 D CCodec  :   int32_t color-transfer = 3
+08-06 17:28:50.949 30318 30393 D CCodec  :   int32_t feature-secure-playback = 0
+08-06 17:28:50.949 30318 30393 D CCodec  :   int32_t frame-rate = 30
+08-06 17:28:50.949 30318 30393 D CCodec  :   int32_t height = 360
+08-06 17:28:50.949 30318 30393 D CCodec  :   int32_t intra-refresh-period = 0
+08-06 17:28:50.949 30318 30393 D CCodec  :   int32_t max-bitrate = 725760
+08-06 17:28:50.949 30318 30393 D CCodec  :   string mime = "video/avc"
+08-06 17:28:50.949 30318 30393 D CCodec  :   int32_t prepend-sps-pps-to-idr-frames = 0
+08-06 17:28:50.949 30318 30393 D CCodec  :   int32_t priority = 1
+08-06 17:28:50.949 30318 30393 D CCodec  :   int32_t profile = 8
+08-06 17:28:50.949 30318 30393 D CCodec  :   int32_t vendor.qti-ext-enc-content-adaptive-mode.value = 0
+08-06 17:28:50.949 30318 30393 D CCodec  :   int32_t level = 131072
+08-06 17:28:50.949 30318 30393 D CCodec  : }
+08-06 17:28:50.949  1747  2203 W QC2Interface: [avcE_313] Failed to query parameters
+08-06 17:28:50.949 30318 30393 I CCodecConfig: query failed after returning 26 values (BAD_INDEX)
+08-06 17:28:50.949  1747 14485 W QC2Interface: [avcE_313] Failed to query parameters
+08-06 17:28:50.949 30318 30393 E .videoclip.test: Failed to query component interface for required system resources: 6
+08-06 17:28:50.951  2710  4546 D SehCodecSolutionService: updateMediaStatisticsData: (action=1@1986621044;category=1@1986621044;label=1936222260@1986621044)
+08-06 17:28:50.951  2710  4546 D CodecSolution_MediaStatisticsData: MediaStatisticsData: action=1@1986621044;category=1@1986621044;label=1936222260@1986621044
+08-06 17:28:50.951  2710  4546 D CodecSolution_MediaStatisticsData: Category.valueOf: 1
+08-06 17:28:50.951  2710  4546 D CodecSolution_MediaStatisticsData: Action.valueOf: 1
+08-06 17:28:50.951  2710  4546 D CodecSolution_MediaStatisticsData: Label.valueOf: 0x73686834
+08-06 17:28:50.952  2710  4546 D CodecSolution_MediaStatisticsData: category: VENC
+08-06 17:28:50.952  2710  4546 D CodecSolution_MediaStatisticsData: action: INSTANTIATE
+08-06 17:28:50.952  2710  4546 D CodecSolution_MediaStatisticsData: label: SEC_HW_H264
+08-06 17:28:50.952  2710  2710 D SehCodecSolutionService: handleMessage : 900
+08-06 17:28:50.952  2710  2710 D SehCodecSolutionService: event : VENC
+08-06 17:28:50.952  2710  2710 D CodecSolution_Logging: dma : true, feature: VENC, extra: SEC_HW_H264, value: -1
+08-06 17:28:50.952  2710  2710 D CodecSolution_Logging: insert diagmon log
+08-06 17:28:50.952  2710  2710 D CodecSolution_Logging: permission granted
+08-06 17:28:50.955  2710 29836 D BSOHChargingDataCollector: 0 	 BattData addData data : BattData { voltage:4.06, current:-0.686718, soc:0.69, temperature:33.3, status:2, timestamp:1786017530955, voltage_chg:null}
+08-06 17:28:50.955  2710 29836 D BSOHChargingDataCollector: performBatteryWork--
+08-06 17:28:50.959  2710  5154 I NSLocationMonitor: getGPSUsingApps() called
+08-06 17:28:50.959  5136  4204 I NSLocationManager_FLP: getGPSUsingApps, No change
+08-06 17:28:50.960  2710  5154 W Binder  : Outgoing transactions from this process must be FLAG_ONEWAY
+08-06 17:28:50.960  2710  5154 W Binder  : java.lang.Throwable
+08-06 17:28:50.960  2710  5154 W Binder  : 	at android.os.BinderProxy.transact(BinderProxy.java:575)
+08-06 17:28:50.960  2710  5154 W Binder  : 	at android.bluetooth.IBluetoothGatt$Stub$Proxy.getAdvertisingSetUids(IBluetoothGatt.java:992)
+08-06 17:28:50.960  2710  5154 W Binder  : 	at android.bluetooth.BluetoothAdapter.getAdvertisingSetUids(BluetoothAdapter.java:1995)
+08-06 17:28:50.960  2710  5154 W Binder  : 	at android.bluetooth.BluetoothAdapter.getHWUsingApps(BluetoothAdapter.java:2266)
+08-06 17:28:50.960  2710  5154 W Binder  : 	at com.android.server.am.mars.filter.filter.BlueToothConnectedFilter.updateBTUsingPackages(qb/110700065 36092c6b5e2db594ddb9390d1d85e789eec1a6560584c72450285350d40ff8cf:22)
+08-06 17:28:50.960  2710  5154 W Binder  : 	at com.android.server.am.FreecessController.freeze(qb/110700065 36092c6b5e2db594ddb9390d1d85e789eec1a6560584c72450285350d40ff8cf:126)
+08-06 17:28:50.960  2710  5154 W Binder  : 	at com.android.server.am.FreecessHandler$MainHandler.handleLcdOnFreeze(qb/110700065 36092c6b5e2db594ddb9390d1d85e789eec1a6560584c72450285350d40ff8cf:55)
+08-06 17:28:50.960  2710  5154 W Binder  : 	at com.android.server.am.FreecessHandler$MainHandler.handleMessage(qb/110700065 36092c6b5e2db594ddb9390d1d85e789eec1a6560584c72450285350d40ff8cf:1686)
+08-06 17:28:50.960  2710  5154 W Binder  : 	at android.os.Handler.dispatchMessage(Handler.java:132)
+08-06 17:28:50.960  2710  5154 W Binder  : 	at android.os.Looper.dispatchMessage(Looper.java:358)
+08-06 17:28:50.960  2710  5154 W Binder  : 	at android.os.Looper.loopOnce(Looper.java:288)
+08-06 17:28:50.960  2710  5154 W Binder  : 	at android.os.Looper.loop(Looper.java:392)
+08-06 17:28:50.960  2710  5154 W Binder  : 	at android.os.HandlerThread.run(HandlerThread.java:139)
+08-06 17:28:50.963 30318 30393 D CCodec  : aidl based PersistentSurface created
+08-06 17:28:50.965 30318 30393 D CCodec  : input format unchanged to AMessage(what = 0x00000000) = {
+08-06 17:28:50.965 30318 30393 D CCodec  :   int32_t android._color-format = 2130708361
+08-06 17:28:50.965 30318 30393 D CCodec  :   Rect crop(0, 0, 479, 359)
+08-06 17:28:50.965 30318 30393 D CCodec  :   int32_t color-standard = 1
+08-06 17:28:50.965 30318 30393 D CCodec  :   int32_t color-range = 2
+08-06 17:28:50.965 30318 30393 D CCodec  :   int32_t color-transfer = 3
+08-06 17:28:50.965 30318 30393 D CCodec  :   int32_t width = 480
+08-06 17:28:50.965 30318 30393 D CCodec  :   int32_t android._dataspace = 260
+08-06 17:28:50.965 30318 30393 D CCodec  :   int32_t feature-secure-playback = 0
+08-06 17:28:50.965 30318 30393 D CCodec  :   int32_t frame-rate = 30
+08-06 17:28:50.965 30318 30393 D CCodec  :   int32_t height = 360
+08-06 17:28:50.965 30318 30393 D CCodec  :   int32_t intra-refresh-period = 0
+08-06 17:28:50.965 30318 30393 D CCodec  :   string mime = "video/raw"
+08-06 17:28:50.965 30318 30393 D CCodec  :   int32_t prepend-sps-pps-to-idr-frames = 0
+08-06 17:28:50.965 30318 30393 D CCodec  :   int32_t priority = 1
+08-06 17:28:50.965 30318 30393 D CCodec  :   Buffer hdr-static-info = {
+08-06 17:28:50.965 30318 30393 D CCodec  :     00000000:  00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00  ................
+08-06 17:28:50.965 30318 30393 D CCodec  :     00000010:  00 00 00 00 00 00 00 00  00                       .........
+08-06 17:28:50.965 30318 30393 D CCodec  :   }
+08-06 17:28:50.965 30318 30393 D CCodec  :   int64_t android._C2MemoryUsage = 4503599895872256
+08-06 17:28:50.965 30318 30393 D CCodec  :   int32_t color-format = 2130708361
+08-06 17:28:50.965 30318 30393 D CCodec  :   int32_t bytebuffer-wrapping-disable = 1
+08-06 17:28:50.965 30318 30393 D CCodec  : }
+08-06 17:28:50.966  1747  2203 W QC2Interface: [avcE_313] Failed to query parameters
+08-06 17:28:50.966 30318 30393 W Codec2Client: query -- param skipped: index = 1610614798.
+08-06 17:28:50.966 30318 30393 D C2NodeImpl: actual buffer count(16), input delay(1), pipeline delay(0)
+08-06 17:28:50.966 30318 30393 D GraphicBufferSource: setting dataspace: 0x10c10000, acquired=0
+08-06 17:28:50.966 30318 30393 D CCodec  : ISConfig not changed
+08-06 17:28:50.967 30318 30360 W libc    : Access denied finding property "vendor.display.enable_optimal_refresh_rate"
+08-06 17:28:50.967 30318 30392 I CCodec  : [c2.qti.avc.encoder] state->set(STARTING)
+08-06 17:28:50.968  1747  2203 W QC2Interface: [avcE_313] Failed to query parameters
+08-06 17:28:50.968  1747  2203 I QC2Comp : [avcE_313] CPU perf resource value pair found: [1082130688, 4095, ]
+08-06 17:28:50.968  1747  2203 I QC2Registry: Build pipelined codec for session
+08-06 17:28:50.968  1747  2203 I QC2Registry: Getting stages for pipelined codec
+08-06 17:28:50.968  1747  2203 I QC2Registry: Requested codec is pipelined. Create codec list
+08-06 17:28:50.968  1747  2203 I QC2Registry: GetEnabledFilters for c2.qti.avc.encoder
+08-06 17:28:50.968  1747  2203 I QC2Registry: Pipeline Index = a000a103
+08-06 17:28:50.968  1747  2203 I QC2Registry: Pipeline Index = a000b002
+08-06 17:28:50.968  1747  2203 I QC2Registry: Filter is enabled
+08-06 17:28:50.970  1747  2203 I QC2Registry: Add c2.qti.filter.imagetransform to pipeline
+08-06 17:28:50.970  1747  2203 I QC2Registry: Pipeline Index = a000a252
+08-06 17:28:50.970  1747  2203 I QC2Registry: search [c2.qti.filter.cvp] in mPreProcessingFactories
+08-06 17:28:50.971  1747  2203 I QC2Registry: Add c2.qti.filter.cvp to pipeline
+08-06 17:28:50.971  1747  2203 I QC2Registry: search [c2.qti.filter.streamintegrator] in mPreProcessingFactories
+08-06 17:28:50.971  1747  2203 I QC2Registry: Created 3 filters for pipelined codec c2.qti.avc.encoder
+08-06 17:28:50.972  1747  2203 I QC2Filter: [imgTxrF_313] KPI_L1: init: ms=0
+08-06 17:28:50.977  1747  2203 I CV      : File: vendor/qcom/proprietary/cv-noship/eva/4.0/src/cpu/platform/android/evaSession.cpp Line: 490 Function: evaGetDebugSettings() Msg: EVA Debug Logs Disabled
+08-06 17:28:50.977  1747  2203 I CV      : File: vendor/qcom/proprietary/cv-noship/eva/4.0/src/cpu/platform/android/evaSession.cpp Line: 536 Function: evaGetPresilSettings() Msg: EVA Sync default timeout used. Timeout = 2500 ms
+08-06 17:28:50.981  2710  3619 D InetDiagMessage: Destroyed 0 sockets, proto=IPPROTO_TCP, family=AF_INET, states=14
+08-06 17:28:50.982  2710  3619 D InetDiagMessage: Destroyed 0 sockets, proto=IPPROTO_TCP, family=AF_INET6, states=14
+08-06 17:28:50.982  2710  3619 D InetDiagMessage: Destroyed live tcp sockets for uids={10257} in 2ms
+08-06 17:28:50.984  1747  2203 W libc    : pthread_create sched_setscheduler(1, {99}) call failed: Operation not permitted
+08-06 17:28:50.984  1747  2203 I CV      : Calling process doesn't have prvileges to set max priority 99
+08-06 17:28:50.984  1747  2203 I CV      : Setting real time priority for child thread is not possible, inheriting priority of calling thread
+08-06 17:28:50.985  1747  2203 W libc    : pthread_create sched_setscheduler(1, {99}) call failed: Operation not permitted
+08-06 17:28:50.985  1747  2203 I CV      : Calling process doesn't have prvileges to set max priority 99
+08-06 17:28:50.985  1747  2203 I CV      : Setting real time priority for child thread is not possible, inheriting priority of calling thread
+08-06 17:28:50.985  1747  2203 I QC2Filter: [cvpF_313] KPI_L1: init: ms=12
+08-06 17:28:50.985  1747  2203 I QC2Filter: [sIgF_313] KPI_L1: init: ms=0
+08-06 17:28:50.987  1747  2203 I QC2V4l2Codec: [v4lavcE_313] KPI_L1: init: ms=1
+08-06 17:28:50.987  1747  2203 I QC2PipelineCodec: [pipeE_avcE_313] KPI_L1: init: ms=15
+08-06 17:28:50.989  1747 30414 I QC2Buf  : use default ref tracker
+08-06 17:28:50.989  1747 30414 I QC2Buf  : registerCallback graphicBufferPool override
+08-06 17:28:50.989  1747 30414 I QC2Buf  : registerCallback graphicBufferPool override
+08-06 17:28:50.990  1747 30414 I QC2Buf  : use default ref tracker
+08-06 17:28:50.990  1747 30414 I QC2Buf  : registerCallback graphicBufferPool override
+08-06 17:28:50.990  1747 30414 I QC2Buf  : registerCallback graphicBufferPool override
+08-06 17:28:50.990  1747 30414 I QC2ImageConverter: Constructing QC2VidTxrEngine engine for image conversion
+08-06 17:28:50.995  1747 30414 I QC2ImageConverter: created QC2ImageConverter: [480x360, RGBA8888_UBWC] -- {do flip 0, then rotate 0} --> [480x360, VENUS_NV12_UBWC]
+08-06 17:28:50.995  1747 30414 I QC2ImageConverter: Constructing QC2VidTxrEngine engine for image conversion
+08-06 17:28:50.996  1747 30414 I QC2ImageConverter: created QC2ImageConverter: [480x360, RGBA8888_UBWC] -- {do flip 0, then rotate 0} --> [480x270, VENUS_NV12_UBWC]
+08-06 17:28:50.997  1747  2203 I QC2PipelineCodec: [imgTxrF_313] KPI_L1: start: ms=8
+08-06 17:28:50.999  1747 30416 I CV      : File: vendor/qcom/proprietary/cv-noship/eva/4.0/src/cpu/evaDme.cpp Line: 510 Function: evaDmeSetInitConfig() Msg: default config
+08-06 17:28:50.999  1747 30416 I CV      : File: vendor/qcom/proprietary/cv-noship/eva/4.0/src/cpu/evaDme.cpp Line: 526 Function: evaDmeSetInitConfig() Msg: default config
+08-06 17:28:51.000  1747 30416 I CV      : File: vendor/qcom/proprietary/cv-noship/eva/4.0/src/cpu/evaDme.cpp Line: 536 Function: evaDmeSetInitConfig() Msg: A FPS : 30 , O FPS : 2147483647
+08-06 17:28:51.000  1747 30416 I CV      : File: vendor/qcom/proprietary/cv-noship/eva/4.0/src/cpu/evaDme.cpp Line: 541 Function: evaDmeSetInitConfig() Msg: nonWarped 480 270 32770
+08-06 17:28:51.001  1747 30416 I CV      : File: vendor/qcom/proprietary/cv-noship/eva/4.0/src/cpu/evaDme.cpp Line: 545 Function: evaDmeSetInitConfig() Msg: Warped 480 270 32770
+08-06 17:28:51.001  1747 30416 I CV      : File: vendor/qcom/proprietary/cv-noship/eva/4.0/src/cpu/evaDme.cpp Line: 549 Function: evaDmeSetInitConfig() Msg: WarpedRef 32770
+08-06 17:28:51.001  1747 30416 I CV      : File: vendor/qcom/proprietary/cv-noship/eva/4.0/src/cpu/evaDme.cpp Line: 574 Function: evaDmeSetInitConfig() Msg: AlignmentType 0 bDisableAlignControl 1 bFtextEnable 1 bDisableGCE 3
+08-06 17:28:51.003  1747 30416 I DMABUFHEAPS: Using DMA-BUF heap named: qcom,system
+08-06 17:28:51.004  1747 30416 I DMABUFHEAPS: Using DMA-BUF heap named: qcom,system
+08-06 17:28:51.007  1747 30416 I CV      : File: vendor/qcom/proprietary/cv-noship/eva/4.0/src/cpu/evaDme.cpp Line: 1750 Function: evaInitDme() Msg: DME Config for session: nonWSrcWid 480, nonWSrcHgt 270, nonWFormat 32770, WSrcWid 480, WSrcHgt 270, WFormat 32770, AlignTyp 0, DisAliCtl 1, StreamId 0
+08-06 17:28:51.007  1747 30416 I CV      : File: vendor/qcom/proprietary/cv-noship/eva/4.0/src/cpu/evaSessionStartStop.cpp Line: 1804 Function: evaStartSession() Msg: hSession: 0xb4000078c5820ed0, nSessionID: 0xe50e580a
+08-06 17:28:51.008  1747  2203 I QC2PipelineCodec: [cvpF_313] KPI_L1: start: ms=11
+08-06 17:28:51.009  1747  2203 I QC2PipelineCodec: [sIgF_313] KPI_L1: start: ms=0
+08-06 17:28:51.022  1747  2203 I QC2V4l2Codec: [v4lavcE_313] KPI_L1: start: ms=11
+08-06 17:28:51.022  1747  2203 I QC2Comp : [pipeE_avcE_313] KPI_L1: start: ms=34
+08-06 17:28:51.022  1747  2203 W QC2Interface: [avcE_313] Failed to query parameters
+08-06 17:28:51.024  1747  2203 I QC2Comp : [avcE_313] KPI_L1: start: ms=55
+08-06 17:28:51.024  1747 14485 W QC2Interface: [avcE_313] Failed to query parameters
+08-06 17:28:51.024 30318 30393 W Codec2Client: query -- param skipped: index = 1610614798.
+08-06 17:28:51.024 30318 30393 D C2NodeImpl: actual buffer count(16), input delay(9), pipeline delay(0)
+08-06 17:28:51.024 30318 30393 D GraphicBufferSource: update max acquired buffer count to 16
+08-06 17:28:51.027  2710  4546 D SehCodecSolutionService: getVideoRecordingParameter id : 130214818480129
+08-06 17:28:51.027  1747  2203 W QC2Interface: [avcE_313] Failed to query parameters
+08-06 17:28:51.027 30318 30393 W Codec2Client: query -- param skipped: index = 1342179345.
+08-06 17:28:51.027 30318 30393 W Codec2Client: query -- param skipped: index = 2415921170.
+08-06 17:28:51.027 30318 30393 W Codec2Client: query -- param skipped: index = 1610614798.
+08-06 17:28:51.028  1747  2640 W QC2Interface: [avcE_313] Failed to query parameters
+08-06 17:28:51.028 30318 30393 D CCodecBufferChannel: [c2.qti.avc.encoder#464] Query input allocators returned 0 params => BAD_INDEX (6)
+08-06 17:28:51.028 30318 30393 D CCodecBufferChannel: [c2.qti.avc.encoder#464] Using basic input block pool with poolID 1 => got 1 - OK (0)
+08-06 17:28:51.028  1747  2642 W QC2Interface: [avcE_313] Failed to query parameters
+08-06 17:28:51.028 30318 30393 D CCodecBufferChannel: [c2.qti.avc.encoder#464] Query output allocators returned 0 params => BAD_INDEX (6)
+08-06 17:28:51.029 30318 30393 I CCodecBufferChannel: [c2.qti.avc.encoder#464] Created output block pool with allocatorID 16 => poolID 10506 - OK
+08-06 17:28:51.029 30318 30393 D CCodecBufferChannel: [c2.qti.avc.encoder#464] Configured output block pool ids 10506 => OK
+08-06 17:28:51.030  1747  2642 W QC2Interface: [avcE_313] Few parameters failed to configure
+08-06 17:28:51.030 30318 30393 I CCodec  : [c2.qti.avc.encoder] state->set(RUNNING)
+08-06 17:28:51.030  2159 24118 I ResourceManagerService: addMediaInfo pid 30318 (width 480 height 360), allocated hw codec count 5
+08-06 17:28:51.031  2159 24118 I ResourceManagerService: getMediaResourceInfo (PID : 1621, clientID : -5476376664185545568, non-secure-codec/hw-video-codec:[]:1, 854x480 (fps:15) - sw codec : no, encoder : no componentName = c2.qti.avc.decoder bitrate = 17000000)
+08-06 17:28:51.031  2159 24118 I ResourceManagerService: getMediaResourceInfo (PID : 29201, clientID : -5476376664186774176, non-secure-codec/hw-video-codec:[]:1, 720x900 (fps:25) - sw codec : no, encoder : no componentName = c2.qti.av1.decoder bitrate = 17000000)
+08-06 17:28:51.031  2159 24118 I ResourceManagerService: getMediaResourceInfo (PID : 29201, clientID : -5476376664186622112, non-secure-codec/hw-video-codec:[]:1, 1280x720 (fps:1) - sw codec : no, encoder : no componentName = c2.qti.avc.decoder bitrate = 17000000)
+08-06 17:28:51.031  2159 24118 I ResourceManagerService: getMediaResourceInfo (PID : 30318, clientID : -5476376664187144544, non-secure-codec/hw-video-codec:[]:1, 480x360 (fps:30) - sw codec : no, encoder : no componentName = c2.qti.hevc.decoder bitrate = 961160)
+08-06 17:28:51.031  2159 24118 I ResourceManagerService: getMediaResourceInfo (PID : 30318, clientID : -5476376664187045616, non-secure-codec/hw-video-codec:[]:1, 480x360 (fps:30) - sw codec : no, encoder : yes componentName = c2.qti.avc.encoder bitrate = 725760)
+08-06 17:28:51.032  6628  6761 I SemMediaResourceHelper: onAdd
+08-06 17:28:51.032  2159 24118 W ResourceManagerServiceUtils: Ignoring request to add new resource entry with value <= 0
+08-06 17:28:51.032  8526  8578 I SemMediaResourceHelper: onAdd
+08-06 17:28:51.032  8526  8578 I DrmMediaResourceHelper: onAdd size = 5
+08-06 17:28:51.033 30318 30392 I MediaCodec: setCodecState state(0), called in 6, domain 1, 0
+08-06 17:28:51.034  8526  8578 I SemMediaResourceHelper: onState
+08-06 17:28:51.034  8526  8578 I DrmMediaResourceHelper: onStateChanged size = 5
+08-06 17:28:51.034  8526  8578 I DrmMediaResourceHelper: resource type: 2,,,isSecured :  falseIsEncoder : falsegetCodecState : 0getpid : 1621
+08-06 17:28:51.034  8526  8578 I DrmMediaResourceHelper: resource type: 2,,,isSecured :  falseIsEncoder : falsegetCodecState : 0getpid : 29201
+08-06 17:28:51.034  8526  8578 I DrmMediaResourceHelper: resource type: 2,,,isSecured :  falseIsEncoder : falsegetCodecState : 0getpid : 29201
+08-06 17:28:51.034  8526  8578 I DrmMediaResourceHelper: resource type: 2,,,isSecured :  falseIsEncoder : falsegetCodecState : 1getpid : 30318
+08-06 17:28:51.034  8526  8578 I DrmMediaResourceHelper: resource type: 2,,,isSecured :  falseIsEncoder : truegetCodecState : 0getpid : 30318
+08-06 17:28:51.034  6628  6761 I SemMediaResourceHelper: onState
+08-06 17:28:51.066 30318 30360 D GraphicBufferSource: got buffer with new dataSpace 0x10c10000
+08-06 17:28:51.067 30318 30360 D C2NodeImpl: dataspace changed to 0x10c10000 pixel format: 0x1
+08-06 17:28:51.067 30318 30360 I .videoclip.test: EglImage dataspace changed, need recreate
+08-06 17:28:51.067 30318 30360 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-06 17:28:51.068  1747  2642 E QC2Comp : [avcE_313] format inp:34 buf:-1040187392
+08-06 17:28:51.070 30318 30360 I .videoclip.test: EglImage dataspace changed, need recreate
+08-06 17:28:51.070 30318 30360 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-06 17:28:51.075 30318 30360 I .videoclip.test: EglImage dataspace changed, need recreate
+08-06 17:28:51.075 30318 30360 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-06 17:28:51.077 30318 30360 I .videoclip.test: EglImage dataspace changed, need recreate
+08-06 17:28:51.077 30318 30360 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-06 17:28:51.079 30318 30360 I .videoclip.test: EglImage dataspace changed, need recreate
+08-06 17:28:51.079 30318 30360 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-06 17:28:51.080 30318 30360 I .videoclip.test: EglImage dataspace changed, need recreate
+08-06 17:28:51.080 30318 30360 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-06 17:28:51.082 30318 30360 I .videoclip.test: EglImage dataspace changed, need recreate
+08-06 17:28:51.082 30318 30360 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-06 17:28:51.084 30318 30360 I .videoclip.test: EglImage dataspace changed, need recreate
+08-06 17:28:51.084 30318 30360 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-06 17:28:51.086 30318 30360 I .videoclip.test: EglImage dataspace changed, need recreate
+08-06 17:28:51.086 30318 30360 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-06 17:28:51.087 30318 30360 I .videoclip.test: EglImage dataspace changed, need recreate
+08-06 17:28:51.087 30318 30360 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-06 17:28:51.090 30318 30360 I .videoclip.test: EglImage dataspace changed, need recreate
+08-06 17:28:51.090 30318 30360 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-06 17:28:51.091 30318 30360 I .videoclip.test: EglImage dataspace changed, need recreate
+08-06 17:28:51.091 30318 30360 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-06 17:28:51.092 30318 30360 I .videoclip.test: EglImage dataspace changed, need recreate
+08-06 17:28:51.092 30318 30360 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-06 17:28:51.094 30318 30360 I .videoclip.test: EglImage dataspace changed, need recreate
+08-06 17:28:51.094 30318 30360 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-06 17:28:51.095 30318 30360 I .videoclip.test: EglImage dataspace changed, need recreate
+08-06 17:28:51.096 30318 30360 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-06 17:28:51.097 30318 30360 I .videoclip.test: EglImage dataspace changed, need recreate
+08-06 17:28:51.097 30318 30360 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-06 17:28:51.098 30318 30360 I .videoclip.test: EglImage dataspace changed, need recreate
+08-06 17:28:51.098 30318 30360 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-06 17:28:51.100  1747 30414 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-06 17:28:51.100  1747 30414 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-06 17:28:51.106  1747 30416 I DMABUFHEAPS: Using DMA-BUF heap named: qcom,system
+08-06 17:28:51.107  1747 30416 I DMABUFHEAPS: Using DMA-BUF heap named: qcom,system
+08-06 17:28:51.108  1747 30416 I DMABUFHEAPS: Using DMA-BUF heap named: qcom,system
+08-06 17:28:51.110  1747 30416 I DMABUFHEAPS: Using DMA-BUF heap named: qcom,system
+08-06 17:28:51.111  1747 30416 I CV      : File: vendor/qcom/proprietary/cv-noship/eva/4.0/src/cpu/evaDme.cpp Line: 941 Function: evaDmeSetFrameConfig() Msg: bFOperationalFpsFound 0
+08-06 17:28:51.111  1747 30416 I CV      : File: vendor/qcom/proprietary/cv-noship/eva/4.0/src/cpu/evaDme.cpp Line: 942 Function: evaDmeSetFrameConfig() Msg: pDme->nFOperationalFps 2147483647 nFOperationalFps 30 ColorFormat 3
+08-06 17:28:51.117  1747 30414 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-06 17:28:51.117  1747 30414 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-06 17:28:51.118  1811  1828 D HeatmapThread: Updated plugType via uevent: 2
+08-06 17:28:51.119  1747 30403 I QC2CompStore: Setting heap usage to system
+08-06 17:28:51.119  1747 30414 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-06 17:28:51.119  1747 30414 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-06 17:28:51.120 30318 30367 D PipelineWatcher: onInputBufferReleased: frameIndex not found (0); ignored
+08-06 17:28:51.120 30318 30367 D CCodecBufferChannel: [c2.qti.avc.encoder#464] Ignoring stale input buffer done callback: last flush index = 0, frameIndex = 0
+08-06 17:28:51.120  1747 30414 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-06 17:28:51.120  1747 30414 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-06 17:28:51.120  1747 30403 I QC2CompStore: Setting heap usage to system
+08-06 17:28:51.121  1747 30414 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-06 17:28:51.122  1747 30414 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-06 17:28:51.122 30318 30367 D PipelineWatcher: onInputBufferReleased: frameIndex not found (1); ignored
+08-06 17:28:51.123  1747 30414 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-06 17:28:51.123  1747 30414 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-06 17:28:51.124 30318 30367 D PipelineWatcher: onInputBufferReleased: frameIndex not found (2); ignored
+08-06 17:28:51.124  1747 30414 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-06 17:28:51.124  1747 30413 E QC2PipelineCodec: [pipeE_avcE_313] filter inst-name=c2.qti.avc.encoder_313 configupdate handle skip
+08-06 17:28:51.124  1747 30414 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-06 17:28:51.127  1750  1841 E BatteryDump: !@new_battery_dump : 4060,-686,800,4189,69,333,328,376,333,0,347,376,0,Charging,NO_CHARGING,Normal,Good,USB_CDP,2,Normal,0,0,9300,0x8000,0x10010000,0x0,0,0,0000,0000,00000000,0,0,0,0,893,4045,6904,1000,0,
+08-06 17:28:51.127  1756  1756 I seh_thermal_service: getTemperaturesWithType SehTemperatureType: 3
+08-06 17:28:51.127  1750  1750 I sehhealth-service: updateLrpSysfs: write: 348
+08-06 17:28:51.128  1747 30414 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-06 17:28:51.129  1747 30414 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-06 17:28:51.129 30318 30393 D CCodecConfig: c2 config diff is   Buffer coded.init-data.value = {
+08-06 17:28:51.129 30318 30393 D CCodecConfig:     00000000:  00 00 00 01 67 64 00 3c  ac b4 0f 05 ff 2c d4 04  ....gd.<.....,..
+08-06 17:28:51.129 30318 30393 D CCodecConfig:     00000010:  04 04 1b 42 84 d4 00 00  00 01 68 ee 06 f2 c0     ...B......h....
+08-06 17:28:51.130  1747 30414 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-06 17:28:51.130 30318 30367 D PipelineWatcher: onInputBufferReleased: frameIndex not found (3); ignored
+08-06 17:28:51.130  1747 30414 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-06 17:28:51.130 30318 30360 I .videoclip.test: EglImage dataspace changed, need recreate
+08-06 17:28:51.130 30318 30360 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-06 17:28:51.131  1747 30414 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-06 17:28:51.131  1747 30414 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-06 17:28:51.132  1747 30414 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-06 17:28:51.132  1747 30414 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-06 17:28:51.132 30318 30367 D PipelineWatcher: onInputBufferReleased: frameIndex not found (4); ignored
+08-06 17:28:51.133  1747 30414 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-06 17:28:51.133  1747 30414 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-06 17:28:51.134  1747 30414 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-06 17:28:51.134  1747 30414 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-06 17:28:51.135  1747 30414 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-06 17:28:51.135 30318 30367 D PipelineWatcher: onInputBufferReleased: frameIndex not found (5); ignored
+08-06 17:28:51.135  1747 30414 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-06 17:28:51.136  1747 30414 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-06 17:28:51.136  1747 30414 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-06 17:28:51.136 30318 30367 D PipelineWatcher: onInputBufferReleased: frameIndex not found (6); ignored
+08-06 17:28:51.137  1747 30414 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-06 17:28:51.137  1747 30414 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-06 17:28:51.138  1747 30414 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-06 17:28:51.138 30318 30367 D PipelineWatcher: onInputBufferReleased: frameIndex not found (7); ignored
+08-06 17:28:51.138  1747 30414 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-06 17:28:51.139  1747 30416 I DMABUFHEAPS: Using DMA-BUF heap named: qcom,system
+08-06 17:28:51.139  1747 30414 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-06 17:28:51.139  1747 30414 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-06 17:28:51.139  1747 30416 I DMABUFHEAPS: Using DMA-BUF heap named: qcom,system
+08-06 17:28:51.139  1747 30416 I DMABUFHEAPS: Using DMA-BUF heap named: qcom,system
+08-06 17:28:51.140  1747 30416 I DMABUFHEAPS: Using DMA-BUF heap named: qcom,system
+08-06 17:28:51.140  1747 30416 I CV      : File: vendor/qcom/proprietary/cv-noship/eva/4.0/src/cpu/evaDme.cpp Line: 941 Function: evaDmeSetFrameConfig() Msg: bFOperationalFpsFound 0
+08-06 17:28:51.140  1747 30416 I CV      : File: vendor/qcom/proprietary/cv-noship/eva/4.0/src/cpu/evaDme.cpp Line: 942 Function: evaDmeSetFrameConfig() Msg: pDme->nFOperationalFps 2147483647 nFOperationalFps 30 ColorFormat 3
+08-06 17:28:51.140 30318 30392 I MediaCodec: setCodecState state(1), called in 6, domain 1, 0
+08-06 17:28:51.140  1747 30414 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-06 17:28:51.141  1747 30414 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-06 17:28:51.142  8526  8578 I SemMediaResourceHelper: onState
+08-06 17:28:51.142  8526  8578 I DrmMediaResourceHelper: onStateChanged size = 5
+08-06 17:28:51.142  8526  8578 I DrmMediaResourceHelper: resource type: 2,,,isSecured :  falseIsEncoder : falsegetCodecState : 0getpid : 1621
+08-06 17:28:51.142  8526  8578 I DrmMediaResourceHelper: resource type: 2,,,isSecured :  falseIsEncoder : falsegetCodecState : 0getpid : 29201
+08-06 17:28:51.142  8526  8578 I DrmMediaResourceHelper: resource type: 2,,,isSecured :  falseIsEncoder : falsegetCodecState : 0getpid : 29201
+08-06 17:28:51.142  8526  8578 I DrmMediaResourceHelper: resource type: 2,,,isSecured :  falseIsEncoder : falsegetCodecState : 1getpid : 30318
+08-06 17:28:51.142  8526  8578 I DrmMediaResourceHelper: resource type: 2,,,isSecured :  falseIsEncoder : truegetCodecState : 1getpid : 30318
+08-06 17:28:51.142 30318 30367 D PipelineWatcher: onInputBufferReleased: frameIndex not found (8); ignored
+08-06 17:28:51.143  6628  6761 I SemMediaResourceHelper: onState
+08-06 17:28:51.144  1747 30414 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-06 17:28:51.144  1747 30414 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-06 17:28:51.145 30318 30367 D PipelineWatcher: onInputBufferReleased: frameIndex not found (9); ignored
+08-06 17:28:51.145  1747 30414 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-06 17:28:51.145  1747 30414 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-06 17:28:51.147  1747 30414 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-06 17:28:51.147  1747 30414 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-06 17:28:51.148  1747 30414 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-06 17:28:51.148  1747 30414 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-06 17:28:51.148 30318 30367 D PipelineWatcher: onInputBufferReleased: frameIndex not found (10); ignored
+08-06 17:28:51.149  1747 30414 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-06 17:28:51.149  1747 30414 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-06 17:28:51.150  1747 30414 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-06 17:28:51.150  1747 30414 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-06 17:28:51.150 30318 30367 D PipelineWatcher: onInputBufferReleased: frameIndex not found (11); ignored
+08-06 17:28:51.151  1747 30414 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-06 17:28:51.151  1747 30414 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-06 17:28:51.153  1747 30414 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-06 17:28:51.153  1747 30414 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-06 17:28:51.153 30318 30367 D PipelineWatcher: onInputBufferReleased: frameIndex not found (12); ignored
+08-06 17:28:51.154  1747 30414 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-06 17:28:51.154  1747 30414 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-06 17:28:51.155  1747 30414 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-06 17:28:51.155 30318 30367 D PipelineWatcher: onInputBufferReleased: frameIndex not found (13); ignored
+08-06 17:28:51.155  1747 30414 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-06 17:28:51.156  1747 30414 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-06 17:28:51.156  1747 30414 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-06 17:28:51.157  1747 30414 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-06 17:28:51.157  1747 30414 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-06 17:28:51.157 30318 30367 D PipelineWatcher: onInputBufferReleased: frameIndex not found (14); ignored
+08-06 17:28:51.158  1747 30414 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-06 17:28:51.158  1747 30414 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-06 17:28:51.159  1747 30414 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-06 17:28:51.159  1747 30414 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-06 17:28:51.160  1747 30414 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-06 17:28:51.160 30318 30367 D PipelineWatcher: onInputBufferReleased: frameIndex not found (15); ignored
+08-06 17:28:51.160  1747 30414 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-06 17:28:51.161  1747 30416 I DMABUFHEAPS: Using DMA-BUF heap named: qcom,system
+08-06 17:28:51.161  1747 30416 I DMABUFHEAPS: Using DMA-BUF heap named: qcom,system
+08-06 17:28:51.161  1747 30416 I DMABUFHEAPS: Using DMA-BUF heap named: qcom,system
+08-06 17:28:51.162  1747 30416 I DMABUFHEAPS: Using DMA-BUF heap named: qcom,system
+08-06 17:28:51.162  1747 30416 I CV      : File: vendor/qcom/proprietary/cv-noship/eva/4.0/src/cpu/evaDme.cpp Line: 941 Function: evaDmeSetFrameConfig() Msg: bFOperationalFpsFound 0
+08-06 17:28:51.162  1747 30416 I CV      : File: vendor/qcom/proprietary/cv-noship/eva/4.0/src/cpu/evaDme.cpp Line: 942 Function: evaDmeSetFrameConfig() Msg: pDme->nFOperationalFps 2147483647 nFOperationalFps 30 ColorFormat 3
+08-06 17:28:51.162  1747 30414 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-06 17:28:51.162  1747 30414 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-06 17:28:51.163  1747 30414 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-06 17:28:51.163  1747 30414 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-06 17:28:51.164  1747 30414 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-06 17:28:51.164  1747 30414 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-06 17:28:51.165  1747 30414 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-06 17:28:51.166  1747 30414 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-06 17:28:51.166 30318 30367 D PipelineWatcher: onInputBufferReleased: frameIndex not found (16); ignored
+08-06 17:28:51.166 30318 30367 D PipelineWatcher: onInputBufferReleased: frameIndex not found (17); ignored
+08-06 17:28:51.167  1747 30414 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-06 17:28:51.167 30318 30367 D PipelineWatcher: onInputBufferReleased: frameIndex not found (18); ignored
+08-06 17:28:51.167  1747 30414 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-06 17:28:51.168  1747 30414 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-06 17:28:51.168  1747 30414 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-06 17:28:51.169 30318 30367 D PipelineWatcher: onInputBufferReleased: frameIndex not found (19); ignored
+08-06 17:28:51.169  1747 30414 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-06 17:28:51.169  1747 30414 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-06 17:28:51.170  1747 30414 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-06 17:28:51.170  1747 30414 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-06 17:28:51.171  1747 30414 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-06 17:28:51.171 30318 30367 D PipelineWatcher: onInputBufferReleased: frameIndex not found (20); ignored
+08-06 17:28:51.171  1747 30414 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-06 17:28:51.172  1747 30414 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-06 17:28:51.172  1747 30414 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-06 17:28:51.174  1747 30414 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-06 17:28:51.174 30318 30367 D PipelineWatcher: onInputBufferReleased: frameIndex not found (21); ignored
+08-06 17:28:51.174  1747 30414 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-06 17:28:51.174  1747 30414 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-06 17:28:51.174  1747 30414 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-06 17:28:51.175  1747 30414 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-06 17:28:51.176  1747 30414 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-06 17:28:51.177  1747 30414 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-06 17:28:51.177 30318 30367 D PipelineWatcher: onInputBufferReleased: frameIndex not found (22); ignored
+08-06 17:28:51.177  1747 30414 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-06 17:28:51.178  6399  8035 W RemoteWorkerFactory: [RemoteWorkerFactory] ID=fe2cb234-0cd6-4f37-b56d-16c178705f1d, TAG=[com.samsung.android.smartsuggestions.search.data.apps.AppsDataWorker, CMD_UPDATE_LIST], WorkerClassName: androidx.work.multiprocess.RemoteListenableDelegatingWorker, RunAttemptCount=0
+08-06 17:28:51.179  1747 30414 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-06 17:28:51.179 30318 30367 D PipelineWatcher: onInputBufferReleased: frameIndex not found (23); ignored
+08-06 17:28:51.179  1747 30414 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-06 17:28:51.179  1747 30416 I DMABUFHEAPS: Using DMA-BUF heap named: qcom,system
+08-06 17:28:51.180  1747 30414 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-06 17:28:51.180  1747 30414 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-06 17:28:51.180  1747 30416 I DMABUFHEAPS: Using DMA-BUF heap named: qcom,system
+08-06 17:28:51.180  1747 30416 I DMABUFHEAPS: Using DMA-BUF heap named: qcom,system
+08-06 17:28:51.180  1747 30416 I DMABUFHEAPS: Using DMA-BUF heap named: qcom,system
+08-06 17:28:51.180  1747 30416 I CV      : File: vendor/qcom/proprietary/cv-noship/eva/4.0/src/cpu/evaDme.cpp Line: 941 Function: evaDmeSetFrameConfig() Msg: bFOperationalFpsFound 0
+08-06 17:28:51.181  1747 30416 I CV      : File: vendor/qcom/proprietary/cv-noship/eva/4.0/src/cpu/evaDme.cpp Line: 942 Function: evaDmeSetFrameConfig() Msg: pDme->nFOperationalFps 2147483647 nFOperationalFps 30 ColorFormat 3
+08-06 17:28:51.181  1747 30414 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-06 17:28:51.181  1747 30414 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-06 17:28:51.181  1747 30414 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-06 17:28:51.182  1747 30414 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-06 17:28:51.182  1747 30414 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-06 17:28:51.182  1747 30414 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-06 17:28:51.184  1747  2203 I QC2Comp : [hvcD_312] Registered an empty EOS buffer
+08-06 17:28:51.185 30318 30367 D PipelineWatcher: onInputBufferReleased: frameIndex not found (24); ignored
+08-06 17:28:51.185 30318 30367 D PipelineWatcher: onInputBufferReleased: frameIndex not found (25); ignored
+08-06 17:28:51.185  1747 30414 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-06 17:28:51.185  1747 30414 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-06 17:28:51.186 30318 30367 D PipelineWatcher: onInputBufferReleased: frameIndex not found (26); ignored
+08-06 17:28:51.186  1747 30414 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-06 17:28:51.186  1747 30414 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-06 17:28:51.188  1747 30414 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-06 17:28:51.188  1747 30414 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-06 17:28:51.189  1747 30414 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-06 17:28:51.189  1747 30414 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-06 17:28:51.190  1747 30414 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-06 17:28:51.190  1747 30414 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-06 17:28:51.190 30318 30367 D PipelineWatcher: onInputBufferReleased: frameIndex not found (27); ignored
+08-06 17:28:51.191  1747 30414 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-06 17:28:51.191  1747 30414 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-06 17:28:51.191 30318 30367 D PipelineWatcher: onInputBufferReleased: frameIndex not found (28); ignored
+08-06 17:28:51.192  1747 30414 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-06 17:28:51.192  1747 30414 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-06 17:28:51.193  1747 30414 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-06 17:28:51.194  8366  8366 I WM-RemoteWorkerService: Binding to RemoteWorkerService
+08-06 17:28:51.194  1747 30414 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-06 17:28:51.194 30318 30367 D PipelineWatcher: onInputBufferReleased: frameIndex not found (29); ignored
+08-06 17:28:51.194  1747 30414 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-06 17:28:51.194  1747 30414 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-06 17:28:51.195  1747 30368 W QC2Comp : [hvcD_312] Skipping empty output buffer
+08-06 17:28:51.195  1747 30414 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-06 17:28:51.196  1747 30414 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-06 17:28:51.196  1747 30368 W QC2Comp : [hvcD_312] Skipping empty output buffer
+08-06 17:28:51.196  8366 19145 W RemoteWorkerFactory: [RemoteWorkerFactory] ID=fe2cb234-0cd6-4f37-b56d-16c178705f1d, TAG=[com.samsung.android.smartsuggestions.search.data.apps.AppsDataWorker, CMD_UPDATE_LIST], WorkerClassName: com.samsung.android.smartsuggestions.search.data.apps.AppsDataWorker, RunAttemptCount=0
+08-06 17:28:51.196  1747 30414 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-06 17:28:51.196  1747 30414 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-06 17:28:51.197 30318 30367 D PipelineWatcher: onInputBufferReleased: frameIndex not found (30); ignored
+08-06 17:28:51.197  8366  8738 I SSS@search user 0: (AppsDataWorker) [androidx.work-3] entering in doWork():
+08-06 17:28:51.197  8366  8738 I SSS@search user 0: (AppsDataObserver) [androidx.work-3] entering in execute():
+08-06 17:28:51.197  8366  8738 I SSS@search user 0: (AppsDataObserver-CMD_UPDATE_LIST) changed package count: 1
+08-06 17:28:51.197  1747 30414 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-06 17:28:51.197  1747 30414 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-06 17:28:51.198 30318 30367 D PipelineWatcher: onInputBufferReleased: frameIndex not found (31); ignored
+08-06 17:28:51.198  1747 30414 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-06 17:28:51.198  1747 30416 I DMABUFHEAPS: Using DMA-BUF heap named: qcom,system
+08-06 17:28:51.199  1747 30414 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-06 17:28:51.199  1747 30416 I DMABUFHEAPS: Using DMA-BUF heap named: qcom,system
+08-06 17:28:51.199  1747 30416 I DMABUFHEAPS: Using DMA-BUF heap named: qcom,system
+08-06 17:28:51.199  1747 30416 I DMABUFHEAPS: Using DMA-BUF heap named: qcom,system
+08-06 17:28:51.199  1747 30416 I CV      : File: vendor/qcom/proprietary/cv-noship/eva/4.0/src/cpu/evaDme.cpp Line: 941 Function: evaDmeSetFrameConfig() Msg: bFOperationalFpsFound 0
+08-06 17:28:51.199  1747 30416 I CV      : File: vendor/qcom/proprietary/cv-noship/eva/4.0/src/cpu/evaDme.cpp Line: 942 Function: evaDmeSetFrameConfig() Msg: pDme->nFOperationalFps 2147483647 nFOperationalFps 30 ColorFormat 3
+08-06 17:28:51.199  1747 30414 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-06 17:28:51.199  1747 30414 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-06 17:28:51.200 30318 30367 D PipelineWatcher: onInputBufferReleased: frameIndex not found (32); ignored
+08-06 17:28:51.200  1747 30414 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-06 17:28:51.200  1747 30414 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-06 17:28:51.202  1747 30414 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-06 17:28:51.202 30318 30367 D PipelineWatcher: onInputBufferReleased: frameIndex not found (33); ignored
+08-06 17:28:51.202  1747 30414 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-06 17:28:51.203  1747 30414 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-06 17:28:51.203  1747 30414 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-06 17:28:51.204 30318 30367 D PipelineWatcher: onInputBufferReleased: frameIndex not found (34); ignored
+08-06 17:28:51.204  1747 30414 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-06 17:28:51.204  1747 30414 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-06 17:28:51.205  1747 30414 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-06 17:28:51.205  1747 30414 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-06 17:28:51.206  1747 30414 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-06 17:28:51.206 30318 30367 D PipelineWatcher: onInputBufferReleased: frameIndex not found (35); ignored
+08-06 17:28:51.206  1747 30414 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-06 17:28:51.206  8366  8738 I SSS@search user 0: (AppsDataObserver) [androidx.work-3] leaving from execute():  result is true
+08-06 17:28:51.206  8366  8738 I SSS@search user 0: (AppsDataWorker) [androidx.work-3] leaving from doWork():
+08-06 17:28:51.207  1747 30414 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-06 17:28:51.207  1747 30414 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-06 17:28:51.208  1747 30414 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-06 17:28:51.208  1747 30414 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-06 17:28:51.209 30318 30367 D PipelineWatcher: onInputBufferReleased: frameIndex not found (36); ignored
+08-06 17:28:51.209  1747 30414 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-06 17:28:51.209  1747 30414 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-06 17:28:51.210  1747 30414 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-06 17:28:51.210  1747 30414 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-06 17:28:51.211 30318 30367 D PipelineWatcher: onInputBufferReleased: frameIndex not found (37); ignored
+08-06 17:28:51.212  8366  8366 I SSS@search user 0: (SearchProvider) onTrimMemory(): 40
+08-06 17:28:51.212  1747 30414 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-06 17:28:51.212  1747 30414 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-06 17:28:51.212  6399  8040 I WM-WorkerWrapper: Worker result SUCCESS for Work [ id=fe2cb234-0cd6-4f37-b56d-16c178705f1d, tags={ com.samsung.android.smartsuggestions.search.data.apps.AppsDataWorker,CMD_UPDATE_LIST } ]
+08-06 17:28:51.213  1747 30414 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-06 17:28:51.213  1747 30414 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-06 17:28:51.214  1747 30414 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-06 17:28:51.214 30318 30367 D PipelineWatcher: onInputBufferReleased: frameIndex not found (38); ignored
+08-06 17:28:51.214  1747 30414 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-06 17:28:51.215  1747 30414 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-06 17:28:51.215  1747 30414 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-06 17:28:51.215 30318 30367 D PipelineWatcher: onInputBufferReleased: frameIndex not found (39); ignored
+08-06 17:28:51.216  1747 30414 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-06 17:28:51.216  1747 30414 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-06 17:28:51.216  1747 30416 I DMABUFHEAPS: Using DMA-BUF heap named: qcom,system
+08-06 17:28:51.216  1747 30416 I DMABUFHEAPS: Using DMA-BUF heap named: qcom,system
+08-06 17:28:51.216  1747 30416 I DMABUFHEAPS: Using DMA-BUF heap named: qcom,system
+08-06 17:28:51.217  1747 30416 I DMABUFHEAPS: Using DMA-BUF heap named: qcom,system
+08-06 17:28:51.217  1747 30416 I CV      : File: vendor/qcom/proprietary/cv-noship/eva/4.0/src/cpu/evaDme.cpp Line: 941 Function: evaDmeSetFrameConfig() Msg: bFOperationalFpsFound 0
+08-06 17:28:51.217  1747 30416 I CV      : File: vendor/qcom/proprietary/cv-noship/eva/4.0/src/cpu/evaDme.cpp Line: 942 Function: evaDmeSetFrameConfig() Msg: pDme->nFOperationalFps 2147483647 nFOperationalFps 30 ColorFormat 3
+08-06 17:28:51.217  1747 30414 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-06 17:28:51.217 30318 30367 D PipelineWatcher: onInputBufferReleased: frameIndex not found (40); ignored
+08-06 17:28:51.217  1747 30414 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-06 17:28:51.218  1747 30414 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-06 17:28:51.218  1747 30414 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-06 17:28:51.219  1747 30414 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-06 17:28:51.219 30318 30367 D PipelineWatcher: onInputBufferReleased: frameIndex not found (41); ignored
+08-06 17:28:51.219  1747 30414 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-06 17:28:51.220  1747 30414 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-06 17:28:51.220  1747 30414 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-06 17:28:51.221 30318 30367 D PipelineWatcher: onInputBufferReleased: frameIndex not found (42); ignored
+08-06 17:28:51.221  1747 30414 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-06 17:28:51.221  1747 30414 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-06 17:28:51.222  1747 30414 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-06 17:28:51.222  1747 30414 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-06 17:28:51.224  1747 30414 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-06 17:28:51.224 30318 30367 D PipelineWatcher: onInputBufferReleased: frameIndex not found (43); ignored
+08-06 17:28:51.224  1747 30414 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-06 17:28:51.225  1747 30414 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-06 17:28:51.225  1747 30414 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-06 17:28:51.226 30318 30367 D PipelineWatcher: onInputBufferReleased: frameIndex not found (44); ignored
+08-06 17:28:51.226  1747 30414 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-06 17:28:51.226  1747 30414 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-06 17:28:51.227  1747 30414 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-06 17:28:51.227  1747 30414 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-06 17:28:51.228  1747 30414 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-06 17:28:51.228  1747 30414 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-06 17:28:51.228 30318 30367 D PipelineWatcher: onInputBufferReleased: frameIndex not found (45); ignored
+08-06 17:28:51.229  1747 30414 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-06 17:28:51.229  1747 30414 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-06 17:28:51.230  1747 30414 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-06 17:28:51.230  1747 30414 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-06 17:28:51.230 30318 30367 D PipelineWatcher: onInputBufferReleased: frameIndex not found (46); ignored
+08-06 17:28:51.232  1747 30414 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-06 17:28:51.232  1747 30414 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-06 17:28:51.233  1747 30414 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-06 17:28:51.233  1747 30414 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-06 17:28:51.233 30318 30367 D PipelineWatcher: onInputBufferReleased: frameIndex not found (47); ignored
+08-06 17:28:51.234  1747 30414 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-06 17:28:51.234  1747 30416 I DMABUFHEAPS: Using DMA-BUF heap named: qcom,system
+08-06 17:28:51.234  1747 30414 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-06 17:28:51.234  1747 30416 I DMABUFHEAPS: Using DMA-BUF heap named: qcom,system
+08-06 17:28:51.234  1747 30416 I DMABUFHEAPS: Using DMA-BUF heap named: qcom,system
+08-06 17:28:51.235  1747 30416 I DMABUFHEAPS: Using DMA-BUF heap named: qcom,system
+08-06 17:28:51.235  1747 30416 I CV      : File: vendor/qcom/proprietary/cv-noship/eva/4.0/src/cpu/evaDme.cpp Line: 941 Function: evaDmeSetFrameConfig() Msg: bFOperationalFpsFound 0
+08-06 17:28:51.235  1747 30416 I CV      : File: vendor/qcom/proprietary/cv-noship/eva/4.0/src/cpu/evaDme.cpp Line: 942 Function: evaDmeSetFrameConfig() Msg: pDme->nFOperationalFps 2147483647 nFOperationalFps 30 ColorFormat 3
+08-06 17:28:51.235  1747 30414 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-06 17:28:51.235  1747 30414 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-06 17:28:51.235 30318 30367 D PipelineWatcher: onInputBufferReleased: frameIndex not found (48); ignored
+08-06 17:28:51.236  1747 30414 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-06 17:28:51.236  1747 30414 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-06 17:28:51.237  1747 30414 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-06 17:28:51.237  1747 30414 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-06 17:28:51.237 30318 30367 D PipelineWatcher: onInputBufferReleased: frameIndex not found (49); ignored
+08-06 17:28:51.238  1747 30414 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-06 17:28:51.238  1747 30414 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-06 17:28:51.239  1747 30414 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-06 17:28:51.239  1747 30414 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-06 17:28:51.240 30318 30367 D PipelineWatcher: onInputBufferReleased: frameIndex not found (50); ignored
+08-06 17:28:51.240  1747 30414 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-06 17:28:51.240  1747 30414 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-06 17:28:51.241 30318 30367 D PipelineWatcher: onInputBufferReleased: frameIndex not found (51); ignored
+08-06 17:28:51.241  1747 30414 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-06 17:28:51.241  1747 30414 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-06 17:28:51.242  1747 30414 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-06 17:28:51.242  1747 30414 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-06 17:28:51.243  1747 30414 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-06 17:28:51.243 30318 30367 D PipelineWatcher: onInputBufferReleased: frameIndex not found (52); ignored
+08-06 17:28:51.243  1747 30414 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-06 17:28:51.244  1747 30414 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-06 17:28:51.244  1747 30414 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-06 17:28:51.245  1747 30414 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-06 17:28:51.246  1747 30414 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-06 17:28:51.246 30318 30367 D PipelineWatcher: onInputBufferReleased: frameIndex not found (53); ignored
+08-06 17:28:51.247  1747 30414 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-06 17:28:51.247  1747 30414 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-06 17:28:51.248 30318 30367 D PipelineWatcher: onInputBufferReleased: frameIndex not found (54); ignored
+08-06 17:28:51.258  1747  2203 I QC2Comp : [avcE_313] Registered an empty EOS buffer
+08-06 17:28:51.258  1747 30414 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-06 17:28:51.259  1747 30414 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-06 17:28:51.260  1747 30414 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-06 17:28:51.260  1747 30414 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-06 17:28:51.261  1747 30414 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-06 17:28:51.261  1747 30414 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-06 17:28:51.262  1747 30414 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-06 17:28:51.262  1747 30414 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-06 17:28:51.262  1747 30416 I DMABUFHEAPS: Using DMA-BUF heap named: qcom,system
+08-06 17:28:51.263  1747 30416 I DMABUFHEAPS: Using DMA-BUF heap named: qcom,system
+08-06 17:28:51.263  1747 30416 I DMABUFHEAPS: Using DMA-BUF heap named: qcom,system
+08-06 17:28:51.263  1747 30414 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-06 17:28:51.263  1747 30414 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-06 17:28:51.264  1747 30416 I DMABUFHEAPS: Using DMA-BUF heap named: qcom,system
+08-06 17:28:51.264  1747 30416 I CV      : File: vendor/qcom/proprietary/cv-noship/eva/4.0/src/cpu/evaDme.cpp Line: 941 Function: evaDmeSetFrameConfig() Msg: bFOperationalFpsFound 0
+08-06 17:28:51.264  1747 30416 I CV      : File: vendor/qcom/proprietary/cv-noship/eva/4.0/src/cpu/evaDme.cpp Line: 942 Function: evaDmeSetFrameConfig() Msg: pDme->nFOperationalFps 2147483647 nFOperationalFps 30 ColorFormat 3
+08-06 17:28:51.264  1747 30414 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-06 17:28:51.265  1747 30414 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-06 17:28:51.266  1747 30414 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-06 17:28:51.266  1747 30414 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-06 17:28:51.267  1747 30414 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-06 17:28:51.267  1747 30414 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-06 17:28:51.268  1747 30414 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-06 17:28:51.268  1747 30414 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-06 17:28:51.269  1747 30414 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-06 17:28:51.269  1747 30414 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-06 17:28:51.270  1747 30426 E QC2Filter: [sIgF_313] call failed [onDrain()]
+08-06 17:28:51.271  1747 30426 E QC2Filter: [sIgF_313] handleQueueInputs: onDrain unsupported in core
+08-06 17:28:51.271  1747  2203 I QC2PipelineCodec: [imgTxrF_313] KPI_L1: drain: ms=12
+08-06 17:28:51.271  1747  2203 I QC2PipelineCodec: [pipeE_avcE_313] KPI_L1: drain: ms=12
+08-06 17:28:51.271 30318 30367 D PipelineWatcher: onInputBufferReleased: frameIndex not found (56); ignored
+08-06 17:28:51.272  1747 30416 I CV      : File: vendor/qcom/proprietary/cv-noship/eva/4.0/src/cpu/evaDme.cpp Line: 510 Function: evaDmeSetInitConfig() Msg: default config
+08-06 17:28:51.272  1747 30416 I CV      : File: vendor/qcom/proprietary/cv-noship/eva/4.0/src/cpu/evaDme.cpp Line: 526 Function: evaDmeSetInitConfig() Msg: default config
+08-06 17:28:51.272  1747 30416 I CV      : File: vendor/qcom/proprietary/cv-noship/eva/4.0/src/cpu/evaDme.cpp Line: 536 Function: evaDmeSetInitConfig() Msg: A FPS : 30 , O FPS : 2147483647
+08-06 17:28:51.272  1747 30416 I CV      : File: vendor/qcom/proprietary/cv-noship/eva/4.0/src/cpu/evaDme.cpp Line: 541 Function: evaDmeSetInitConfig() Msg: nonWarped 480 270 32770
+08-06 17:28:51.272  1747 30416 I CV      : File: vendor/qcom/proprietary/cv-noship/eva/4.0/src/cpu/evaDme.cpp Line: 545 Function: evaDmeSetInitConfig() Msg: Warped 480 270 32770
+08-06 17:28:51.272  1747 30416 I CV      : File: vendor/qcom/proprietary/cv-noship/eva/4.0/src/cpu/evaDme.cpp Line: 549 Function: evaDmeSetInitConfig() Msg: WarpedRef 32770
+08-06 17:28:51.272  1747 30416 I CV      : File: vendor/qcom/proprietary/cv-noship/eva/4.0/src/cpu/evaDme.cpp Line: 574 Function: evaDmeSetInitConfig() Msg: AlignmentType 0 bDisableAlignControl 1 bFtextEnable 1 bDisableGCE 3
+08-06 17:28:51.273 30318 30367 D PipelineWatcher: onInputBufferReleased: frameIndex not found (57); ignored
+08-06 17:28:51.273 30318 30367 D PipelineWatcher: onInputBufferReleased: frameIndex not found (58); ignored
+08-06 17:28:51.273 30318 30367 D PipelineWatcher: onInputBufferReleased: frameIndex not found (59); ignored
+08-06 17:28:51.273  1747 30416 I CV      : File: vendor/qcom/proprietary/cv-noship/eva/4.0/src/cpu/evaDme.cpp Line: 1750 Function: evaInitDme() Msg: DME Config for session: nonWSrcWid 480, nonWSrcHgt 270, nonWFormat 32770, WSrcWid 480, WSrcHgt 270, WFormat 32770, AlignTyp 0, DisAliCtl 1, StreamId 0
+08-06 17:28:51.273  1747 30416 I CV      : File: vendor/qcom/proprietary/cv-noship/eva/4.0/src/cpu/evaSessionStartStop.cpp Line: 1804 Function: evaStartSession() Msg: hSession: 0xb4000078c5820ed0, nSessionID: 0xe50e580a
+08-06 17:28:51.275  1747 30426 E QC2Filter: [sIgF_313] call failed [onDrain()]
+08-06 17:28:51.276  1747 30426 E QC2Filter: [sIgF_313] handleQueueInputs: onDrain unsupported in core
+08-06 17:28:51.277  1747 30394 W QC2Comp : [avcE_313] Skipping empty output buffer
+08-06 17:28:51.277  1747 30394 W QC2Comp : [avcE_313] Skipping empty output buffer
+08-06 17:28:51.296 30318 30355 I TransformerInternal: Release d49094 [AndroidXMedia3/1.10.1] [e3q, SM-S928B, samsung, 36] [media3.common, media3.transformer, media3.exoplayer, media3.decoder, media3.datasource, media3.extractor, media3.effect]
+08-06 17:28:51.299 30318 30360 W GraphicBufferSource: released unpopulated slots: [17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63]
+08-06 17:28:51.304 30318 30392 I CCodec  : [c2.qti.avc.encoder] state->set(RELEASING)
+08-06 17:28:51.305 30318 30355 I ExoPlayerImpl: Release fbf1083 [AndroidXMedia3/1.10.1] [e3q, SM-S928B, samsung, 36] [media3.common, media3.transformer, media3.exoplayer, media3.decoder, media3.datasource, media3.extractor, media3.effect]
+08-06 17:28:51.305 30318 30436 D CCodec  : hold CodecLooper(1) until release
+08-06 17:28:51.305 30318 30436 I CCodec  : [release][3751] surface -> component
+08-06 17:28:51.306 30318 30361 W libc    : Access denied finding property "vendor.display.enable_optimal_refresh_rate"
+08-06 17:28:51.306 30318 30361 D SurfaceUtils: connecting to surface 0xb400007152e3f3e0, reason connectToSurface
+08-06 17:28:51.306 30318 30361 I MediaCodec: [c2.qti.hevc.decoder] setting surface generation to 31045634
+08-06 17:28:51.306 30318 30361 D SurfaceUtils: disconnecting from surface 0xb400007152e3f3e0, reason connectToSurface(reconnect)
+08-06 17:28:51.306 30318 30361 D SurfaceUtils: connecting to surface 0xb400007152e3f3d0, reason connectToSurface(reconnect-with-listener)
+08-06 17:28:51.306 30318 30361 D SurfaceUtils: legacy buffer drop disabled: target sdk (36)
+08-06 17:28:51.306 30318 30361 D Codec2-OutputBufferQueue: C2SurfaceSyncMemory created 20(20)
+08-06 17:28:51.306 30318 30361 D Codec2-OutputBufferQueue: remote graphic buffer migration 0/0
+08-06 17:28:51.307  1747  2642 W QC2Interface: [hvcD_312] Few parameters failed to configure
+08-06 17:28:51.307 30318 30361 D Codec2Client: setOutputSurface -- failed to set consumer usage (6/BAD_INDEX)
+08-06 17:28:51.307 30318 30361 D Codec2Client: setOutputSurface -- generation=31045634 consumer usage=0x900 sync
+08-06 17:28:51.309  1747  2203 I QC2Filter: [imgTxrF_313] KPI_L1: stop: ms=2
+08-06 17:28:51.309  1747 14485 D C2BqBuffer: local generation change 31045634 , bqId: 130214818480130 migrated buffers # 13
+08-06 17:28:51.309 30318 30361 D Codec2Client: Surface configure completed
+08-06 17:28:51.309 30318 30361 D SurfaceUtils: disconnecting from surface 0xb400007152e39350, reason disconnectFromSurface
+08-06 17:28:51.310 30318 30361 I CCodec  : [c2.qti.hevc.decoder] state->set(RELEASING)
+08-06 17:28:51.310 30318 30361 D CCodecBufferChannel: [c2.qti.hevc.decoder#183] MediaCodec discarded an unknown buffer
+08-06 17:28:51.310 30318 30438 D CCodec  : hold CodecLooper(1) until release
+08-06 17:28:51.310 30318 30438 I CCodec  : [release][3751] surface -> component
+08-06 17:28:51.310  1747 14485 D C2BqBuffer: configuring null producer: igbp_information(0)
+08-06 17:28:51.313  1747 30416 I CV      : File: vendor/qcom/proprietary/cv-noship/eva/4.0/src/cpu/evaDme.cpp Line: 510 Function: evaDmeSetInitConfig() Msg: default config
+08-06 17:28:51.313  1747 30416 I CV      : File: vendor/qcom/proprietary/cv-noship/eva/4.0/src/cpu/evaDme.cpp Line: 526 Function: evaDmeSetInitConfig() Msg: default config
+08-06 17:28:51.313  1747 30416 I CV      : File: vendor/qcom/proprietary/cv-noship/eva/4.0/src/cpu/evaDme.cpp Line: 536 Function: evaDmeSetInitConfig() Msg: A FPS : 30 , O FPS : 2147483647
+08-06 17:28:51.313  1747 30416 I CV      : File: vendor/qcom/proprietary/cv-noship/eva/4.0/src/cpu/evaDme.cpp Line: 541 Function: evaDmeSetInitConfig() Msg: nonWarped 480 270 32770
+08-06 17:28:51.313  1747 30416 I CV      : File: vendor/qcom/proprietary/cv-noship/eva/4.0/src/cpu/evaDme.cpp Line: 545 Function: evaDmeSetInitConfig() Msg: Warped 480 270 32770
+08-06 17:28:51.314  1747 30416 I CV      : File: vendor/qcom/proprietary/cv-noship/eva/4.0/src/cpu/evaDme.cpp Line: 549 Function: evaDmeSetInitConfig() Msg: WarpedRef 32770
+08-06 17:28:51.314  1747 30416 I CV      : File: vendor/qcom/proprietary/cv-noship/eva/4.0/src/cpu/evaDme.cpp Line: 574 Function: evaDmeSetInitConfig() Msg: AlignmentType 0 bDisableAlignControl 1 bFtextEnable 1 bDisableGCE 3
+08-06 17:28:51.314  1747 30416 I CV      : File: vendor/qcom/proprietary/cv-noship/eva/4.0/src/cpu/evaDme.cpp Line: 1750 Function: evaInitDme() Msg: DME Config for session: nonWSrcWid 480, nonWSrcHgt 270, nonWFormat 32770, WSrcWid 480, WSrcHgt 270, WFormat 32770, AlignTyp 0, DisAliCtl 1, StreamId 0
+08-06 17:28:51.314  1747 30416 I CV      : File: vendor/qcom/proprietary/cv-noship/eva/4.0/src/cpu/evaSessionStartStop.cpp Line: 1804 Function: evaStartSession() Msg: hSession: 0xb4000078c5820ed0, nSessionID: 0xe50e580a
+08-06 17:28:51.315  1747  2642 I QC2V4l2Codec: [v4lhvcD_312] KPI_L1: stop: ms=4
+08-06 17:28:51.317  1747  2203 I QC2Filter: [cvpF_313] KPI_L1: stop: ms=7
+08-06 17:28:51.318  1747  2203 I QC2Filter: [sIgF_313] KPI_L1: stop: ms=0
+08-06 17:28:51.320 30318 30335 V NuMediaExtractor: NuMediaExtractor constructor
+08-06 17:28:51.324  2148 24260 I MediaExtractorFactory: Created an extractor 'SECMPEG4Extractor' with confidence 0.41
+08-06 17:28:51.325 30318 30335 V NuMediaExtractor: track of type 'video/avc' does not publish bitrate
+08-06 17:28:51.325  1747  2642 I QC2V4l2Codec: [v4lhvcD_312] KPI_L1: release: ms=10
+08-06 17:28:51.325  1747  2642 I QC2V4l2Codec: [v4lhvcD_312] KPI_L1: stop: ms=0
+08-06 17:28:51.325  2710  4003 D SLocation: WifiBssidMonitor - requestRefresh
+08-06 17:28:51.325  1747  2642 I QC2V4l2Codec: [v4lhvcD_312] KPI_L1: release: ms=0
+08-06 17:28:51.326  2710  4003 W SLocation: WifiBssidMonitor - connected wifi : (88:76:b9:**:**:41/779)
+08-06 17:28:51.326  1747 30394 W QC2Comp : [avcE_313] Skipping empty output buffer
+08-06 17:28:51.326  1747 30394 W QC2Comp : [avcE_313] Skipping empty output buffer
+08-06 17:28:51.326 30318 30335 V NuMediaExtractor: NuMediaExtractor destructor
+08-06 17:28:51.326  1747 30394 W QC2Comp : [avcE_313] Skipping empty output buffer
+08-06 17:28:51.326 30318 30335 V NuMediaExtractor: NuMediaExtractor constructor
+08-06 17:28:51.327  1747  2642 D BufferPoolAccessor2.0: Destruction - bufferpool2 0xb4000078a584d388 cached: 0/0M, 0/0% in use; allocs: 24, 0% recycled; transfers: 0, 0% unfetched
+08-06 17:28:51.327  1747  2642 I QC2Comp : [hvcD_312] NOTE: Release returning: 0 (OK=0)
+08-06 17:28:51.327  1747  2203 I QC2V4l2Codec: [v4lavcE_313] KPI_L1: stop: ms=8
+08-06 17:28:51.327  1747  2642 I QC2Comp : [hvcD_312] KPI_L1: release: ms=16
+08-06 17:28:51.327  1747  2642 I FRCFilterPlugin: release entry
+08-06 17:28:51.328  1747  2642 I FRCFilterPlugin: shutDownMpp entry
+08-06 17:28:51.328  1747  2642 I FRCFilterPlugin: shutDownMpp exit
+08-06 17:28:51.328  1747  2642 I FRCFilterPlugin: cleanUpResources entry
+08-06 17:28:51.328  1747  2642 I FRCFilterPlugin: cleanUpResources exit
+08-06 17:28:51.328  1747  2203 I QC2PipelineCodec: [pipeE_avcE_313] KPI_L1: stop: ms=20
+08-06 17:28:51.328  1747  2642 I FRCFilterPlugin: release exit
+08-06 17:28:51.328 30318 30438 I CCodec  : [c2.qti.hevc.decoder] state->set(RELEASED)
+08-06 17:28:51.328  1747  2203 W QC2Filter: [imgTxrF_313] Incorrect/Bad state to process stop
+08-06 17:28:51.328  1747  2203 I QC2Filter: [imgTxrF_313] KPI_L1: stop: ms=0
+08-06 17:28:51.328  1747  2203 W QC2Filter: [imgTxrF_313] stop returned retval=1
+08-06 17:28:51.328 30318 30362 I Codec2Client: Component destructing
+08-06 17:28:51.328 30318 30362 I hw-BpHwBinder: onLastStrongRef automatically unlinking death recipients
+08-06 17:28:51.328 30318 30361 D SurfaceUtils: disconnecting from surface 0xb400007152e3f3e0, reason disconnectFromSurface
+08-06 17:28:51.328  1747  2642 I hw-BpHwBinder: onLastStrongRef automatically unlinking death recipients
+08-06 17:28:51.328  1747  2642 I vendor.qti.media.c2@1.0-service: HDRToneMappingFilter DTOR
+08-06 17:28:51.328  1747 30394 W QC2Comp : [avcE_313] Skipping empty output buffer
+08-06 17:28:51.328  1747  2642 I vendor.qti.media.c2@1.0-service: AIFRCFilter DTOR
+08-06 17:28:51.328  1747  2642 I QC2CompStore: Deleting component(c2.qti.hevc.decoder) id(312)
+08-06 17:28:51.329  1747  2642 I QC2CompStore: removeIdFromList remove Id[312] from list
+08-06 17:28:51.329  1747  2642 I StatsHandler: [hvcD_312] Stats: Pending(0) i/p-done(0) Works: Q: 77/Done 78|Work-Rate: Q(133.9/s Avg=133.9/s) Done(135.668/s Avg=135.668/s)| Stream: 30.00fps 351.8Kbps
+08-06 17:28:51.329  1747  2642 I StatsHandler: [hvcD_312] Mem-usage:  [In-1D: 5 bufs 40.000 MB] [1D-10503: 24 bufs 0.375 MB] [2D-10504: 19 bufs 5.641 MB] | Total: 46.016 MB
+08-06 17:28:51.329  1747  2642 I QC2Comp : [c2.qti.hevc.decoder] KPI_L1: Total component latency: ms=574
+08-06 17:28:51.329 30318 30361 I MediaCodec: Codec shutdown complete
+08-06 17:28:51.330  2159 24118 I ResourceManagerService: removeResourceInfo pid 30318, removed 172800 (width 480 height 360), remained hw codec count 4
+08-06 17:28:51.330  2159 24118 I ResourceManagerService: getMediaResourceInfo (PID : 1621, clientID : -5476376664185545568, non-secure-codec/hw-video-codec:[]:1, 854x480 (fps:15) - sw codec : no, encoder : no componentName = c2.qti.avc.decoder bitrate = 17000000)
+08-06 17:28:51.330  2159 24118 I ResourceManagerService: getMediaResourceInfo (PID : 29201, clientID : -5476376664186774176, non-secure-codec/hw-video-codec:[]:1, 720x900 (fps:25) - sw codec : no, encoder : no componentName = c2.qti.av1.decoder bitrate = 17000000)
+08-06 17:28:51.330  2159 24118 I ResourceManagerService: getMediaResourceInfo (PID : 29201, clientID : -5476376664186622112, non-secure-codec/hw-video-codec:[]:1, 1280x720 (fps:1) - sw codec : no, encoder : no componentName = c2.qti.avc.decoder bitrate = 17000000)
+08-06 17:28:51.330  2159 24118 I ResourceManagerService: getMediaResourceInfo (PID : 30318, clientID : -5476376664187045616, non-secure-codec/hw-video-codec:[]:1, 480x360 (fps:30) - sw codec : no, encoder : yes componentName = c2.qti.avc.encoder bitrate = 725760)
+08-06 17:28:51.330  8526  8578 I SemMediaResourceHelper: onRemove
+08-06 17:28:51.330  8526  8578 I DrmMediaResourceHelper: onRemove size = 4
+08-06 17:28:51.330  2148 24260 I MediaExtractorFactory: Created an extractor 'SECMPEG4Extractor' with confidence 0.41
+08-06 17:28:51.330  6628  6761 I SemMediaResourceHelper: onRemove
+08-06 17:28:51.331 30318 30361 I CCodecBufferChannel: CCodecBufferChannel destructing c2.qti.hevc.decoder#183
+08-06 17:28:51.331 30318 30335 V NuMediaExtractor: track of type 'video/avc' does not publish bitrate
+08-06 17:28:51.332 30318 30335 V NuMediaExtractor: NuMediaExtractor destructor
+08-06 17:28:51.332 30318 30335 V MediaMetadataRetriever: constructor
+08-06 17:28:51.332  2159 24118 V MetadataRetrieverClient: MetadataRetrieverClient constructor pid(30318)
+08-06 17:28:51.332  2159 24118 V MediaPlayerService: Create new media retriever from pid 30318
+08-06 17:28:51.334 30318 30335 V MediaMetadataRetriever: setDataSource(104, 0, 576460752303423487)
+08-06 17:28:51.334  2159 24118 V MetadataRetrieverClient: setDataSource fd=18, offset=0, length=576460752303423487
+08-06 17:28:51.334  2159 24118 V MetadataRetrieverClient: st_dev  = 65089
+08-06 17:28:51.334  2159 24118 V MetadataRetrieverClient: st_mode = 33152
+08-06 17:28:51.334  2159 24118 V MetadataRetrieverClient: st_uid  = 10503
+08-06 17:28:51.334  2159 24118 V MetadataRetrieverClient: st_gid  = 20503
+08-06 17:28:51.334  2159 24118 V MetadataRetrieverClient: st_size = 642464
+08-06 17:28:51.334  2159 24118 V MetadataRetrieverClient: calculated length = 642464
+08-06 17:28:51.334  2159 24118 V MetadataRetrieverClient: player type = 4
+08-06 17:28:51.335  2159 24118 D StagefrightMetadataRetriever: FileSource remote
+08-06 17:28:51.336  1747  2203 I QC2Filter: [imgTxrF_313] KPI_L1: release: ms=7
+08-06 17:28:51.336  1747  2203 W QC2Filter: [cvpF_313] Incorrect/Bad state to process stop
+08-06 17:28:51.336  1747  2203 I QC2Filter: [cvpF_313] KPI_L1: stop: ms=0
+08-06 17:28:51.336  1747  2203 W QC2Filter: [cvpF_313] stop returned retval=1
+08-06 17:28:51.336  2148 24260 I MediaExtractorFactory: Created an extractor 'SECMPEG4Extractor' with confidence 0.41
+08-06 17:28:51.336  2159 24118 V MetadataRetrieverClient: setDataSource(fd) return(0)
+08-06 17:28:51.336 30318 30335 V MediaMetadataRetriever: setDataSource(fd) return(0)
+08-06 17:28:51.336 30318 30335 V MediaMetadataRetriever: extractMetadata(9)
+08-06 17:28:51.336  2159 24118 V MetadataRetrieverClient: extractMetadata
+08-06 17:28:51.337  2159 24118 I libsfextcp: GetMaxResolution(104)
+08-06 17:28:51.337  2159 24118 I libsfextcp: name(c2.qti.avc.decoder) width(8192) height(4320) isSoftware(0)
+08-06 17:28:51.337 30318 30335 V MediaMetadataRetriever: destructor
+08-06 17:28:51.337 30318 30335 V MediaMetadataRetriever: disconnect
+08-06 17:28:51.337  2159 24118 V MetadataRetrieverClient: disconnect from pid 30318
+08-06 17:28:51.337  2159 24118 V MetadataRetrieverClient: MetadataRetrieverClient destructor
+08-06 17:28:51.338  2159 24118 V MetadataRetrieverClient: disconnect from pid 30318
+08-06 17:28:51.338  1747  2203 I QC2Filter: [cvpF_313] KPI_L1: release: ms=1
+08-06 17:28:51.338  1747  2203 W QC2Filter: [sIgF_313] Incorrect/Bad state to process stop
+08-06 17:28:51.338  1747  2203 I QC2Filter: [sIgF_313] KPI_L1: stop: ms=0
+08-06 17:28:51.338  1747  2203 W QC2Filter: [sIgF_313] stop returned retval=1
+08-06 17:28:51.338  1747  2203 I QC2Filter: [sIgF_313] KPI_L1: release: ms=0
+08-06 17:28:51.340 30318 30335 I VideoClipEditorHevc: HEVC_OUTPUT path=/data/user/0/com.oneononearena.videoclip.test/cache/video-clip-editor/acac8789-008d-4d0b-ba4e-ee4b668974f7/9803d95d-77bd-4083-bb15-fbdc105f3993.mp4 videoMime=video/avc audioMime=audio/mp4a-latm cleanup=Cleared existsAfterCleanup=false
+08-06 17:28:51.341 30318 30335 I TestRunner: finished: productionFactoryClipsSdrHevcToOwnedH264AacMp4WithoutMutatingSource(com.oneononearena.videoclip.HevcClipRoundTripTest)

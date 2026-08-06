@@ -2,6 +2,7 @@ package com.oneononearena.videoclip.compose
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.horizontalScroll
@@ -79,6 +80,7 @@ internal fun ClipRangeSelector(
     onRangeGestureStart: () -> Unit = {},
     onRangeChange: (RangeBoundary, Duration) -> Unit = { _, _ -> },
     onRangeGestureEnd: () -> Unit = {},
+    onRangeGestureCancel: () -> Unit = {},
     onSeek: (Duration) -> Unit = {},
     onPlayheadDragStart: () -> Unit = {},
 ) {
@@ -118,9 +120,16 @@ internal fun ClipRangeSelector(
                 val endPx = sourceTimeToContentPx(range.endExclusive, duration, contentWidthPx)
                 Box(Modifier.width(with(density) { startPx.toDp() }).height(frameHeight).background(Color.Black.copy(alpha = 0.55f)))
                 Box(Modifier.offset { IntOffset(endPx.roundToInt(), 0) }.fillMaxWidth().height(frameHeight).background(Color.Black.copy(alpha = 0.55f)))
-                Box(Modifier.offset { IntOffset(startPx.roundToInt(), 0) }.width(with(density) { (endPx - startPx).coerceAtLeast(0f).toDp() }).height(frameHeight).background(Color.Transparent))
-                SelectorHandle("clip-start-handle", startPx, handleTargetPx, onRangeGestureStart, onRangeGestureEnd) { x -> onRangeChange(RangeBoundary.Start, sourceTimeToContentPxToDuration(x, duration, contentWidthPx)) }
-                SelectorHandle("clip-end-handle", endPx, handleTargetPx, onRangeGestureStart, onRangeGestureEnd) { x -> onRangeChange(RangeBoundary.End, sourceTimeToContentPxToDuration(x, duration, contentWidthPx)) }
+                Box(
+                    Modifier
+                        .offset { IntOffset(startPx.roundToInt(), 0) }
+                        .width(with(density) { (endPx - startPx).coerceAtLeast(0f).toDp() })
+                        .height(frameHeight)
+                        .border(2.dp, Color.Yellow)
+                        .semantics { testTag = "clip-selected-range" },
+                )
+                SelectorHandle("clip-start-handle", startPx, handleTargetPx, onRangeGestureStart, onRangeGestureEnd, onRangeGestureCancel) { x -> onRangeChange(RangeBoundary.Start, sourceTimeToContentPxToDuration(x, duration, contentWidthPx)) }
+                SelectorHandle("clip-end-handle", endPx, handleTargetPx, onRangeGestureStart, onRangeGestureEnd, onRangeGestureCancel) { x -> onRangeChange(RangeBoundary.End, sourceTimeToContentPxToDuration(x, duration, contentWidthPx)) }
                 Playhead(
                     positionPx = sourceTimeToContentPx(playhead, duration, contentWidthPx),
                     duration = duration,
@@ -168,6 +177,7 @@ private fun SelectorHandle(
     targetWidthPx: Float,
     onDragStart: () -> Unit,
     onDragEnd: () -> Unit,
+    onDragCancel: () -> Unit,
     onPosition: (Float) -> Unit,
 ) {
     var position by remember(tag, positionPx) { mutableFloatStateOf(positionPx) }
@@ -177,7 +187,7 @@ private fun SelectorHandle(
             .size(with(LocalDensity.current) { targetWidthPx.toDp() }, 48.dp)
             .semantics { testTag = tag }
             .pointerInput(tag) {
-                detectDragGestures(onDragStart = { onDragStart() }, onDragEnd = onDragEnd) { change, drag ->
+                detectDragGestures(onDragStart = { onDragStart() }, onDragEnd = onDragEnd, onDragCancel = onDragCancel) { change, drag ->
                     change.consume()
                     position += drag.x
                     onPosition(position)

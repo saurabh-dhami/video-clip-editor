@@ -112,35 +112,23 @@ class ClipEditorPresenterTest {
     }
 
     @Test
-    fun `timeline mapping clamps positions at both track edges`() {
-        assertEquals(0.milliseconds, toDuration(-4f, 100, 10_000))
-        assertEquals(10_000.milliseconds, toDuration(104f, 100, 10_000))
-        assertEquals(0f, toPosition((-1).milliseconds, 10_000, 100))
-        assertEquals(100f, toPosition(12_000.milliseconds, 10_000, 100))
-    }
+    fun handleDrag_keepsCanonicalRangeUntilCommitAndCancelDiscardsProvisionalRange() = runTest {
+        val presenter = ClipEditorPresenter(this)
+        presenter.start(VideoSourcePath("/video.mp4"), FakeEditor(FakeSession(flow { emit(FrameStripEvent.Complete) })))
+        testScheduler.advanceUntilIdle()
 
-    @Test
-    fun `timeline mapping keeps 48dp edge targets fully inside track`() {
-        val edgeInsetPx = 24f
+        presenter.beginRangeGesture()
+        presenter.updateEndFromSelector(4.seconds)
 
-        assertEquals(0.milliseconds, toDuration(24f, 100, 10_000, edgeInsetPx))
-        assertEquals(10_000.milliseconds, toDuration(76f, 100, 10_000, edgeInsetPx))
-        assertEquals(24f, toPosition(0.milliseconds, 10_000, 100, edgeInsetPx))
-        assertEquals(76f, toPosition(10_000.milliseconds, 10_000, 100, edgeInsetPx))
-    }
+        val dragging = assertIs<ClipEditorUiState.Ready>(presenter.state.value)
+        assertEquals(10.seconds, dragging.range.endExclusive)
+        assertEquals(4.seconds, dragging.provisionalRange?.endExclusive)
 
-    @Test
-    fun `fractional density target stays within full measured track bounds`() {
-        val targetWidthPx = 53 // 48dp rounded at density 1.1
-        val trackWidthPx = 200
-        val edgeInsetPx = targetWidthPx / 2f
-        val startPosition = toPosition(0.milliseconds, 10_000, trackWidthPx, edgeInsetPx)
-        val endPosition = toPosition(10_000.milliseconds, 10_000, trackWidthPx, edgeInsetPx)
+        presenter.cancelRangeGesture()
 
-        assertEquals(0, timelineHandleOffsetPx(startPosition, targetWidthPx))
-        assertEquals(trackWidthPx - targetWidthPx, timelineHandleOffsetPx(endPosition, targetWidthPx))
-        assertEquals(0.milliseconds, toDuration(startPosition, trackWidthPx, 10_000, edgeInsetPx))
-        assertEquals(10_000.milliseconds, toDuration(endPosition, trackWidthPx, 10_000, edgeInsetPx))
+        val cancelled = assertIs<ClipEditorUiState.Ready>(presenter.state.value)
+        assertEquals(10.seconds, cancelled.range.endExclusive)
+        assertEquals(null, cancelled.provisionalRange)
     }
 
     @Test

@@ -50,8 +50,6 @@ import com.oneononearena.videoclip.VideoClipEditor
 import com.oneononearena.videoclip.VideoEditFailure
 import com.oneononearena.videoclip.VideoMetadata
 import com.oneononearena.videoclip.VideoSourcePath
-import kotlin.math.roundToLong
-import kotlin.math.roundToInt
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.milliseconds
 import kotlinx.coroutines.CoroutineScope
@@ -114,11 +112,12 @@ fun ClipEditorScreen(
 
 @Composable
 private fun EditorControls(ready: ClipEditorUiState.Ready, presenter: ClipEditorPresenter) {
+    val visualRange = ready.provisionalRange ?: ready.range
     ClipRangeSelector(
         frames = ready.frames,
         metadata = ready.metadata,
-        range = ready.range,
-        playhead = ready.range.start,
+        range = visualRange,
+        playhead = visualRange.start,
         onRangeGestureStart = presenter::beginRangeGesture,
         onRangeChange = { boundary, value ->
             when (boundary) {
@@ -127,54 +126,27 @@ private fun EditorControls(ready: ClipEditorUiState.Ready, presenter: ClipEditor
             }
         },
         onRangeGestureEnd = presenter::commitRangeGesture,
+        onRangeGestureCancel = presenter::cancelRangeGesture,
         onSeek = presenter::seekFromSelector,
         onPlayheadDragStart = presenter::pausePreview,
     )
-    Text(ready.range.start.toString(), Modifier.semantics { testTag = "clip-start-time" })
-    Text(ready.range.endExclusive.toString(), Modifier.semantics { testTag = "clip-end-time" })
+    Text(visualRange.start.toString(), Modifier.semantics { testTag = "clip-start-time" })
+    Text(visualRange.endExclusive.toString(), Modifier.semantics { testTag = "clip-end-time" })
     Button({}, Modifier.semantics { testTag = "play-pause" }) { Text("Play") }
     Button(presenter::createClip, Modifier.semantics { testTag = "done" }) { Text("Create clip") }
 }
 
 internal expect fun decodeJpegForRender(bytes: ByteArray): ImageBitmap?
 
-internal fun toDuration(
-    position: Float,
-    trackWidthPx: Int,
-    durationMs: Long,
-    edgeInsetPx: Float = 0f,
-): Duration {
-    val width = trackWidthPx.toFloat()
-    if (width <= 0f) return Duration.ZERO
-    val edgeInset = timelineEdgeInset(trackWidthPx, edgeInsetPx)
-    val usableWidth = width - edgeInset * 2f
-    if (usableWidth <= 0f) return Duration.ZERO
-    return (((position.coerceIn(edgeInset, width - edgeInset) - edgeInset) / usableWidth) * durationMs).roundToLong().milliseconds
-}
-
-internal fun toPosition(
-    duration: Duration,
-    durationMs: Long,
-    trackWidthPx: Int,
-    edgeInsetPx: Float = 0f,
-): Float {
-    val width = trackWidthPx.coerceAtLeast(0).toFloat()
-    val edgeInset = timelineEdgeInset(trackWidthPx, edgeInsetPx)
-    val usableWidth = width - edgeInset * 2f
-    if (durationMs <= 0L || usableWidth <= 0f) return edgeInset
-    return (edgeInset + duration.inWholeMilliseconds.toFloat() / durationMs * usableWidth).coerceIn(edgeInset, width - edgeInset)
-}
-
-internal fun timelineEdgeInset(trackWidthPx: Int, requestedInsetPx: Float): Float =
-    requestedInsetPx.coerceIn(0f, trackWidthPx.coerceAtLeast(0).toFloat() / 2f)
-
-internal fun timelineHandleOffsetPx(position: Float, targetWidthPx: Int): Int =
-    (position - targetWidthPx.coerceAtLeast(0) / 2f).roundToInt()
-
 internal sealed interface ClipEditorUiState {
     data object LoadingMetadata : ClipEditorUiState
     data object LoadingFrames : ClipEditorUiState
-    data class Ready(val metadata: VideoMetadata, val frames: List<ThumbnailFrame>, val range: ClipRange) : ClipEditorUiState
+    data class Ready(
+        val metadata: VideoMetadata,
+        val frames: List<ThumbnailFrame>,
+        val range: ClipRange,
+        val provisionalRange: ClipRange? = null,
+    ) : ClipEditorUiState
     data object Exporting : ClipEditorUiState
     data class Retry(val message: String) : ClipEditorUiState
     data class Terminal(val message: String) : ClipEditorUiState
@@ -296,8 +268,9 @@ internal class ClipEditorPresenter(
     fun updateEnd(value: Duration) = updateRange { range, duration -> range.copy(endExclusive = value.coerceIn(range.start + minimumRange, duration)) }
     fun beginRangeGesture() {
         if (rangeGestureInProgress) return
+        val ready = backingState.value as? ClipEditorUiState.Ready ?: return
         rangeGestureInProgress = true
-        if (backingState.value !is ClipEditorUiState.Ready) return
+        backingState.value = ready.copy(provisionalRange = ready.range)
         previewPort?.dispatch(PreviewCommand.SetPlayWhenReady(previewGeneration, previewRevision, false))
     }
     fun updateStartFromSelector(value: Duration) = updateRange { range, duration ->
@@ -317,12 +290,26 @@ internal class ClipEditorPresenter(
         if (!rangeGestureInProgress) return
         rangeGestureInProgress = false
         val ready = backingState.value as? ClipEditorUiState.Ready ?: return
+        val committedRange = ready.provisionalRange ?: return
         previewRevision = PreviewRevision(previewRevision.value + 1)
-        previewPort?.dispatch(PreviewCommand.ReplaceRange(previewBinding(ready)))
+        val committed = ready.copy(range = committedRange, provisionalRange = null)
+        backingState.value = committed
+        previewPort?.dispatch(PreviewCommand.ReplaceRange(previewBinding(committed)))
+    }
+    fun cancelRangeGesture() {
+        if (!rangeGestureInProgress) return
+        rangeGestureInProgress = false
+        val ready = backingState.value as? ClipEditorUiState.Ready ?: return
+        backingState.value = ready.copy(provisionalRange = null)
     }
     private fun updateRange(transform: (ClipRange, Duration) -> ClipRange) {
         val ready = backingState.value as? ClipEditorUiState.Ready ?: return
-        backingState.value = ready.copy(range = transform(ready.range, ready.metadata.duration))
+        if (rangeGestureInProgress) {
+            val provisional = ready.provisionalRange ?: ready.range
+            backingState.value = ready.copy(provisionalRange = transform(provisional, ready.metadata.duration))
+        } else {
+            backingState.value = ready.copy(range = transform(ready.range, ready.metadata.duration))
+        }
     }
     private fun previewBinding(ready: ClipEditorUiState.Ready): PreviewBinding = PreviewBinding(
         generation = previewGeneration,

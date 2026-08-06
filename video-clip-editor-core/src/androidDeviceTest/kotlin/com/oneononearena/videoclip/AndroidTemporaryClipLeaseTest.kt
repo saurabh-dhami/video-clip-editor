@@ -2,6 +2,7 @@ package com.oneononearena.videoclip
 
 import android.system.Os
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import androidx.test.core.app.ApplicationProvider
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.async
 import kotlinx.coroutines.test.runTest
@@ -15,6 +16,73 @@ import java.io.File
 
 @RunWith(AndroidJUnit4::class)
 class AndroidTemporaryClipLeaseTest {
+    @Test
+    fun issued_store_lease_clears_only_its_owned_output_and_is_idempotent() = runTest {
+        val context = ApplicationProvider.getApplicationContext<android.content.Context>()
+        val store = AndroidOwnedTempFileStore(context)
+        val session = store.createSession()
+        val destination = session.createDestination()
+        destination.partial.writeBytes(byteArrayOf(1))
+        val lease = session.publish(destination)
+        val foreign = File(context.cacheDir, "video-editor-foreign-${System.nanoTime()}.mp4").apply {
+            writeBytes(byteArrayOf(2))
+        }
+
+        try {
+            assertTrue(lease.file.absolutePath.startsWith(File(context.cacheDir, "video-clip-editor").absolutePath))
+            assertEquals(TempDeleteResult.Cleared, lease.clearTemporaryFile())
+            assertFalse(File(lease.file.absolutePath).exists())
+            assertEquals(TempDeleteResult.AlreadyCleared, lease.clearTemporaryFile())
+            assertEquals(TempDeleteResult.AlreadyCleared, session.clearIssuedLease(foreign, "not-issued"))
+            assertTrue(foreign.exists())
+        } finally {
+            foreign.delete()
+            session.close()
+        }
+    }
+
+    @Test
+    fun issued_store_lease_refuses_terminal_symbolic_link_without_deleting_foreign_target() = runTest {
+        val context = ApplicationProvider.getApplicationContext<android.content.Context>()
+        val store = AndroidOwnedTempFileStore(context)
+        val session = store.createSession()
+        val destination = session.createDestination()
+        destination.partial.writeBytes(byteArrayOf(1))
+        val lease = session.publish(destination)
+        val target = File(context.cacheDir, "video-editor-target-${System.nanoTime()}.mp4").apply {
+            writeBytes(byteArrayOf(2))
+        }
+        val output = File(lease.file.absolutePath)
+
+        try {
+            assertTrue(output.delete())
+            Os.symlink(target.absolutePath, output.absolutePath)
+
+            assertTrue(lease.clearTemporaryFile() is TempDeleteResult.Failed)
+            assertTrue(target.exists())
+            assertTrue(output.exists())
+        } finally {
+            output.delete()
+            target.delete()
+            session.close()
+        }
+    }
+
+    @Test
+    fun issued_store_lease_remains_clearable_after_the_session_closes() = runTest {
+        val context = ApplicationProvider.getApplicationContext<android.content.Context>()
+        val store = AndroidOwnedTempFileStore(context)
+        val session = store.createSession()
+        val destination = session.createDestination()
+        destination.partial.writeBytes(byteArrayOf(1))
+        val lease = session.publish(destination)
+
+        session.close()
+
+        assertEquals(TempDeleteResult.Cleared, lease.clearTemporaryFile())
+        assertFalse(File(lease.file.absolutePath).exists())
+    }
+
     @Test
     fun clears_an_issued_regular_file_and_reports_idempotent_result() {
         val target = File.createTempFile("video-editor-lease", ".mp4")

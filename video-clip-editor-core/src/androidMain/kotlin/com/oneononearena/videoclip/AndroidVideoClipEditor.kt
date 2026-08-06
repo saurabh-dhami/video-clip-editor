@@ -1,39 +1,20 @@
 package com.oneononearena.videoclip
 
 import android.content.Context
-import android.graphics.Bitmap
-import android.media.MediaExtractor
-import android.media.MediaFormat
-import android.media.MediaMetadataRetriever
-import android.net.Uri
-import android.os.Build
 import android.os.Handler
 import android.os.Looper
 import android.system.ErrnoException
 import android.system.Os
 import android.system.OsConstants
-import androidx.media3.common.MediaItem
-import androidx.media3.common.MimeTypes
-import androidx.media3.transformer.Composition
-import androidx.media3.transformer.ExportException
-import androidx.media3.transformer.ExportResult
-import androidx.media3.transformer.Transformer
 import com.oneononearena.videoclip.internal.engine.ClipMediaEngine
-import com.oneononearena.videoclip.internal.engine.EngineAudioCodec
 import com.oneononearena.videoclip.internal.engine.EngineExportRequest
 import com.oneononearena.videoclip.internal.engine.EngineExportResult
 import com.oneononearena.videoclip.internal.engine.EngineFrameEvent
 import com.oneononearena.videoclip.internal.engine.EngineFrameRequest
 import com.oneononearena.videoclip.internal.engine.EngineProbeResult
 import com.oneononearena.videoclip.internal.engine.EngineSource
-import com.oneononearena.videoclip.internal.engine.EngineStreamTopology
-import com.oneononearena.videoclip.internal.engine.EngineVideoCodec
-import java.io.ByteArrayOutputStream
 import java.io.File
-import java.io.IOException
-import java.util.UUID
 import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.flow.Flow
@@ -46,11 +27,7 @@ import kotlinx.coroutines.joinAll
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
-import kotlinx.coroutines.withContext
 import kotlin.coroutines.resume
-import kotlin.math.max
-import kotlin.math.min
-import kotlin.time.Duration.Companion.milliseconds
 
 public fun createAndroidVideoClipEditor(
     context: Context,
@@ -100,98 +77,33 @@ private class AndroidVideoClipEditor(
     private val configuration: VideoClipEditorConfiguration,
     private val engine: ClipMediaEngine? = null,
 ) : VideoClipEditor {
-    private val temporaryRoot = File(context.cacheDir, "video-clip-editor")
+    private val temporaryStore = AndroidOwnedTempFileStore(context)
 
     override suspend fun openSession(source: VideoSourcePath): OpenSessionResult {
-        AndroidSourcePolicy.validate(source.value, temporaryRoot)?.let { return OpenSessionResult.InvalidRequest(it, null) }
+        AndroidSourcePolicy.validate(source.value, temporaryStore.root)?.let { return OpenSessionResult.InvalidRequest(it, null) }
         val sourceFile = AndroidSourcePolicy.canonicalFile(source.value)
             ?: return OpenSessionResult.InvalidRequest(ValidationCode.PATH_NOT_REGULAR_FILE, null)
-        return when (val probe = engine?.probe(EngineSource(sourceFile.absolutePath))?.toSourceProbeResult() ?: probeSource(sourceFile)) {
+        val sessionEngine = engine ?: Media3ClipMediaEngine(context)
+        return when (val probe = sessionEngine.probe(EngineSource(sourceFile.absolutePath)).toSourceProbeResult()) {
             is SourceProbeResult.Unsupported -> OpenSessionResult.Unsupported(probe.code, probe.diagnostic)
             is SourceProbeResult.Failed -> OpenSessionResult.Failed(probe.failure)
             is SourceProbeResult.Success -> {
-                val root = File(temporaryRoot, UUID.randomUUID().toString())
-                if (!root.mkdirs()) return OpenSessionResult.Failed(tempCreateFailure(root))
+                val temporarySession = try {
+                    temporaryStore.createSession()
+                } catch (error: TempStoreCreateException) {
+                    return OpenSessionResult.Failed(tempCreateFailure(error.target))
+                }
                 OpenSessionResult.Open(
                     AndroidClipEditorSession(
-                        sourceFile,
                         EngineSource(sourceFile.absolutePath),
-                        root,
+                        temporarySession,
                         probe.metadata,
                         configuration,
-                        context,
-                        engine,
+                        sessionEngine,
                     ),
                 )
             }
         }
-    }
-
-    private suspend fun probeSource(file: File): SourceProbeResult = withContext(Dispatchers.IO) {
-        if (file.length() > MAXIMUM_INPUT_BYTES) {
-            return@withContext SourceProbeResult.Unsupported(UnsupportedCode.INPUT_TOO_LARGE, file.length().toString())
-        }
-        val extractor = MediaExtractor()
-        val retriever = MediaMetadataRetriever()
-        try {
-            extractor.setDataSource(file.absolutePath)
-            retriever.setDataSource(file.absolutePath)
-            if (Build.VERSION.SDK_INT >= 26 && extractor.drmInitData != null) {
-                return@withContext SourceProbeResult.Unsupported(UnsupportedCode.DRM_PROTECTED, null)
-            }
-            val containerMime = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_MIMETYPE)
-            if (containerMime != "video/mp4" && containerMime != "application/mp4") {
-                return@withContext SourceProbeResult.Unsupported(UnsupportedCode.UNSUPPORTED_CONTAINER, containerMime)
-            }
-            val formats = (0 until extractor.trackCount).map { extractor.getTrackFormat(it) }
-            val videoTracks = formats.filter { it.mime().startsWith("video/") }
-            if (videoTracks.size != 1) {
-                return@withContext SourceProbeResult.Unsupported(UnsupportedCode.UNSUPPORTED_VIDEO_CODEC, "Expected exactly one video track")
-            }
-            val video = videoTracks.single()
-            val audioTracks = formats.filter { it.mime().startsWith("audio/") }
-            if (audioTracks.size > 1) {
-                return@withContext SourceProbeResult.Unsupported(UnsupportedCode.UNSUPPORTED_AUDIO_CODEC, "Expected at most one audio track")
-            }
-            if (formats.any { !it.mime().startsWith("video/") && !it.mime().startsWith("audio/") }) {
-                return@withContext SourceProbeResult.Unsupported(UnsupportedCode.UNSUPPORTED_CONTAINER, "Unsupported auxiliary track")
-            }
-            val audio = audioTracks.singleOrNull()
-            val topology = EngineStreamTopology(
-                videoCodec = video.toEngineVideoCodec(),
-                audioCodec = audio?.toEngineAudioCodec(),
-                isHdr = video.isHdr(),
-            )
-            AndroidSourceTopologyPolicy.validate(topology)?.let { code ->
-                val diagnostic = when (code) {
-                    UnsupportedCode.UNSUPPORTED_VIDEO_CODEC -> video.mime()
-                    UnsupportedCode.UNSUPPORTED_AUDIO_CODEC -> audio?.mime()
-                    else -> null
-                }
-                return@withContext SourceProbeResult.Unsupported(code, diagnostic)
-            }
-            val durationMs = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION)?.toLongOrNull()
-                ?: return@withContext SourceProbeResult.Failed(metadataFailure("Missing duration"))
-            if (durationMs > MAXIMUM_INPUT_DURATION_MS) {
-                return@withContext SourceProbeResult.Unsupported(UnsupportedCode.INPUT_TOO_LONG, durationMs.toString())
-            }
-            val encodedWidth = video.getInteger(MediaFormat.KEY_WIDTH)
-            val encodedHeight = video.getInteger(MediaFormat.KEY_HEIGHT)
-            val rotation = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_VIDEO_ROTATION)?.toIntOrNull() ?: 0
-            val width = if (rotation == 90 || rotation == 270) encodedHeight else encodedWidth
-            val height = if (rotation == 90 || rotation == 270) encodedWidth else encodedHeight
-            SourceProbeResult.Success(VideoMetadata(durationMs.milliseconds, width, height, audio != null))
-        } catch (error: Exception) {
-            SourceProbeResult.Failed(metadataFailure(error.message))
-        } finally {
-            retriever.release()
-            extractor.release()
-        }
-    }
-
-    private companion object {
-        const val MAXIMUM_INPUT_BYTES: Long = 512L * 1024L * 1024L
-        const val MAXIMUM_INPUT_DURATION_MS: Long = 300_000L
     }
 }
 
@@ -204,21 +116,15 @@ private fun EngineProbeResult.toSourceProbeResult(): SourceProbeResult = when (t
 }
 
 private class AndroidClipEditorSession(
-    private val source: File,
     private val engineSource: EngineSource,
-    private val sessionRoot: File,
+    private val temporarySession: AndroidOwnedTempFileStore.AndroidOwnedTempSession,
     override val metadata: VideoMetadata,
     private val configuration: VideoClipEditorConfiguration,
-    private val context: Context,
-    private val engine: ClipMediaEngine?,
+    private val engine: ClipMediaEngine,
 ) : ClipEditorSession {
     private val exportMutex = Mutex()
     private val frameEmissionGate = FrameEmissionGate()
     private val lifecycle = AndroidSessionLifecycle()
-    private val lifecycleLock = Any()
-    private val issuedLeases = mutableMapOf<String, LeaseRecord>()
-    private var activeTransformer: Transformer? = null
-    private var activeCancellation: (() -> Unit)? = null
 
     override fun frames(request: FrameStripRequest): Flow<FrameStripEvent> = callbackFlow {
         val worker = launch {
@@ -230,24 +136,12 @@ private class AndroidClipEditorSession(
                 send(FrameStripEvent.InvalidRequest(it, null))
                 return@launch
             }
-            engine?.let { injectedEngine ->
-                injectedEngine.frames(
-                    engineSource,
-                    EngineFrameRequest(request.frameCount, configuration.maximumThumbnailDimensionPx),
-                ).collect { event ->
-                    send(event.toFrameStripEvent())
-                }
-                return@launch
+            engine.frames(
+                engineSource,
+                EngineFrameRequest(request.frameCount, configuration.maximumThumbnailDimensionPx),
+            ).collect { event ->
+                send(event.toFrameStripEvent())
             }
-            val frames = runCatching { extractFrames(request.frameCount) }.getOrElse {
-                send(FrameStripEvent.Failed(VideoEditFailure(FailureCode.FRAME_EXTRACTION_FAILED, true, it.message)))
-                return@launch
-            }
-            frames.forEachIndexed { index, frame ->
-                send(FrameStripEvent.Frame(frame))
-                send(FrameStripEvent.Progress(index + 1, frames.size))
-            }
-            send(FrameStripEvent.Complete)
         }
         worker.invokeOnCompletion { close() }
         awaitClose { worker.cancel() }
@@ -259,40 +153,43 @@ private class AndroidClipEditorSession(
         if (!exportMutex.tryLock()) return ClipResult.InvalidRequest(ValidationCode.OPERATION_IN_PROGRESS, null)
         try {
             if (lifecycle.isClosed()) return ClipResult.InvalidRequest(ValidationCode.SESSION_CLOSED, null)
-            val outputId = UUID.randomUUID().toString()
-            val partial = File(sessionRoot, "$outputId.partial")
-            val final = File(sessionRoot, "$outputId.mp4")
+            val destination = try {
+                temporarySession.createDestination()
+            } catch (error: IllegalStateException) {
+                return ClipResult.InvalidRequest(ValidationCode.SESSION_CLOSED, null)
+            }
             return try {
-                export(range, partial)
-                if (!partial.renameTo(final)) {
-                    partial.delete()
-                    ClipResult.Failed(VideoEditFailure(FailureCode.TEMP_RENAME_FAILED, true, final.name))
-                } else {
-                    val opaqueId = UUID.randomUUID().toString()
-                    val record = LeaseRecord(opaqueId)
-                    synchronized(lifecycleLock) {
+                when (val result = engine.export(EngineExportRequest(engineSource, range, destination.partial.absolutePath))) {
+                    EngineExportResult.Success -> {
                         if (lifecycle.isClosed()) {
-                            final.delete()
-                            return ClipResult.Failed(VideoEditFailure(FailureCode.EXPORT_CANCELLED, true, "Session closed"))
+                            temporarySession.discard(destination)
+                            ClipResult.Failed(VideoEditFailure(FailureCode.EXPORT_CANCELLED, true, "Session closed"))
+                        } else {
+                            val lease = temporarySession.publish(destination)
+                            if (lifecycle.isClosed()) {
+                                lease.clearTemporaryFile()
+                                ClipResult.Failed(VideoEditFailure(FailureCode.EXPORT_CANCELLED, true, "Session closed"))
+                            } else {
+                                ClipResult.Success(lease, range)
+                            }
                         }
-                        issuedLeases[final.absolutePath] = record
                     }
-                    ClipResult.Success(AndroidTemporaryClipLease(final, opaqueId) { clearIssuedLease(final, opaqueId) }, range)
+                    is EngineExportResult.Unsupported -> {
+                        temporarySession.discard(destination)
+                        ClipResult.Unsupported(result.code, result.diagnostic)
+                    }
+                    is EngineExportResult.Failed -> {
+                        temporarySession.discard(destination)
+                        ClipResult.Failed(result.failure)
+                    }
                 }
-            } catch (unavailable: DeviceEncoderUnavailableException) {
-                partial.delete()
-                ClipResult.Unsupported(UnsupportedCode.DEVICE_ENCODER_UNAVAILABLE, unavailable.message)
-            } catch (unsupported: EngineUnsupportedException) {
-                partial.delete()
-                ClipResult.Unsupported(unsupported.code, unsupported.diagnostic)
-            } catch (failed: EngineFailedException) {
-                partial.delete()
-                ClipResult.Failed(failed.failure)
+            } catch (rename: TempStoreRenameException) {
+                ClipResult.Failed(VideoEditFailure(FailureCode.TEMP_RENAME_FAILED, true, rename.target.name))
             } catch (cancelled: CancellationException) {
-                partial.delete()
+                temporarySession.discard(destination)
                 ClipResult.Failed(VideoEditFailure(FailureCode.EXPORT_CANCELLED, true, cancelled.message))
             } catch (error: Exception) {
-                partial.delete()
+                temporarySession.discard(destination)
                 ClipResult.Failed(VideoEditFailure(FailureCode.EXPORT_FAILED, true, error.message))
             }
         } finally {
@@ -301,133 +198,13 @@ private class AndroidClipEditorSession(
     }
 
     override suspend fun close() = lifecycle.close {
-        runCatching { engine?.cancelActiveExport() }
-        val active = synchronized(lifecycleLock) {
-            activeTransformer to activeCancellation
-        }
+        runCatching { engine.cancelActiveExport() }
         frameEmissionGate.close()
-        AndroidMainLooperDispatcher.run {
-            runCatching { active.first?.cancel() }
-            runCatching { active.second?.invoke() }
-        }
         exportMutex.lock()
         try {
-            synchronized(lifecycleLock) {
-                sessionRoot.listFiles()?.forEach { child ->
-                    if (child.absolutePath !in issuedLeases) child.delete()
-                }
-                if (sessionRoot.listFiles().isNullOrEmpty()) sessionRoot.delete()
-            }
+            temporarySession.close()
         } finally {
             exportMutex.unlock()
-        }
-    }
-
-    private suspend fun clearIssuedLease(target: File, opaqueId: String): TempDeleteResult = synchronized(lifecycleLock) {
-        val record = issuedLeases[target.absolutePath]
-        if (record?.opaqueId != opaqueId) return@synchronized TempDeleteResult.AlreadyCleared
-        AndroidLeaseDeletionPolicy.clear(target).also { result ->
-            if (result is TempDeleteResult.Cleared || result is TempDeleteResult.AlreadyCleared) {
-                issuedLeases.remove(target.absolutePath)
-                if (sessionRoot.listFiles().isNullOrEmpty()) sessionRoot.delete()
-            }
-        }
-    }
-
-    private suspend fun extractFrames(count: Int): List<ThumbnailFrame> = withContext(Dispatchers.IO) {
-        val retriever = MediaMetadataRetriever()
-        val extractor = MediaExtractor()
-        try {
-            retriever.setDataSource(source.absolutePath)
-            extractor.setDataSource(source.absolutePath)
-            val videoTrack = (0 until extractor.trackCount).firstOrNull { extractor.getTrackFormat(it).mime().startsWith("video/") }
-                ?: throw IOException("No video track")
-            extractor.selectTrack(videoTrack)
-            (0 until count).map { index ->
-                val requested = (metadata.duration.inWholeMilliseconds * index / count).milliseconds
-                extractor.seekTo(requested.inWholeMicroseconds, MediaExtractor.SEEK_TO_CLOSEST_SYNC)
-                val actual = extractor.sampleTime.coerceAtLeast(0).milliseconds / 1_000
-                val bitmap = retriever.getFrameAtTime(actual.inWholeMicroseconds, MediaMetadataRetriever.OPTION_CLOSEST_SYNC)
-                    ?: throw IOException("No frame at ${requested.inWholeMilliseconds}ms")
-                bitmap.useAsThumbnail(requested, actual, configuration.maximumThumbnailDimensionPx)
-            }
-        } finally {
-            extractor.release()
-            retriever.release()
-        }
-    }
-
-    private suspend fun export(range: ClipRange, partial: File): ExportResult? {
-        engine?.let { injectedEngine ->
-            return when (val result = injectedEngine.export(EngineExportRequest(engineSource, range, partial.absolutePath))) {
-                EngineExportResult.Success -> null
-                is EngineExportResult.Unsupported -> throw EngineUnsupportedException(result.code, result.diagnostic)
-                is EngineExportResult.Failed -> throw EngineFailedException(result.failure)
-            }
-        }
-        return suspendCancellableCoroutine { continuation ->
-        AndroidMainLooperDispatcher.post {
-            var cleanup: (() -> Unit)? = null
-            try {
-                if (!continuation.isActive) return@post
-                val transformer = Transformer.Builder(context)
-                .setVideoMimeType(MimeTypes.VIDEO_H264)
-                .setAudioMimeType(MimeTypes.AUDIO_AAC)
-                .setEnsureFileStartsOnVideoFrameEnabled(true)
-                .build()
-                val clearActive = {
-                    synchronized(lifecycleLock) {
-                        if (activeTransformer === transformer) {
-                            activeTransformer = null
-                            activeCancellation = null
-                        }
-                    }
-                }
-                cleanup = clearActive
-                val cancel = {
-                    try {
-                        transformer.cancel()
-                    } finally {
-                        clearActive()
-                        if (continuation.isActive) continuation.resumeWith(Result.failure(CancellationException("Export cancelled")))
-                    }
-                }
-                synchronized(lifecycleLock) {
-                    if (lifecycle.isClosed()) {
-                        continuation.resumeWith(Result.failure(CancellationException("Session closed")))
-                        return@post
-                    }
-                    activeTransformer = transformer
-                    activeCancellation = cancel
-                }
-                transformer.addListener(object : Transformer.Listener {
-            override fun onCompleted(composition: Composition, result: ExportResult) {
-                clearActive()
-                if (continuation.isActive) continuation.resume(result)
-            }
-
-            override fun onError(composition: Composition, result: ExportResult, exception: ExportException) {
-                clearActive()
-                val error: Throwable = if (exception.errorCode == ExportException.ERROR_CODE_ENCODER_INIT_FAILED || exception.errorCode == ExportException.ERROR_CODE_ENCODING_FORMAT_UNSUPPORTED) DeviceEncoderUnavailableException(exception) else exception
-                if (continuation.isActive) continuation.resumeWith(Result.failure(error))
-            }
-                })
-                continuation.invokeOnCancellation { AndroidMainLooperDispatcher.post { runCatching { cancel() }; partial.delete() } }
-                transformer.start(
-            MediaItem.Builder().setUri(Uri.fromFile(source)).setClippingConfiguration(
-                MediaItem.ClippingConfiguration.Builder()
-                    .setStartPositionMs(range.start.inWholeMilliseconds)
-                    .setEndPositionMs(range.endExclusive.inWholeMilliseconds)
-                    .build(),
-            ).build(),
-            partial.absolutePath,
-                )
-            } catch (error: Throwable) {
-                cleanup?.invoke()
-                partial.delete()
-                if (continuation.isActive) continuation.resumeWith(Result.failure(error))
-            }
-        }
         }
     }
 }
@@ -485,8 +262,6 @@ internal class AndroidTemporaryClipLease(
     }
 }
 
-private data class LeaseRecord(val opaqueId: String)
-
 /**
  * Deletes only an issued regular-file entry. `lstat` inspects the terminal entry without following
  * links; `remove` then removes that entry without traversing a target. Both APIs are available on
@@ -517,10 +292,6 @@ internal object AndroidLeaseDeletionPolicy {
     }
 }
 
-private class DeviceEncoderUnavailableException(cause: ExportException) : Exception(cause.message, cause)
-private class EngineUnsupportedException(val code: UnsupportedCode, val diagnostic: String?) : Exception(diagnostic)
-private class EngineFailedException(val failure: VideoEditFailure) : Exception(failure.diagnostic)
-
 private sealed interface SourceProbeResult {
     data class Success(val metadata: VideoMetadata) : SourceProbeResult
     data class Unsupported(val code: UnsupportedCode, val diagnostic: String?) : SourceProbeResult
@@ -536,39 +307,7 @@ private fun EngineFrameEvent.toFrameStripEvent(): FrameStripEvent = when (this) 
     is EngineFrameEvent.Failed -> FrameStripEvent.Failed(failure)
 }
 
-private fun MediaFormat.mime(): String = getString(MediaFormat.KEY_MIME).orEmpty()
-
-internal fun MediaFormat.toEngineVideoCodec(): EngineVideoCodec = when (mime()) {
-    MimeTypes.VIDEO_H264 -> EngineVideoCodec.AVC
-    MimeTypes.VIDEO_H265 -> EngineVideoCodec.HEVC
-    else -> EngineVideoCodec.OTHER
-}
-
-internal fun MediaFormat.toEngineAudioCodec(): EngineAudioCodec = when (mime()) {
-    MimeTypes.AUDIO_AAC -> EngineAudioCodec.AAC
-    else -> EngineAudioCodec.OTHER
-}
-
-private fun MediaFormat.isHdr(): Boolean = containsKey(MediaFormat.KEY_COLOR_TRANSFER) &&
-    getInteger(MediaFormat.KEY_COLOR_TRANSFER) in setOf(6, 7)
-
-private fun Bitmap.useAsThumbnail(requested: kotlin.time.Duration, actual: kotlin.time.Duration, maxDimension: Int): ThumbnailFrame {
-    val scale = min(1f, min(min(maxDimension, ThumbnailFrame.MAX_WIDTH_PX).toFloat() / width, ThumbnailFrame.MAX_HEIGHT_PX.toFloat() / height))
-    val targetWidth = max(1, (width * scale).toInt())
-    val targetHeight = max(1, (height * scale).toInt())
-    val scaled = if (targetWidth == width && targetHeight == height) this else Bitmap.createScaledBitmap(this, targetWidth, targetHeight, true)
-    return try {
-        val output = ByteArrayOutputStream()
-        scaled.compress(Bitmap.CompressFormat.JPEG, 82, output)
-        ThumbnailFrame(requested, actual, targetWidth, targetHeight, output.toByteArray())
-    } finally {
-        if (scaled !== this) scaled.recycle()
-        recycle()
-    }
-}
-
 private fun tempCreateFailure(root: File) = VideoEditFailure(FailureCode.TEMP_CREATE_FAILED, true, root.absolutePath)
-private fun metadataFailure(diagnostic: String?) = VideoEditFailure(FailureCode.METADATA_READ_FAILED, true, diagnostic)
 private fun deleteFailure(target: File, diagnostic: String?) = TempDeleteResult.Failed(
     VideoEditFailure(FailureCode.TEMP_DELETE_FAILED, true, diagnostic ?: target.name),
 )

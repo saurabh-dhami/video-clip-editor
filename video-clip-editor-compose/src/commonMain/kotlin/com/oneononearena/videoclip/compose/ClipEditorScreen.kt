@@ -107,64 +107,33 @@ fun ClipEditorScreen(
             ClipEditorUiState.Cancelled -> Text("Cancelled")
         }
         if (state !is ClipEditorUiState.Terminal && state != ClipEditorUiState.Cancelled) {
-            Button(presenter::cancel, Modifier.semantics { testTag = "cancel" }) { Text("Cancel") }
+            Button(presenter::cancel, Modifier.semantics { testTag = "back" }) { Text("Cancel") }
         }
     }
 }
 
 @Composable
 private fun EditorControls(ready: ClipEditorUiState.Ready, presenter: ClipEditorPresenter) {
-    var size by remember { mutableStateOf(IntSize.Zero) }
-    val durationMs = ready.metadata.duration.inWholeMilliseconds.coerceAtLeast(1)
-    val hitTargetWidthPx = with(LocalDensity.current) { 48.dp.roundToPx() }
-    val edgeInsetPx = hitTargetWidthPx / 2f
-    Box(Modifier.fillMaxWidth().widthIn(min = 48.dp).height(48.dp).background(Color.DarkGray).onSizeChanged { size = it }) {
-        DragHandle("clip-start-handle", toPosition(ready.range.start, durationMs, size.width, edgeInsetPx), size, hitTargetWidthPx, edgeInsetPx) { x ->
-            presenter.updateStart(toDuration(x, size.width, durationMs, edgeInsetPx))
-        }
-        DragHandle("clip-end-handle", toPosition(ready.range.endExclusive, durationMs, size.width, edgeInsetPx), size, hitTargetWidthPx, edgeInsetPx) { x ->
-            presenter.updateEnd(toDuration(x, size.width, durationMs, edgeInsetPx))
-        }
-    }
-    Row {
-        ready.frames.forEach { frame ->
-            decodeJpegForRender(frame.copyEncodedJpeg())?.let { bitmap ->
-                Image(bitmap, null, Modifier.size(48.dp, 32.dp))
+    ClipRangeSelector(
+        frames = ready.frames,
+        metadata = ready.metadata,
+        range = ready.range,
+        playhead = ready.range.start,
+        onRangeGestureStart = presenter::beginRangeGesture,
+        onRangeChange = { boundary, value ->
+            when (boundary) {
+                RangeBoundary.Start -> presenter.updateStartFromSelector(value)
+                RangeBoundary.End -> presenter.updateEndFromSelector(value)
             }
-        }
-    }
-    Button(presenter::createClip, Modifier.semantics { testTag = "create-clip" }) { Text("Create clip") }
-}
-
-@Composable
-private fun DragHandle(
-    label: String,
-    initialPosition: Float,
-    size: IntSize,
-    hitTargetWidthPx: Int,
-    edgeInsetPx: Float,
-    onPosition: (Float) -> Unit,
-) {
-    val density = LocalDensity.current
-    val hitTargetWidth = with(density) { hitTargetWidthPx.toDp() }
-    var position by remember(label, initialPosition) { mutableFloatStateOf(initialPosition) }
-    Box(
-        Modifier
-            .offset { IntOffset(timelineHandleOffsetPx(position, hitTargetWidthPx), 0) }
-            .size(hitTargetWidth)
-            .semantics { testTag = label }
-            .pointerInput(label, size, edgeInsetPx) {
-                detectDragGestures { _, drag ->
-                    position = (position + drag.x).coerceIn(
-                        timelineEdgeInset(size.width, edgeInsetPx),
-                        size.width.toFloat() - timelineEdgeInset(size.width, edgeInsetPx),
-                    )
-                    onPosition(position)
-                }
-            },
-    ) {
-        Box(Modifier.align(Alignment.Center).width(12.dp).height(32.dp).background(Color.White))
-    }
+        },
+        onRangeGestureEnd = presenter::commitRangeGesture,
+        onSeek = presenter::seekFromSelector,
+        onPlayheadDragStart = presenter::pausePreview,
+    )
+    Text(ready.range.start.toString(), Modifier.semantics { testTag = "clip-start-time" })
+    Text(ready.range.endExclusive.toString(), Modifier.semantics { testTag = "clip-end-time" })
+    Button({}, Modifier.semantics { testTag = "play-pause" }) { Text("Play") }
+    Button(presenter::createClip, Modifier.semantics { testTag = "done" }) { Text("Create clip") }
 }
 
 internal expect fun decodeJpegForRender(bytes: ByteArray): ImageBitmap?
@@ -216,6 +185,7 @@ internal class ClipEditorPresenter(
     private val scope: CoroutineScope,
     onResult: (ClipResult) -> Unit = {},
     onCancel: () -> Unit = {},
+    private val previewPort: PreviewPort? = null,
 ) {
     private val backingState = MutableStateFlow<ClipEditorUiState>(ClipEditorUiState.LoadingMetadata)
     val state: StateFlow<ClipEditorUiState> = backingState.asStateFlow()
@@ -225,6 +195,9 @@ internal class ClipEditorPresenter(
     private var operation: Job? = null
     private var resultSent = false
     private var cancelSent = false
+    private var previewGeneration = PreviewGeneration(0)
+    private var previewRevision = PreviewRevision(0)
+    private var rangeGestureInProgress = false
     private var onResult = onResult
     private var onCancel = onCancel
     private val sessionMutex = Mutex()
@@ -240,6 +213,8 @@ internal class ClipEditorPresenter(
         this.editor = editor
         resultSent = false
         cancelSent = false
+        previewGeneration = PreviewGeneration(previewGeneration.value + 1)
+        previewRevision = PreviewRevision(0)
         backingState.value = ClipEditorUiState.LoadingMetadata
         operation = scope.launch {
             val openedSession = sessionMutex.withLock {
@@ -290,7 +265,9 @@ internal class ClipEditorPresenter(
                         if (opened.metadata.duration < minimumRange) {
                             finish(ClipResult.InvalidRequest(com.oneononearena.videoclip.ValidationCode.RANGE_BELOW_MINIMUM, "Video shorter than 500ms"))
                         } else {
-                            backingState.value = ClipEditorUiState.Ready(opened.metadata, frames.toList(), ClipRange(Duration.ZERO, opened.metadata.duration))
+                            val ready = ClipEditorUiState.Ready(opened.metadata, frames.toList(), ClipRange(Duration.ZERO, opened.metadata.duration))
+                            backingState.value = ready
+                            previewPort?.dispatch(PreviewCommand.Bind(previewBinding(ready)))
                         }
                     }
                     is FrameStripEvent.Failed -> {
@@ -317,10 +294,45 @@ internal class ClipEditorPresenter(
 
     fun updateStart(value: Duration) = updateRange { range, duration -> range.copy(start = value.coerceIn(Duration.ZERO, range.endExclusive - minimumRange)) }
     fun updateEnd(value: Duration) = updateRange { range, duration -> range.copy(endExclusive = value.coerceIn(range.start + minimumRange, duration)) }
+    fun beginRangeGesture() {
+        if (rangeGestureInProgress) return
+        rangeGestureInProgress = true
+        if (backingState.value !is ClipEditorUiState.Ready) return
+        previewPort?.dispatch(PreviewCommand.SetPlayWhenReady(previewGeneration, previewRevision, false))
+    }
+    fun updateStartFromSelector(value: Duration) = updateRange { range, duration ->
+        range.copy(start = clampRangeBoundary(value, range.endExclusive, duration, RangeBoundary.Start))
+    }
+    fun updateEndFromSelector(value: Duration) = updateRange { range, duration ->
+        range.copy(endExclusive = clampRangeBoundary(value, range.start, duration, RangeBoundary.End))
+    }
+    fun pausePreview() {
+        previewPort?.dispatch(PreviewCommand.SetPlayWhenReady(previewGeneration, previewRevision, false))
+    }
+    fun seekFromSelector(value: Duration) {
+        val ready = backingState.value as? ClipEditorUiState.Ready ?: return
+        previewPort?.dispatch(PreviewCommand.Seek(previewGeneration, previewRevision, clampPlayhead(value, ready.range)))
+    }
+    fun commitRangeGesture() {
+        if (!rangeGestureInProgress) return
+        rangeGestureInProgress = false
+        val ready = backingState.value as? ClipEditorUiState.Ready ?: return
+        previewRevision = PreviewRevision(previewRevision.value + 1)
+        previewPort?.dispatch(PreviewCommand.ReplaceRange(previewBinding(ready)))
+    }
     private fun updateRange(transform: (ClipRange, Duration) -> ClipRange) {
         val ready = backingState.value as? ClipEditorUiState.Ready ?: return
         backingState.value = ready.copy(range = transform(ready.range, ready.metadata.duration))
     }
+    private fun previewBinding(ready: ClipEditorUiState.Ready): PreviewBinding = PreviewBinding(
+        generation = previewGeneration,
+        revision = previewRevision,
+        source = requireNotNull(source),
+        metadata = ready.metadata,
+        range = ready.range,
+        sourcePosition = ready.range.start,
+        playWhenReady = false,
+    )
 
     fun createClip() {
         val ready = backingState.value as? ClipEditorUiState.Ready ?: return

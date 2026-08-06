@@ -23,10 +23,12 @@ import kotlin.test.assertEquals
 import kotlin.test.assertIs
 import kotlin.test.assertTrue
 import kotlin.time.Duration.Companion.milliseconds
+import kotlin.time.Duration.Companion.seconds
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.test.runTest
 
@@ -92,6 +94,21 @@ class ClipEditorPresenterTest {
         val ready = assertIs<ClipEditorUiState.Ready>(presenter.state.value)
         assertEquals(9_500.milliseconds, ready.range.start)
         assertEquals(10_000.milliseconds, ready.range.endExclusive)
+    }
+
+    @Test
+    fun completedHandleDrag_emitsOneRangeReplacement() = runTest {
+        val port = RecordingPreviewPort()
+        val presenter = ClipEditorPresenter(this, previewPort = port)
+        presenter.start(VideoSourcePath("/video.mp4"), FakeEditor(FakeSession(flow { emit(FrameStripEvent.Complete) })))
+        testScheduler.advanceUntilIdle()
+
+        presenter.beginRangeGesture()
+        presenter.updateEndFromSelector(4.seconds)
+        presenter.updateEndFromSelector(5.seconds)
+        presenter.commitRangeGesture()
+
+        assertEquals(1, port.commands.filterIsInstance<PreviewCommand.ReplaceRange>().size)
     }
 
     @Test
@@ -255,6 +272,15 @@ class ClipEditorPresenterTest {
 
 private class FakeEditor(private val session: ClipEditorSession) : VideoClipEditor {
     override suspend fun openSession(source: VideoSourcePath): OpenSessionResult = OpenSessionResult.Open(session)
+}
+
+private class RecordingPreviewPort : PreviewPort {
+    override val events: Flow<PreviewEvent> = emptyFlow()
+    val commands = mutableListOf<PreviewCommand>()
+
+    override fun dispatch(command: PreviewCommand) {
+        commands += command
+    }
 }
 
 private class FakeSession(private val events: Flow<FrameStripEvent>) : ClipEditorSession {

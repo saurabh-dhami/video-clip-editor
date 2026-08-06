@@ -6,6 +6,7 @@ import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeout
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.buffer
@@ -18,6 +19,7 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
+import kotlin.time.Duration.Companion.seconds
 
 @RunWith(AndroidJUnit4::class)
 class FrameEmissionGateTest {
@@ -67,9 +69,11 @@ class FrameEmissionGateTest {
         val gate = FrameEmissionGate()
         val received = mutableListOf<Int>()
 
-        gateEvents(gate).collect { event ->
-            received += event
-            gate.close()
+        withTimeout(1.seconds) {
+            gateEvents(gate).collect { event ->
+                received += event
+                gate.close()
+            }
         }
 
         assertEquals(listOf(1), received)

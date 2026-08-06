@@ -201,15 +201,15 @@ private class AndroidClipEditorSession(
 ) : ClipEditorSession {
     private val exportMutex = Mutex()
     private val frameEmissionGate = FrameEmissionGate()
+    private val lifecycle = AndroidSessionLifecycle()
     private val lifecycleLock = Any()
     private val issuedLeases = mutableMapOf<String, LeaseRecord>()
-    @Volatile private var closed = false
     private var activeTransformer: Transformer? = null
     private var activeCancellation: (() -> Unit)? = null
 
     override fun frames(request: FrameStripRequest): Flow<FrameStripEvent> = callbackFlow {
         val worker = launch {
-            if (closed || !frameEmissionGate.register(coroutineContext[Job]!!)) {
+            if (lifecycle.isClosed() || !frameEmissionGate.register(coroutineContext[Job]!!)) {
                 send(FrameStripEvent.InvalidRequest(ValidationCode.SESSION_CLOSED, null))
                 return@launch
             }
@@ -241,11 +241,11 @@ private class AndroidClipEditorSession(
     }.buffer(0)
 
     override suspend fun createClip(range: ClipRange): ClipResult {
-        if (closed) return ClipResult.InvalidRequest(ValidationCode.SESSION_CLOSED, null)
+        if (lifecycle.isClosed()) return ClipResult.InvalidRequest(ValidationCode.SESSION_CLOSED, null)
         CommonValidation.clipRange(range, metadata, configuration)?.let { return ClipResult.InvalidRequest(it, null) }
         if (!exportMutex.tryLock()) return ClipResult.InvalidRequest(ValidationCode.OPERATION_IN_PROGRESS, null)
         try {
-            if (closed) return ClipResult.InvalidRequest(ValidationCode.SESSION_CLOSED, null)
+            if (lifecycle.isClosed()) return ClipResult.InvalidRequest(ValidationCode.SESSION_CLOSED, null)
             val outputId = UUID.randomUUID().toString()
             val partial = File(sessionRoot, "$outputId.partial")
             val final = File(sessionRoot, "$outputId.mp4")
@@ -258,7 +258,7 @@ private class AndroidClipEditorSession(
                     val opaqueId = UUID.randomUUID().toString()
                     val record = LeaseRecord(opaqueId)
                     synchronized(lifecycleLock) {
-                        if (closed) {
+                        if (lifecycle.isClosed()) {
                             final.delete()
                             return ClipResult.Failed(VideoEditFailure(FailureCode.EXPORT_CANCELLED, true, "Session closed"))
                         }
@@ -287,10 +287,9 @@ private class AndroidClipEditorSession(
         }
     }
 
-    override suspend fun close() {
-        engine?.cancelActiveExport()
+    override suspend fun close() = lifecycle.close {
+        runCatching { engine?.cancelActiveExport() }
         val active = synchronized(lifecycleLock) {
-            closed = true
             activeTransformer to activeCancellation
         }
         frameEmissionGate.close()
@@ -381,7 +380,7 @@ private class AndroidClipEditorSession(
                     }
                 }
                 synchronized(lifecycleLock) {
-                    if (closed) {
+                    if (lifecycle.isClosed()) {
                         continuation.resumeWith(Result.failure(CancellationException("Session closed")))
                         return@post
                     }

@@ -50,13 +50,47 @@ class Media3TrimFeasibilityTest {
     }
 
     @Test
+    fun scanner_reads_empty_and_zero_based_edit_list_media_times() {
+        val file = File.createTempFile("edit-list", ".mp4")
+        try {
+            RandomAccessFile(file, "rw").use { output ->
+                output.writeInt(56)
+                output.writeBytes("moov")
+                output.writeInt(48)
+                output.writeBytes("edts")
+                output.writeInt(40)
+                output.writeBytes("elst")
+                output.writeInt(0) // version and flags
+                output.writeInt(2)
+                output.writeInt(50)
+                output.writeInt(-1)
+                output.writeInt(0x0001_0000)
+                output.writeInt(5_000)
+                output.writeInt(0)
+                output.writeInt(0x0001_0000)
+            }
+
+            assertEquals(listOf(-1L, 0L), Mp4BoxScanner(file).editListMediaTimes())
+        } finally {
+            file.delete()
+        }
+    }
+
+    @Test
     fun trim_has_no_edit_list_and_is_time_aligned() = runTest {
         val result = exportFixture(startMs = 2_000, endMs = 7_000)
+        val hasEdts = Mp4BoxScanner(result.file).contains("edts")
+        val hasElst = Mp4BoxScanner(result.file).contains("elst")
+        val editListMediaTimes = Mp4BoxScanner(result.file).editListMediaTimes()
+        val mediaProbe = probe(result.file)
 
-        assertFalse(Mp4BoxScanner(result.file).contains("edts") || Mp4BoxScanner(result.file).contains("elst"))
-        assertEquals(0L, probe(result.file).firstPresentationTimeUs)
-        assertTrue(abs(probe(result.file).durationMs - 5_000) <= 50)
-        assertTrue(probe(result.file).audioVideoStartSkewMs <= 50)
+        assertTrue(
+            "Trim must not use an edit list to skip source media: edts=$hasEdts, elst=$hasElst, mediaTimes=$editListMediaTimes, probe=$mediaProbe",
+            editListMediaTimes.all { it == -1L || it == 0L },
+        )
+        assertEquals(0L, mediaProbe.firstPresentationTimeUs)
+        assertTrue(abs(mediaProbe.durationMs - 5_000) <= 50)
+        assertTrue(mediaProbe.audioVideoStartSkewMs <= 50)
     }
 
     @Test

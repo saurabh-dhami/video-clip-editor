@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.remember
@@ -73,6 +74,7 @@ internal fun clampPlayhead(value: Duration, range: ClipRange): Duration =
 @Composable
 internal fun ClipRangeSelector(
     frames: List<ThumbnailFrame>,
+    frameSlots: Int = frames.size,
     metadata: VideoMetadata,
     range: ClipRange,
     playhead: Duration,
@@ -83,6 +85,7 @@ internal fun ClipRangeSelector(
     onRangeGestureCancel: () -> Unit = {},
     onSeek: (Duration) -> Unit = {},
     onPlayheadDragStart: () -> Unit = {},
+    onContentScroll: (Int) -> Unit = {},
 ) {
     val scrollState = rememberScrollState()
     val density = LocalDensity.current
@@ -91,11 +94,12 @@ internal fun ClipRangeSelector(
     val handleTarget = 48.dp
     val handleTargetPx = with(density) { handleTarget.toPx() }
     var viewportSize by remember { androidx.compose.runtime.mutableStateOf(IntSize.Zero) }
-    val contentWidthPx = with(density) { (frames.size * frameWidth.toPx()).coerceAtLeast(viewportSize.width.toFloat()) }
+    val contentWidthPx = with(density) { (frameSlots.coerceAtLeast(frames.size) * frameWidth.toPx()).coerceAtLeast(viewportSize.width.toFloat()) }
     val duration = metadata.duration
     val sourceTimeAt: (Float) -> Duration = { viewportPx ->
         viewportPxToSourceTime(viewportPx, scrollState.value.toFloat(), viewportSize.width.toFloat(), contentWidthPx, duration)
     }
+    SideEffect { onContentScroll(scrollState.value) }
 
     Box(
         modifier

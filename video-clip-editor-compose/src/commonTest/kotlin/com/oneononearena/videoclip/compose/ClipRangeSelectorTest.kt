@@ -1,6 +1,9 @@
 package com.oneononearena.videoclip.compose
 
 import androidx.compose.foundation.layout.width
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.test.ExperimentalTestApi
@@ -53,10 +56,41 @@ class ClipRangeSelectorTest {
     @Test
     fun bareTrackDrag_doesNotSeek() = runComposeUiTest {
         var sought = (-1).milliseconds
+        var scrollOffset = 0
 
         setContent {
             ClipRangeSelector(
                 frames = emptyList(),
+                frameSlots = 24,
+                metadata = VideoMetadata(10.seconds, 100, 100, false),
+                range = ClipRange(Duration.ZERO, 10.seconds),
+                playhead = Duration.ZERO,
+                modifier = Modifier.width(400.dp),
+                onSeek = { sought = it },
+                onContentScroll = { scrollOffset = it },
+            )
+        }
+
+        onNodeWithTag("clip-timeline").performTouchInput {
+            down(center)
+            moveBy(Offset(-160f, 0f))
+            up()
+        }
+        waitForIdle()
+
+        assertEquals((-1).milliseconds, sought)
+        assertTrue(scrollOffset > 0)
+    }
+
+    @OptIn(ExperimentalTestApi::class)
+    @Test
+    fun scrollOffset_isIncludedWhenTimelineTapMapsToSourceTime() = runComposeUiTest {
+        var sought = (-1).milliseconds
+
+        setContent {
+            ClipRangeSelector(
+                frames = emptyList(),
+                frameSlots = 24,
                 metadata = VideoMetadata(10.seconds, 100, 100, false),
                 range = ClipRange(Duration.ZERO, 10.seconds),
                 playhead = Duration.ZERO,
@@ -70,9 +104,10 @@ class ClipRangeSelectorTest {
             moveBy(Offset(-160f, 0f))
             up()
         }
+        onNodeWithTag("clip-timeline").performTouchInput { click(center) }
         waitForIdle()
 
-        assertEquals((-1).milliseconds, sought)
+        assertTrue(sought > 5.seconds)
     }
 
     @OptIn(ExperimentalTestApi::class)
@@ -105,6 +140,53 @@ class ClipRangeSelectorTest {
 
         assertEquals(false, port.commands.filterIsInstance<PreviewCommand.SetPlayWhenReady>().single().value)
         assertTrue(port.commands.filterIsInstance<PreviewCommand.Seek>().single().sourcePosition > 4.seconds)
+    }
+
+    @OptIn(ExperimentalTestApi::class)
+    @Test
+    fun endHandlePointerDrag_keepsCanonicalRangeUntilRelease_andEmitsOneReplacement() = runComposeUiTest {
+        val port = SelectorRecordingPreviewPort()
+        val metadata = VideoMetadata(10.seconds, 100, 100, false)
+        var canonical by mutableStateOf(ClipRange(2.seconds, 8.seconds))
+        var provisional by mutableStateOf<ClipRange?>(null)
+        var canonicalObservedDuringDrag: ClipRange? = null
+
+        setContent {
+            val visual = provisional ?: canonical
+            ClipRangeSelector(
+                frames = emptyList(),
+                metadata = metadata,
+                range = visual,
+                playhead = visual.start,
+                modifier = Modifier.width(400.dp),
+                onRangeGestureStart = { provisional = canonical },
+                onRangeChange = { boundary, value ->
+                    val current = provisional ?: canonical
+                    provisional = when (boundary) {
+                        RangeBoundary.End -> current.copy(endExclusive = clampRangeBoundary(value, current.start, metadata.duration, boundary))
+                        RangeBoundary.Start -> current.copy(start = clampRangeBoundary(value, current.endExclusive, metadata.duration, boundary))
+                    }
+                    canonicalObservedDuringDrag = canonical
+                },
+                onRangeGestureEnd = {
+                    canonical = requireNotNull(provisional)
+                    provisional = null
+                    port.dispatch(PreviewCommand.ReplaceRange(testBinding(canonical, metadata)))
+                },
+                onRangeGestureCancel = { provisional = null },
+            )
+        }
+
+        onNodeWithTag("clip-end-handle").performTouchInput {
+            down(center)
+            moveBy(Offset(-40f, 0f))
+            up()
+        }
+        waitForIdle()
+
+        assertEquals(8.seconds, canonicalObservedDuringDrag?.endExclusive)
+        assertTrue(canonical.endExclusive < 8.seconds)
+        assertEquals(1, port.commands.filterIsInstance<PreviewCommand.ReplaceRange>().size)
     }
 
     @Test
@@ -145,3 +227,13 @@ private class SelectorRecordingPreviewPort : PreviewPort {
         commands += command
     }
 }
+
+private fun testBinding(range: ClipRange, metadata: VideoMetadata) = PreviewBinding(
+    generation = PreviewGeneration(1),
+    revision = PreviewRevision(1),
+    source = com.oneononearena.videoclip.VideoSourcePath("/video.mp4"),
+    metadata = metadata,
+    range = range,
+    sourcePosition = range.start,
+    playWhenReady = false,
+)

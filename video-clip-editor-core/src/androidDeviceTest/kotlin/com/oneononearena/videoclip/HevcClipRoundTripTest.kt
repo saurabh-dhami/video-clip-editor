@@ -4,6 +4,7 @@ import android.content.Context
 import android.media.MediaExtractor
 import android.media.MediaFormat
 import android.media.MediaMetadataRetriever
+import android.util.Log
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
@@ -37,16 +38,30 @@ class HevcClipRoundTripTest {
             when (val result = session.createClip(range)) {
                 is ClipResult.Success -> {
                     val output = File(result.output.file.absolutePath)
-                    assertEquals(range, result.sourceRange)
-                    assertTrue(output.absolutePath.startsWith(File(context.cacheDir, "video-clip-editor").absolutePath))
-                    assertTrue(output.isFile)
-                    assertEquals("video/avc", trackMime(output, "video/"))
-                    assertEquals("audio/mp4a-latm", trackMime(output, "audio/"))
-                    assertTrue(outputDurationMs(output) in 1_500L..2_500L)
-                    assertEquals(sourceHash, sha256(source))
-                    assertEquals(TempDeleteResult.Cleared, result.output.clearTemporaryFile())
-                    assertFalse(output.exists())
-                    assertEquals(TempDeleteResult.AlreadyCleared, result.output.clearTemporaryFile())
+                    try {
+                        val outputPath = output.absolutePath
+                        val videoMime = trackMime(output, "video/")
+                        val audioMime = trackMime(output, "audio/")
+                        assertEquals(range, result.sourceRange)
+                        assertTrue(outputPath.startsWith(File(context.cacheDir, "video-clip-editor").absolutePath))
+                        assertTrue(output.isFile)
+                        assertEquals("video/avc", videoMime)
+                        assertEquals("audio/mp4a-latm", audioMime)
+                        assertTrue(outputDurationMs(output) in 1_500L..2_500L)
+                        assertEquals(sourceHash, sha256(source))
+                        val cleanup = result.output.clearTemporaryFile()
+                        val existsAfterCleanup = output.exists()
+                        Log.i(
+                            HEVC_EVIDENCE_TAG,
+                            "HEVC_OUTPUT path=$outputPath videoMime=$videoMime audioMime=$audioMime " +
+                                "cleanup=$cleanup existsAfterCleanup=$existsAfterCleanup",
+                        )
+                        assertEquals(TempDeleteResult.Cleared, cleanup)
+                        assertFalse(existsAfterCleanup)
+                        assertEquals(TempDeleteResult.AlreadyCleared, result.output.clearTemporaryFile())
+                    } finally {
+                        output.delete()
+                    }
                 }
                 is ClipResult.Unsupported -> assertEquals(UnsupportedCode.DEVICE_ENCODER_UNAVAILABLE, result.code)
                 else -> fail("Expected successful HEVC round trip or typed device capability result, got $result")
@@ -97,4 +112,8 @@ class HevcClipRoundTripTest {
     private fun sha256(file: File): String = MessageDigest.getInstance("SHA-256")
         .digest(file.readBytes())
         .joinToString("") { "%02x".format(it.toInt() and 0xff) }
+
+    private companion object {
+        const val HEVC_EVIDENCE_TAG = "VideoClipEditorHevc"
+    }
 }

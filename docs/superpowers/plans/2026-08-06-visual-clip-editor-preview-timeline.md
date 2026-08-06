@@ -10,7 +10,7 @@
 
 ## Global constraints
 
-- Work only in /Users/sandeepdhami/Documents/GitHub/video-clip-editor/.worktrees/feasibility on chore/feasibility.
+- Work only in /Users/sandeepdhami/Documents/GitHub/OneOnOneArena-Workspace/video-clip-editor-visual-worktree on chore/visual-editor-execution. This is an isolated worktree of the standalone video-clip-editor repository.
 - Never modify, import, build, or use fixtures from OneOnOneArena.
 - Preserve docs/superpowers/specs/2026-08-06-kmp-video-clip-editor-v1-api-baseline.md, including the exact ClipEditorScreen signature.
 - Core stays playback/UI-free. Context, Uri, ExoPlayer, Player, Surface, MediaItem, AVFoundation, UIKit, and Swift types are forbidden from common/public signatures.

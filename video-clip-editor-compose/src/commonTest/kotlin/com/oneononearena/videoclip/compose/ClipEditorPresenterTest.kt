@@ -12,10 +12,14 @@ import com.oneononearena.videoclip.VideoClipEditor
 import com.oneononearena.videoclip.VideoEditFailure
 import com.oneononearena.videoclip.VideoMetadata
 import com.oneononearena.videoclip.VideoSourcePath
+import kotlin.coroutines.coroutineContext
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
 import kotlin.time.Duration.Companion.milliseconds
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.test.runTest
@@ -32,6 +36,18 @@ class ClipEditorPresenterTest {
 
         val ready = assertIs<ClipEditorUiState.Ready>(presenter.state.value)
         assertEquals(emptyList(), ready.frames)
+    }
+
+    @Test
+    fun `frame collection falls back to the configured lower maximum`() = runTest {
+        val session = LowerFrameLimitSession(maximumFrameCount = 3)
+        val presenter = ClipEditorPresenter(this, {})
+
+        presenter.start(VideoSourcePath("/video.mp4"), FakeEditor(session))
+        testScheduler.advanceUntilIdle()
+
+        assertIs<ClipEditorUiState.Ready>(presenter.state.value)
+        assertEquals((24 downTo 3).toList(), session.requests)
     }
 
     @Test
@@ -190,6 +206,21 @@ class ClipEditorPresenterTest {
         assertEquals(2, callbacks)
     }
 
+    @Test
+    fun `close closes session after presenter scope is cancelled`() = runTest {
+        val presenterScope = CoroutineScope(coroutineContext + Job())
+        val session = FakeSession(flow { emit(FrameStripEvent.Complete) })
+        val presenter = ClipEditorPresenter(presenterScope, {})
+
+        presenter.start(VideoSourcePath("/video.mp4"), FakeEditor(session))
+        testScheduler.advanceUntilIdle()
+        presenterScope.cancel()
+
+        presenter.close()
+
+        assertEquals(1, session.closeCalls)
+    }
+
 }
 
 private class FakeEditor(private val session: ClipEditorSession) : VideoClipEditor {
@@ -206,6 +237,27 @@ private class FakeSession(private val events: Flow<FrameStripEvent>) : ClipEdito
         return ClipResult.Failed(VideoEditFailure(com.oneononearena.videoclip.FailureCode.EXPORT_FAILED, false, null))
     }
     override suspend fun close() { closeCalls++ }
+}
+
+private class LowerFrameLimitSession(
+    private val maximumFrameCount: Int,
+) : ClipEditorSession {
+    override val metadata = VideoMetadata(10_000.milliseconds, 100, 100, false)
+    val requests = mutableListOf<Int>()
+
+    override fun frames(request: FrameStripRequest): Flow<FrameStripEvent> = flow {
+        requests += request.frameCount
+        if (request.frameCount > maximumFrameCount) {
+            emit(FrameStripEvent.InvalidRequest(com.oneononearena.videoclip.ValidationCode.INVALID_FRAME_REQUEST, null))
+        } else {
+            emit(FrameStripEvent.Complete)
+        }
+    }
+
+    override suspend fun createClip(range: ClipRange): ClipResult =
+        ClipResult.Failed(VideoEditFailure(FailureCode.EXPORT_FAILED, false, null))
+
+    override suspend fun close() = Unit
 }
 
 private class SequentialFakeEditor(vararg private val sessions: FakeSession) : VideoClipEditor {

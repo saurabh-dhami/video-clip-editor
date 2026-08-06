@@ -55,7 +55,10 @@ import kotlin.math.roundToInt
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.milliseconds
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -77,13 +80,18 @@ fun ClipEditorScreen(
     modifier: Modifier = Modifier,
 ) {
     val scope = rememberCoroutineScope()
+    val cleanupScope = remember { CoroutineScope(SupervisorJob() + Dispatchers.Default) }
     val result by rememberUpdatedState(onResult)
     val cancel by rememberUpdatedState(onCancel)
     val presenter = remember { ClipEditorPresenter(scope) }
     SideEffect { presenter.updateCallbacks(result, cancel) }
     val state by presenter.state.collectAsState()
     LaunchedEffect(source, editor, presenter) { presenter.start(source, editor) }
-    DisposableEffect(presenter) { onDispose { presenter.close() } }
+    DisposableEffect(presenter) {
+        onDispose {
+            cleanupScope.launch { presenter.close() }
+        }
+    }
 
     Column(modifier.padding(16.dp)) {
         when (val current = state) {
@@ -266,36 +274,44 @@ internal class ClipEditorPresenter(
     }
 
     private suspend fun collectFrames(opened: ClipEditorSession) {
-        if (session !== opened || !currentCoroutineContext().isActive) return
-        backingState.value = ClipEditorUiState.LoadingFrames
-        val frames = mutableListOf<ThumbnailFrame>()
-        var framesTerminal = false
-        opened.frames(FrameStripRequest(frameCount)).collect { event ->
-            if (framesTerminal || session !== opened || !currentCoroutineContext().isActive) return@collect
-            when (event) {
-                is FrameStripEvent.Frame -> frames += event.value
-                is FrameStripEvent.Progress -> Unit
-                FrameStripEvent.Complete -> {
-                    framesTerminal = true
-                    if (opened.metadata.duration < minimumRange) {
-                        finish(ClipResult.InvalidRequest(com.oneononearena.videoclip.ValidationCode.RANGE_BELOW_MINIMUM, "Video shorter than 500ms"))
-                    } else {
-                        backingState.value = ClipEditorUiState.Ready(opened.metadata, frames.toList(), ClipRange(Duration.ZERO, opened.metadata.duration))
+        for (requestedFrameCount in frameCount downTo 1) {
+            if (session !== opened || !currentCoroutineContext().isActive) return
+            backingState.value = ClipEditorUiState.LoadingFrames
+            val frames = mutableListOf<ThumbnailFrame>()
+            var framesTerminal = false
+            var retryWithFewerFrames = false
+            opened.frames(FrameStripRequest(requestedFrameCount)).collect { event ->
+                if (framesTerminal || session !== opened || !currentCoroutineContext().isActive) return@collect
+                when (event) {
+                    is FrameStripEvent.Frame -> frames += event.value
+                    is FrameStripEvent.Progress -> Unit
+                    FrameStripEvent.Complete -> {
+                        framesTerminal = true
+                        if (opened.metadata.duration < minimumRange) {
+                            finish(ClipResult.InvalidRequest(com.oneononearena.videoclip.ValidationCode.RANGE_BELOW_MINIMUM, "Video shorter than 500ms"))
+                        } else {
+                            backingState.value = ClipEditorUiState.Ready(opened.metadata, frames.toList(), ClipRange(Duration.ZERO, opened.metadata.duration))
+                        }
+                    }
+                    is FrameStripEvent.Failed -> {
+                        framesTerminal = true
+                        finishFailure(event.error)
+                    }
+                    is FrameStripEvent.InvalidRequest -> {
+                        framesTerminal = true
+                        if (event.code == com.oneononearena.videoclip.ValidationCode.INVALID_FRAME_REQUEST && requestedFrameCount > 1) {
+                            retryWithFewerFrames = true
+                        } else {
+                            finish(ClipResult.InvalidRequest(event.code, event.diagnostic))
+                        }
+                    }
+                    is FrameStripEvent.Unsupported -> {
+                        framesTerminal = true
+                        finish(ClipResult.Unsupported(event.code, event.diagnostic))
                     }
                 }
-                is FrameStripEvent.Failed -> {
-                    framesTerminal = true
-                    finishFailure(event.error)
-                }
-                is FrameStripEvent.InvalidRequest -> {
-                    framesTerminal = true
-                    finish(ClipResult.InvalidRequest(event.code, event.diagnostic))
-                }
-                is FrameStripEvent.Unsupported -> {
-                    framesTerminal = true
-                    finish(ClipResult.Unsupported(event.code, event.diagnostic))
-                }
             }
+            if (!retryWithFewerFrames) return
         }
     }
 
@@ -322,18 +338,19 @@ internal class ClipEditorPresenter(
     fun cancel() {
         if (cancelSent) return
         cancelSent = true
-        close()
+        scope.launch { close() }
         backingState.value = ClipEditorUiState.Cancelled
         onCancel()
     }
-    fun close() {
-        operation?.cancel()
+    suspend fun close() {
+        val runningOperation = operation
         operation = null
-        scope.launch {
-            sessionMutex.withLock {
-                session?.close()
-                session = null
-            }
+        if (runningOperation != currentCoroutineContext()[Job]) {
+            runningOperation?.cancelAndJoin()
+        }
+        sessionMutex.withLock {
+            session?.close()
+            session = null
         }
     }
     private fun finishFailure(failure: VideoEditFailure) {

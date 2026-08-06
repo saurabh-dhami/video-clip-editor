@@ -10,3 +10,7 @@
 ## iOS — deferred by scope
 
 The common API and iOS source sets remain in place. The iOS factory continues to return the typed unavailable result until AVFoundation media work is scheduled. No common-contract or host-integration change is required when that work starts.
+
+## 2026-08-06 release evidence
+
+Fresh KMP, Compose, iOS simulator, Android API-36 emulator, HEVC round-trip, cleanup, and demo-launch evidence is recorded in `docs/verification/2026-08-06-android-hevc-release-gate.md`. Android publication is **held**, not failed: the required Samsung serial `RZCX519T5FL` was not connected, so physical AVC/HEVC smoke evidence remains outstanding. The frozen contract and iOS typed-unavailable behavior remain unchanged.

@@ -212,3 +212,9 @@ No navigation, Activity Result, player, upload, URI, bitmap, Media3, or platform
 ## R1 verification evidence — 2026-08-06
 
 Fresh KMP, Compose, and iOS ARM64-simulator tests completed successfully, and the Android API-36 device suite completed 43/43 with the HEVC production-factory round trip and temporary-lease assertions. The baseline common contract, iOS factory, and optional Compose `ClipEditorScreen` source files have no diff from `92f78412796113f2abe27f55be0125e9373c9f1c`; `git diff --check` also passed. This section records evidence only and changes no declaration above. Physical Samsung release evidence remains pending in `docs/verification/2026-08-06-android-hevc-release-gate.md`.
+
+## R1 evidence refresh — 2026-08-06
+
+The physical Samsung gate is now recorded in `docs/verification/2026-08-06-android-hevc-release-gate.md`: `RZCX519T5FL` / SM-S928B / API36 passed its focused 17-test instrumentation suite. The HEVC production-factory test logged an absolute library-cache output path, `video/avc`, `audio/mp4a-latm`, `cleanup=Cleared`, and `existsAfterCleanup=false`. This is evidence only; it changes no declaration above.
+
+The frozen-surface comparison is scoped to the three frozen source files named above, rather than a broad repository diff: `git diff --quiet 92f78412796113f2abe27f55be0125e9373c9f1c HEAD -- <common-contract> <ios-factory> <compose-screen>` exited `0`. Separately, the public Android factory signature remains `createAndroidVideoClipEditor(Context, VideoClipEditorConfiguration = VideoClipEditorConfiguration()): VideoClipEditor`. Android V1 publication remains held pending a fresh API-23 device run; the existing `ClipEditor_API23` AVD cannot safely boot while the host data volume has only 641 MiB free.

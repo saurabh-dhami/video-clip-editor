@@ -136,6 +136,7 @@ internal sealed interface PreviewCommand {
     data class Seek(val generation: PreviewGeneration, val revision: PreviewRevision, val sourcePosition: Duration) : PreviewCommand
     data class SetPlayWhenReady(val generation: PreviewGeneration, val revision: PreviewRevision, val value: Boolean) : PreviewCommand
     data class ReplaceRange(val binding: PreviewBinding) : PreviewCommand
+    data class Retry(val binding: PreviewBinding) : PreviewCommand
     data class Release(val generation: PreviewGeneration) : PreviewCommand
 }
 
@@ -157,11 +158,18 @@ The presenter is the only producer of command generations/revisions and accepts 
 | Port state | Accepted command | Required next event/state |
 | --- | --- | --- |
 | Unbound | `Bind(binding)` | `Binding(generation, revision)` then exactly one `Ready` or `RecoverableFailure` for that revision |
+| Binding | `ReplaceRange(binding)` | Keep only the highest revision as `pendingBinding`; pause and never make an obsolete revision playable |
+| Binding | `Ready` for obsolete revision | Detach obsolete clipped item and bind `pendingBinding`; do not emit Ready to the presenter for the obsolete revision |
+| Binding | `Ready` for latest revision | Transition ready-paused or ready-playing according to binding's `playWhenReady` |
+| Binding | `RecoverableFailure` for latest revision | Transition recoverable-failure; disable Play/Done |
 | Ready-paused | `Seek`, `SetPlayWhenReady(false)` | Matching `Position`; remain ready-paused |
 | Ready-paused | `SetPlayWhenReady(true)` | Matching `Position(isPlaying=true)`; transition ready-playing |
 | Ready-playing | `Seek`, `SetPlayWhenReady(false)` | Matching `Position`; remain paused or resume only after explicit true command |
 | Ready-* | `ReplaceRange(binding)` | Pause/detach old revision; then exactly one `Ready` or `RecoverableFailure` for new revision |
+| Recoverable-failure | `Retry(binding)` | Binding of the same generation at the next revision; exactly one `Ready` or `RecoverableFailure` |
 | Any non-terminal | `Release(generation)` | No later event for that generation except one `Released`; transition terminal |
+
+During a trim-handle gesture the common selector updates only provisional visual range state and pauses playback. On gesture end it emits one complete `ReplaceRange` for the latest range. Therefore a normal drag produces one source reconfiguration. Rapid completed gestures still obey the `pendingBinding` latest-wins rule above. `Retry` is the only recovery command and always carries a complete, clamped binding with the next revision. The presenter accepts no `Position`, `Ready`, or failure event whose generation/revision is not currently active.
 
 `PreviewPort` itself is an internal common interface. The platform-specific port instance and preview surface are created through an internal `expect/actual` Compose helper. Common tests use a fake `PreviewPort`; Android device tests use the Media3 actual. The expect/actual helper and all port declarations remain internal.
 
@@ -269,6 +277,9 @@ The forward pass has no contradictory state owner: range/export remain presenter
 | VUI-R1 | user-owned | Outcome definition | Stop/reset versus loop | Shared selector, Media3 adapter, frozen API | Stop/reset assumption | User decision | User | Continuous selected-range looping approved | Playback rules only | 1 | Resolved | No public API effect |
 | VUI-R2 | evidence-owned | Architecture review | Existing UI has frames but not a selector | Core/export/temp contract, 24-frame bound | Claim that visual outcome was complete | Current source read | Codex | Replace detached bar/row with shared selector; no core contract change | Compose/UI integration | 1 | Resolved | Compose modules only |
 | VUI-R3 | technical | Preview evaluation | `PlayerView` AndroidView would add Compose surface risk | Media3 dependency/version, Android player choice | PlayerView wrapper proposal | Official Media3 surface guidance | Codex | Use Compose-native Media3 surface APIs | Android preview | 1 | Resolved | Android Compose actual |
+| VUI-R4 | evidence-owned | First independent principal review | Position polling after trim end could render unselected media | Media3 preview, range loop requirement, public API isolation | UI-poll loop decision | Principal finding + Media3 clipping API | Codex | Replace poll boundary with source-level `ClippingConfiguration` and one-period repeat | V2 playback rules and failure matrix | 1 | Resolved | V2 acceptance strengthened |
+| VUI-R5 | evidence-owned | First independent principal review | Preview contract did not define command order, stale events, retry, or close fence | Internal-only seam and presenter ownership | Responsibility-only seam description | Principal finding | Codex | Freeze generation/revision binding, commands/events/port, and state table | V1–V3 | 1 | Resolved | V1/V2/V3 interfaces frozen |
+| VUI-R6 | evidence-owned | First independent principal review | Historical predecessor blueprint was untracked | Accepted implementation and committed API/release baseline | Link to untracked file as evidence | `git ls-tree` of `f7c868e` | Codex | Link committed baseline/release gate; label historical file non-evidence | Compatibility evidence | 1 | Resolved | No production module effect |
 
 **Module-freeze status: BLOCKED pending independent principal-engineer review.** Outcome and architecture evidence are recorded; no user-owned ambiguity remains. Modules stay provisional until the reviewer verifies state ownership, lifecycle, API isolation, device compatibility, and every chunk at >=95/100 readiness.
 
@@ -283,7 +294,20 @@ The forward pass has no contradictory state owner: range/export remain presenter
 | `video-clip-editor-compose/commonTest` | Pure mapping/state/component tests with fake preview controller | Android SDK/Media3 assertions |
 | `video-clip-editor-compose/androidDeviceTest` or demo Android tests | Player, loop, lifecycle, and end-to-end visual/device verification | Replacing common selector tests |
 
-## 12. Ordered delivery chunks
+## 12. Model routing and execution record
+
+| Work | Floor / profile | Topology and dependency | Mapping/review record | Override | Observed execution |
+| --- | --- | --- | --- | --- | --- |
+| V1 common selector/state | Terra / medium | Ordered first; freezes the pure common port used by V2/V3 | Workspace routing policy: normal Compose/state implementation; independent review required | None | Blueprint author model profile not externally verifiable; record as planned until execution |
+| V2 Android Media3 adapter | Sol / high | Depends on frozen V1; ordered before V3 | High-risk decoder/surface/lifecycle/concurrency boundary; principal review and device evidence required | None | Planned |
+| V3 screen integration | Terra / medium | Depends on V1+V2; cannot parallelize because it owns common screen composition | Existing presenter and disposal integration | None | Planned |
+| IG1 integration gate | Sol / high | Depends on V1–V3; integration-only | Cross-module lifecycle/range/export proof; principal review | None | Planned |
+| V4 device/demo evidence | Terra / medium | Depends on IG1 | Bounded device verification and evidence collection | None | Planned |
+| V5 final audit | Sol / high | Depends on V4 | Independent architecture/API/security/device audit | None | Planned |
+
+Mapping digest: the active workspace routing policy selects Terra for normal implementation and Sol for cross-cutting/high-risk architecture. The target library has no local `AGENTS.md`; the user-approved scope, this blueprint, and the frozen public baseline are the target-specific authority. No below-floor override is permitted. There is no implementation execution record yet.
+
+## 13. Ordered delivery chunks
 
 Each chunk must independently pass its completion gate. A later chunk cannot repair an earlier incomplete contract.
 
@@ -320,12 +344,23 @@ Each chunk must independently pass its completion gate. A later chunk cannot rep
 * **Rollback strategy:** Revert composition wiring; V1/V2 internal files remain unused or revert as one ordered unit.
 * **Integration strategy:** Run existing core device suite plus new Compose/device suites before demo change.
 
+### IG1 — Integration-only editor-flow gate
+
+* **Scope:** No new reusable feature. Compose V1, Android V2, and screen V3 are assembled in one library-owned Android test host.
+* **Responsibilities:** Prove the cross-module ordering that unit tests cannot: open source → extract frames → bind clipped preview → pan/scrub/commit range → selected-range loop → Done/export → preview release/session close/temp lease cleanup.
+* **Interfaces:** The frozen §4 internal port and existing public `ClipEditorScreen`/`ClipResult` only. No demo-only hook becomes public.
+* **Dependencies:** Accepted V1, V2, and V3 completion gates; legal deterministic local fixture.
+* **Acceptance criteria:** One test session observes no stale generation event, selected source range equals exported range, clipped preview configuration equals committed selector range, playback repeats the selected clipped period, release completes before session close, and lease cleanup remains idempotent.
+* **Test strategy:** Android instrumentation against the real Media3 actual and repository fixture; a test-only event recorder timestamps port events, player release, session close, export result, and cleanup result. Existing core HEVC/AVC integration suite also passes unchanged.
+* **Rollback strategy:** Revert V1–V3 as one ordered unit if integration exposes a contract conflict; do not hide an integration failure by weakening IG1.
+* **Integration strategy:** **IG1 is a hard gate.** V4 cannot start until IG1 is green on an API 23 emulator. Samsung evidence may begin only after IG1's API 23 pass.
+
 ### V4 — Demo and visual acceptance evidence
 
 * **Scope:** Adjust only standalone Android demo to display the completed screen and add legal deterministic visual fixture/evidence.
 * **Responsibilities:** Verify actual host flow after document import; record screenshot/screen capture without user media; expose no extra library functionality.
 * **Interfaces:** Existing `ClipEditorScreen` and typed result/lease cleanup callbacks.
-* **Dependencies:** V3; repository-owned AVC and HEVC fixtures.
+* **Dependencies:** IG1; repository-owned AVC and HEVC fixtures.
 * **Acceptance criteria:** Samsung and API 23 evidence show preview, thumbnail selector, panning, drag, scrub, selected-range loop, export, and temp cleanup.
 * **Test strategy:** Instrumented device tests plus manual checklist using non-sensitive repository fixture; archive test output only, not device personal media.
 * **Rollback strategy:** Revert demo/evidence changes; no library contract impact.
@@ -336,7 +371,7 @@ Each chunk must independently pass its completion gate. A later chunk cannot rep
 * **Scope:** Principal-engineer review, API diff, licensing/security review, full acceptance traceability.
 * **Responsibilities:** Verify objective rather than code intent; reject incomplete visual/device evidence.
 * **Interfaces:** No production interface changes.
-* **Dependencies:** V1–V4 evidence.
+* **Dependencies:** V1–V4 and IG1 evidence.
 * **Acceptance criteria:** Independent reviewer PASS >=95/100; every objective criterion has direct evidence; no OneOnOneArena diff.
 * **Test strategy:** Review exact commits, run `git diff --check`, API baseline comparison, dependency/NOTICE review, API23 and Samsung results.
 * **Rollback strategy:** Revert the failing bounded chunk, preserve approved evidence and public API baseline.
@@ -397,13 +432,13 @@ Each chunk must independently pass its completion gate. A later chunk cannot rep
 
 | Outcome | Backward condition | Forward module/chunk | Direct evidence | Status |
 | --- | --- | --- | --- | --- |
-| Video preview | VUI-03 | V2, V3 | Android player/lifecycle test | Pending |
-| Visual clip selector | VUI-04 | V1, V3 | Common Compose test + Samsung screenshot | Pending |
-| Pan/scrub | VUI-04 | V1, V3 | Geometry + Android seek test | Pending |
-| Range looping | VUI-01/VUI-03 | V2, V3 | Device loop test | Pending |
-| Existing clip/export lease | Existing contract | V3, V4 | Export/cleanup regression | Pending |
+| Video preview | VUI-03 | V2, V3, IG1 | Android player/lifecycle test | Pending |
+| Visual clip selector | VUI-04 | V1, V3, IG1 | Common Compose test + Samsung screenshot | Pending |
+| Pan/scrub | VUI-04 | V1, V3, IG1 | Geometry + Android seek test | Pending |
+| Range looping | VUI-01/VUI-03 | V2, V3, IG1 | Device loop test | Pending |
+| Existing clip/export lease | Existing contract | V3, IG1, V4 | Export/cleanup regression | Pending |
 | API/platform isolation | VUI-02/VUI-06 | V1–V5 | Public API diff + iOS compile | Pending |
 | API 23/Samsung support | VUI-05 | V4, V5 | Both device results | Pending |
 | No OneOnOneArena changes | Scope boundary | V5 | Repository diff/path audit | Pending |
 
-**Next gate:** independent principal-engineer review. A PASS at >=95/100 freezes V1–V5 chunk contracts. Then the user reviews this written blueprint. Only user approval of the reviewed blueprint permits the implementation plan and production code.
+**Next gate:** independent principal-engineer review. A PASS at >=95/100 freezes V1–V5 and IG1 contracts. Then the user reviews this written blueprint. Only user approval of the reviewed blueprint permits the implementation plan and production code.

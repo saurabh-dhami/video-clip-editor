@@ -10,6 +10,9 @@ kotlin {
         namespace = "com.oneononearena.videoclip"
         compileSdk = 36
         minSdk = 23
+        androidResources {
+            enable = true
+        }
         withDeviceTest {
             instrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         }

@@ -27,8 +27,8 @@ internal class ClipEditorLifecycleOwner(
 ) {
     private val ownerJob = SupervisorJob()
     private val scope = CoroutineScope(ownerJob + dispatcher)
-    val presenter = ClipEditorPresenter(scope)
     val coordinator = ClipEditorPreviewCoordinator()
+    val presenter = ClipEditorPresenter(scope, onExportTransition = coordinator::lockInteractions)
 
     private val intents = Channel<LifecycleIntent>(Channel.UNLIMITED)
     private val terminalLatched = MutableStateFlow(false)
@@ -46,13 +46,15 @@ internal class ClipEditorLifecycleOwner(
 
     init {
         scope.launch {
-            presenter.state.collect { intents.send(LifecycleIntent.PresenterStateChanged(it)) }
+            presenter.state.collect { state ->
+                intents.send(LifecycleIntent.PresenterStateChanged(active?.generation, state))
+            }
         }
         scope.launch {
             for (intent in intents) {
                 when (intent) {
                     is LifecycleIntent.Replace -> replace(intent.source, intent.editor)
-                    is LifecycleIntent.PresenterStateChanged -> presenterStateChanged(intent.state)
+                    is LifecycleIntent.PresenterStateChanged -> presenterStateChanged(intent.generation, intent.state)
                     is LifecycleIntent.PortEvent -> portEvent(intent.generation, intent.event)
                     is LifecycleIntent.Close -> close(intent.cancel)
                 }
@@ -110,14 +112,17 @@ internal class ClipEditorLifecycleOwner(
         presenter.start(source, editor)
     }
 
-    private fun presenterStateChanged(state: ClipEditorUiState) {
+    private fun presenterStateChanged(
+        generation: PreviewGeneration?,
+        state: ClipEditorUiState,
+    ) {
+        val current = active ?: return
+        if (current.generation != generation || terminalLatched.value) return
         if (state == ClipEditorUiState.Exporting) {
             coordinator.lockInteractions()
             return
         }
-        val current = active ?: return
         val ready = state as? ClipEditorUiState.Ready ?: return
-        if (terminalLatched.value) return
         if (active !== current) return
         val existing = coordinator.state.value.binding
         val revision = existing?.revision ?: PreviewRevision(1)
@@ -201,7 +206,10 @@ internal class ClipEditorLifecycleOwner(
 
     private sealed interface LifecycleIntent {
         data class Replace(val source: VideoSourcePath, val editor: VideoClipEditor) : LifecycleIntent
-        data class PresenterStateChanged(val state: ClipEditorUiState) : LifecycleIntent
+        data class PresenterStateChanged(
+            val generation: PreviewGeneration?,
+            val state: ClipEditorUiState,
+        ) : LifecycleIntent
         data class PortEvent(val generation: PreviewGeneration, val event: PreviewEvent) : LifecycleIntent
         data class Close(val cancel: Boolean) : LifecycleIntent
     }

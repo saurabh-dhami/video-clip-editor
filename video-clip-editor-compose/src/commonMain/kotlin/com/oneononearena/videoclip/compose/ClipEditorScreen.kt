@@ -203,6 +203,7 @@ internal class ClipEditorPresenter(
     onResult: (ClipResult) -> Unit = {},
     onCancel: () -> Unit = {},
     private val previewPort: PreviewPort? = null,
+    private val onExportTransition: () -> Unit = {},
 ) {
     private val backingState = MutableStateFlow<ClipEditorUiState>(ClipEditorUiState.LoadingMetadata)
     val state: StateFlow<ClipEditorUiState> = backingState.asStateFlow()
@@ -371,6 +372,7 @@ internal class ClipEditorPresenter(
         if (rangeGestureInProgress) return
         val ready = backingState.value as? ClipEditorUiState.Ready ?: return
         val opened = session ?: return
+        onExportTransition()
         backingState.value = ClipEditorUiState.Exporting
         operation = scope.launch {
             when (val result = opened.createClip(ready.range)) {

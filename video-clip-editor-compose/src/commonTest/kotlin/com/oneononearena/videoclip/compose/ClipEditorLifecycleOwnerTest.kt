@@ -13,6 +13,7 @@ import com.oneononearena.videoclip.VideoSourcePath
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
+import kotlin.time.Duration
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
 import kotlinx.coroutines.flow.Flow
@@ -153,7 +154,43 @@ class ClipEditorLifecycleOwnerTest {
     }
 
     @Test
-    fun exportingLocksCoordinatorAgainstLateControlCallbacks() = runTest {
+    fun oldReadyQueuedDuringReleaseCannotBindOrMutateFreshLifecycle() = runTest {
+        val oldMetadata = VideoMetadata(10.seconds, 100, 100, false)
+        val freshMetadata = VideoMetadata(20.seconds, 200, 200, true)
+        val freshFrames = MutableSharedFlow<FrameStripEvent>(extraBufferCapacity = 1)
+        val rig = LifecycleRig(
+            dispatcher = StandardTestDispatcher(testScheduler),
+            firstMetadata = oldMetadata,
+            secondMetadata = freshMetadata,
+            secondFrames = freshFrames,
+        )
+        rig.owner.requestReplace(sourceA, rig.firstEditor)
+        advanceUntilIdle()
+        rig.calls.clear()
+
+        rig.owner.requestReplace(sourceB, rig.secondEditor)
+        runCurrent()
+        assertEquals(listOf("Release:g1:r1"), rig.calls)
+
+        rig.owner.presenter.updateEnd(4.seconds)
+        runCurrent()
+        rig.calls += "Released:g1"
+        rig.oldPort.emit(PreviewEvent.Released(PreviewGeneration(1)))
+        runCurrent()
+        freshFrames.emit(FrameStripEvent.Complete)
+        advanceUntilIdle()
+
+        val freshBinds = rig.freshPort.commandSnapshot().filterIsInstance<PreviewCommand.Bind>()
+        assertEquals(1, freshBinds.size)
+        assertEquals(sourceB, freshBinds.single().binding.source)
+        assertEquals(freshMetadata, freshBinds.single().binding.metadata)
+        assertEquals(ClipRange(Duration.ZERO, 20.seconds), freshBinds.single().binding.range)
+        assertEquals(Duration.ZERO, rig.owner.coordinator.state.value.playhead)
+        assertEquals(freshBinds.single().binding, rig.owner.coordinator.state.value.binding)
+    }
+
+    @Test
+    fun exportTransitionSynchronouslyLocksImmediateControlCallbacks() = runTest {
         val calls = mutableListOf<String>()
         val port = LifecycleTerminalPort("g1", calls)
         val export = CompletableDeferred<ClipResult>()
@@ -170,9 +207,9 @@ class ClipEditorLifecycleOwnerTest {
         advanceUntilIdle()
         port.emit(PreviewEvent.Ready(PreviewGeneration(1), PreviewRevision(1)))
         runCurrent()
-        owner.presenter.createClip()
-        runCurrent()
         val commandsAtExportStart = port.commandSnapshot()
+        owner.presenter.createClip()
+        val stateAtExportStart = owner.coordinator.state.value
 
         owner.coordinator.togglePlayPause()
         owner.coordinator.pause()
@@ -191,6 +228,7 @@ class ClipEditorLifecycleOwnerTest {
         )
 
         assertEquals(commandsAtExportStart, port.commandSnapshot())
+        assertEquals(stateAtExportStart, owner.coordinator.state.value)
         export.complete(ClipResult.Failed(VideoEditFailure(com.oneononearena.videoclip.FailureCode.EXPORT_FAILED, false, null)))
         advanceUntilIdle()
         owner.requestClose()
@@ -207,15 +245,18 @@ class ClipEditorLifecycleOwnerTest {
 private class LifecycleRig(
     dispatcher: kotlinx.coroutines.CoroutineDispatcher,
     lowerLayerDiagnostic: Any? = null,
+    firstMetadata: VideoMetadata = VideoMetadata(10.seconds, 100, 100, false),
+    secondMetadata: VideoMetadata = VideoMetadata(10.seconds, 100, 100, false),
+    secondFrames: Flow<FrameStripEvent> = flowOf(FrameStripEvent.Complete),
 ) {
     val calls = mutableListOf<String>()
     val oldPort = LifecycleTerminalPort("g1", calls, lowerLayerDiagnostic)
-    private val freshPort = LifecycleTerminalPort("g2", calls)
+    val freshPort = LifecycleTerminalPort("g2", calls)
     private var createCount = 0
     lateinit var owner: ClipEditorLifecycleOwner
-    private val firstSession = LifecycleSession("g1", calls) { owner.releaseAudit.value }
-    private val secondSession = LifecycleSession("g2", calls) { owner.releaseAudit.value }
-    private val thirdSession = LifecycleSession("g3", calls) { owner.releaseAudit.value }
+    private val firstSession = LifecycleSession("g1", calls, { owner.releaseAudit.value }, firstMetadata)
+    private val secondSession = LifecycleSession("g2", calls, { owner.releaseAudit.value }, secondMetadata, secondFrames)
+    private val thirdSession = LifecycleSession("g3", calls, { owner.releaseAudit.value })
     val firstEditor = LifecycleEditor("g1", firstSession, calls)
     val secondEditor = LifecycleEditor("g2", secondSession, calls)
     val thirdEditor = LifecycleEditor("g3", thirdSession, calls)
@@ -293,9 +334,10 @@ private class LifecycleSession(
     private val label: String,
     private val calls: MutableList<String>,
     private val audit: () -> PreviewReleaseAudit?,
+    override val metadata: VideoMetadata = VideoMetadata(10.seconds, 100, 100, false),
+    private val frameEvents: Flow<FrameStripEvent> = flowOf(FrameStripEvent.Complete),
 ) : ClipEditorSession {
-    override val metadata = VideoMetadata(10.seconds, 100, 100, false)
-    override fun frames(request: FrameStripRequest): Flow<FrameStripEvent> = flowOf(FrameStripEvent.Complete)
+    override fun frames(request: FrameStripRequest): Flow<FrameStripEvent> = frameEvents
     override suspend fun createClip(range: ClipRange): ClipResult =
         ClipResult.Failed(VideoEditFailure(com.oneononearena.videoclip.FailureCode.EXPORT_FAILED, false, null))
 

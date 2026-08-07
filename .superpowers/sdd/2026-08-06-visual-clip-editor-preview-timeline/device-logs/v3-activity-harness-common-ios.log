@@ -1,0 +1,124 @@
+To honour the JVM settings for this build a single-use Daemon process will be forked. For more on this, please refer to https://docs.gradle.org/9.4.1/userguide/gradle_daemon.html#sec:disabling_the_daemon in the Gradle documentation.
+Daemon will be stopped at the end of the build
+
+> Configure project :video-clip-editor-compose
+WARNING: The 'commonTest' source directory exists, but android host tests are not enabled. To enable android host tests, add `withHostTest {}` to your android target configuration in the Gradle build file.
+
+> Configure project :video-clip-editor-core
+WARNING: The 'commonTest' source directory exists, but android host tests are not enabled. To enable android host tests, add `withHostTest {}` to your android target configuration in the Gradle build file.
+w: ⚠️ Native task 'iosX64Test' is disabled
+Task 'iosX64Test' for target 'ios_x64' cannot run on the current host (macos-aarch64).
+Reason: architecture mismatch - target requires X64, current host is ARM64
+Solution: To suppress this warning, add 'kotlin.native.ignoreDisabledTargets=true' to gradle.properties.
+
+
+> Task :video-clip-editor-compose:kmpPartiallyResolvedDependenciesChecker
+> Task :video-clip-editor-compose:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :video-clip-editor-compose:checkIosSimulatorArm64MainComposeLibrariesCompatibility
+> Task :video-clip-editor-compose:downloadKotlinNativeDistribution UP-TO-DATE
+> Task :video-clip-editor-compose:convertXmlValueResourcesForAppleMain NO-SOURCE
+> Task :video-clip-editor-compose:copyNonXmlValueResourcesForAppleMain NO-SOURCE
+> Task :video-clip-editor-compose:prepareComposeResourcesTaskForAppleMain NO-SOURCE
+> Task :video-clip-editor-compose:generateResourceAccessorsForAppleMain SKIPPED
+> Task :video-clip-editor-compose:convertXmlValueResourcesForCommonMain NO-SOURCE
+> Task :video-clip-editor-compose:copyNonXmlValueResourcesForCommonMain NO-SOURCE
+> Task :video-clip-editor-compose:prepareComposeResourcesTaskForCommonMain NO-SOURCE
+> Task :video-clip-editor-compose:generateResourceAccessorsForCommonMain SKIPPED
+> Task :video-clip-editor-compose:convertXmlValueResourcesForIosMain NO-SOURCE
+> Task :video-clip-editor-compose:copyNonXmlValueResourcesForIosMain NO-SOURCE
+> Task :video-clip-editor-compose:prepareComposeResourcesTaskForIosMain NO-SOURCE
+> Task :video-clip-editor-compose:generateResourceAccessorsForIosMain SKIPPED
+> Task :video-clip-editor-compose:convertXmlValueResourcesForIosSimulatorArm64Main NO-SOURCE
+> Task :video-clip-editor-compose:copyNonXmlValueResourcesForIosSimulatorArm64Main NO-SOURCE
+> Task :video-clip-editor-compose:prepareComposeResourcesTaskForIosSimulatorArm64Main NO-SOURCE
+> Task :video-clip-editor-compose:generateResourceAccessorsForIosSimulatorArm64Main SKIPPED
+> Task :video-clip-editor-compose:convertXmlValueResourcesForNativeMain NO-SOURCE
+> Task :video-clip-editor-compose:copyNonXmlValueResourcesForNativeMain NO-SOURCE
+> Task :video-clip-editor-compose:prepareComposeResourcesTaskForNativeMain NO-SOURCE
+> Task :video-clip-editor-compose:generateResourceAccessorsForNativeMain SKIPPED
+> Task :video-clip-editor-compose:generateActualResourceCollectorsForIosSimulatorArm64Main SKIPPED
+> Task :video-clip-editor-compose:generateComposeResClass SKIPPED
+> Task :video-clip-editor-compose:generateExpectResourceCollectorsForCommonMain SKIPPED
+> Task :video-clip-editor-core:kmpPartiallyResolvedDependenciesChecker
+> Task :video-clip-editor-core:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :video-clip-editor-core:downloadKotlinNativeDistribution UP-TO-DATE
+> Task :video-clip-editor-core:compileKotlinIosSimulatorArm64 UP-TO-DATE
+> Task :video-clip-editor-core:exportCrossCompilationMetadataForIosSimulatorArm64ApiElements UP-TO-DATE
+> Task :video-clip-editor-compose:compileKotlinIosSimulatorArm64 UP-TO-DATE
+> Task :video-clip-editor-compose:checkIosSimulatorArm64TestComposeLibrariesCompatibility
+> Task :video-clip-editor-compose:convertXmlValueResourcesForAppleTest NO-SOURCE
+> Task :video-clip-editor-compose:copyNonXmlValueResourcesForAppleTest NO-SOURCE
+> Task :video-clip-editor-compose:prepareComposeResourcesTaskForAppleTest NO-SOURCE
+> Task :video-clip-editor-compose:generateResourceAccessorsForAppleTest SKIPPED
+> Task :video-clip-editor-compose:convertXmlValueResourcesForCommonTest NO-SOURCE
+> Task :video-clip-editor-compose:copyNonXmlValueResourcesForCommonTest NO-SOURCE
+> Task :video-clip-editor-compose:prepareComposeResourcesTaskForCommonTest NO-SOURCE
+> Task :video-clip-editor-compose:generateResourceAccessorsForCommonTest SKIPPED
+> Task :video-clip-editor-compose:convertXmlValueResourcesForIosSimulatorArm64Test NO-SOURCE
+> Task :video-clip-editor-compose:copyNonXmlValueResourcesForIosSimulatorArm64Test NO-SOURCE
+> Task :video-clip-editor-compose:prepareComposeResourcesTaskForIosSimulatorArm64Test NO-SOURCE
+> Task :video-clip-editor-compose:generateResourceAccessorsForIosSimulatorArm64Test SKIPPED
+> Task :video-clip-editor-compose:convertXmlValueResourcesForIosTest NO-SOURCE
+> Task :video-clip-editor-compose:copyNonXmlValueResourcesForIosTest NO-SOURCE
+> Task :video-clip-editor-compose:prepareComposeResourcesTaskForIosTest NO-SOURCE
+> Task :video-clip-editor-compose:generateResourceAccessorsForIosTest SKIPPED
+> Task :video-clip-editor-compose:convertXmlValueResourcesForNativeTest NO-SOURCE
+> Task :video-clip-editor-compose:copyNonXmlValueResourcesForNativeTest NO-SOURCE
+> Task :video-clip-editor-compose:prepareComposeResourcesTaskForNativeTest NO-SOURCE
+> Task :video-clip-editor-compose:generateResourceAccessorsForNativeTest SKIPPED
+> Task :video-clip-editor-compose:iosSimulatorArm64ResolveResourcesFromDependencies UP-TO-DATE
+> Task :video-clip-editor-compose:assembleIosSimulatorArm64MainResources UP-TO-DATE
+> Task :video-clip-editor-compose:iosSimulatorArm64ResolveSelfResourcesCopyHierarchicalMultiplatformResources UP-TO-DATE
+> Task :video-clip-editor-compose:iosSimulatorArm64AggregateResources UP-TO-DATE
+> Task :video-clip-editor-compose:iosSimulatorArm64ProcessResources UP-TO-DATE
+> Task :video-clip-editor-compose:iosSimulatorArm64MainKlibrary UP-TO-DATE
+
+> Task :video-clip-editor-compose:compileTestKotlinIosSimulatorArm64
+w: file:///Users/sandeepdhami/Documents/GitHub/OneOnOneArena-Workspace/video-clip-editor-visual-worktree/video-clip-editor-compose/src/commonTest/kotlin/com/oneononearena/videoclip/compose/ClipEditorLifecycleOwnerTest.kt:34:9 This declaration needs opt-in. Its usage should be marked with '@kotlinx.coroutines.ExperimentalCoroutinesApi' or '@OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)'
+w: file:///Users/sandeepdhami/Documents/GitHub/OneOnOneArena-Workspace/video-clip-editor-visual-worktree/video-clip-editor-compose/src/commonTest/kotlin/com/oneononearena/videoclip/compose/ClipEditorLifecycleOwnerTest.kt:38:9 This declaration needs opt-in. Its usage should be marked with '@kotlinx.coroutines.ExperimentalCoroutinesApi' or '@OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)'
+w: file:///Users/sandeepdhami/Documents/GitHub/OneOnOneArena-Workspace/video-clip-editor-visual-worktree/video-clip-editor-compose/src/commonTest/kotlin/com/oneononearena/videoclip/compose/ClipEditorLifecycleOwnerTest.kt:42:9 This declaration needs opt-in. Its usage should be marked with '@kotlinx.coroutines.ExperimentalCoroutinesApi' or '@OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)'
+w: file:///Users/sandeepdhami/Documents/GitHub/OneOnOneArena-Workspace/video-clip-editor-visual-worktree/video-clip-editor-compose/src/commonTest/kotlin/com/oneononearena/videoclip/compose/ClipEditorLifecycleOwnerTest.kt:47:9 This declaration needs opt-in. Its usage should be marked with '@kotlinx.coroutines.ExperimentalCoroutinesApi' or '@OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)'
+w: file:///Users/sandeepdhami/Documents/GitHub/OneOnOneArena-Workspace/video-clip-editor-visual-worktree/video-clip-editor-compose/src/commonTest/kotlin/com/oneononearena/videoclip/compose/ClipEditorLifecycleOwnerTest.kt:69:9 This declaration needs opt-in. Its usage should be marked with '@kotlinx.coroutines.ExperimentalCoroutinesApi' or '@OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)'
+w: file:///Users/sandeepdhami/Documents/GitHub/OneOnOneArena-Workspace/video-clip-editor-visual-worktree/video-clip-editor-compose/src/commonTest/kotlin/com/oneononearena/videoclip/compose/ClipEditorLifecycleOwnerTest.kt:73:9 This declaration needs opt-in. Its usage should be marked with '@kotlinx.coroutines.ExperimentalCoroutinesApi' or '@OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)'
+w: file:///Users/sandeepdhami/Documents/GitHub/OneOnOneArena-Workspace/video-clip-editor-visual-worktree/video-clip-editor-compose/src/commonTest/kotlin/com/oneononearena/videoclip/compose/ClipEditorLifecycleOwnerTest.kt:74:9 This declaration needs opt-in. Its usage should be marked with '@kotlinx.coroutines.ExperimentalCoroutinesApi' or '@OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)'
+w: file:///Users/sandeepdhami/Documents/GitHub/OneOnOneArena-Workspace/video-clip-editor-visual-worktree/video-clip-editor-compose/src/commonTest/kotlin/com/oneononearena/videoclip/compose/ClipEditorLifecycleOwnerTest.kt:75:9 This declaration needs opt-in. Its usage should be marked with '@kotlinx.coroutines.ExperimentalCoroutinesApi' or '@OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)'
+w: file:///Users/sandeepdhami/Documents/GitHub/OneOnOneArena-Workspace/video-clip-editor-visual-worktree/video-clip-editor-compose/src/commonTest/kotlin/com/oneononearena/videoclip/compose/ClipEditorLifecycleOwnerTest.kt:114:13 This declaration needs opt-in. Its usage should be marked with '@kotlinx.coroutines.ExperimentalCoroutinesApi' or '@OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)'
+w: file:///Users/sandeepdhami/Documents/GitHub/OneOnOneArena-Workspace/video-clip-editor-visual-worktree/video-clip-editor-compose/src/commonTest/kotlin/com/oneononearena/videoclip/compose/ClipEditorLifecycleOwnerTest.kt:116:13 This declaration needs opt-in. Its usage should be marked with '@kotlinx.coroutines.ExperimentalCoroutinesApi' or '@OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)'
+w: file:///Users/sandeepdhami/Documents/GitHub/OneOnOneArena-Workspace/video-clip-editor-visual-worktree/video-clip-editor-compose/src/commonTest/kotlin/com/oneononearena/videoclip/compose/ClipEditorLifecycleOwnerTest.kt:117:13 This declaration needs opt-in. Its usage should be marked with '@kotlinx.coroutines.ExperimentalCoroutinesApi' or '@OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)'
+w: file:///Users/sandeepdhami/Documents/GitHub/OneOnOneArena-Workspace/video-clip-editor-visual-worktree/video-clip-editor-compose/src/commonTest/kotlin/com/oneononearena/videoclip/compose/ClipEditorLifecycleOwnerTest.kt:118:13 This declaration needs opt-in. Its usage should be marked with '@kotlinx.coroutines.ExperimentalCoroutinesApi' or '@OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)'
+w: file:///Users/sandeepdhami/Documents/GitHub/OneOnOneArena-Workspace/video-clip-editor-visual-worktree/video-clip-editor-compose/src/commonTest/kotlin/com/oneononearena/videoclip/compose/ClipEditorLifecycleOwnerTest.kt:127:13 This declaration needs opt-in. Its usage should be marked with '@kotlinx.coroutines.ExperimentalCoroutinesApi' or '@OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)'
+w: file:///Users/sandeepdhami/Documents/GitHub/OneOnOneArena-Workspace/video-clip-editor-visual-worktree/video-clip-editor-compose/src/commonTest/kotlin/com/oneononearena/videoclip/compose/ClipEditorLifecycleOwnerTest.kt:135:9 This declaration needs opt-in. Its usage should be marked with '@kotlinx.coroutines.ExperimentalCoroutinesApi' or '@OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)'
+w: file:///Users/sandeepdhami/Documents/GitHub/OneOnOneArena-Workspace/video-clip-editor-visual-worktree/video-clip-editor-compose/src/commonTest/kotlin/com/oneononearena/videoclip/compose/ClipEditorLifecycleOwnerTest.kt:139:9 This declaration needs opt-in. Its usage should be marked with '@kotlinx.coroutines.ExperimentalCoroutinesApi' or '@OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)'
+w: file:///Users/sandeepdhami/Documents/GitHub/OneOnOneArena-Workspace/video-clip-editor-visual-worktree/video-clip-editor-compose/src/commonTest/kotlin/com/oneononearena/videoclip/compose/ClipEditorLifecycleOwnerTest.kt:144:9 This declaration needs opt-in. Its usage should be marked with '@kotlinx.coroutines.ExperimentalCoroutinesApi' or '@OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)'
+w: file:///Users/sandeepdhami/Documents/GitHub/OneOnOneArena-Workspace/video-clip-editor-visual-worktree/video-clip-editor-compose/src/commonTest/kotlin/com/oneononearena/videoclip/compose/ClipEditorLifecycleOwnerTest.kt:146:9 This declaration needs opt-in. Its usage should be marked with '@kotlinx.coroutines.ExperimentalCoroutinesApi' or '@OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)'
+w: file:///Users/sandeepdhami/Documents/GitHub/OneOnOneArena-Workspace/video-clip-editor-visual-worktree/video-clip-editor-compose/src/commonTest/kotlin/com/oneononearena/videoclip/compose/ClipEditorLifecycleOwnerTest.kt:168:9 This declaration needs opt-in. Its usage should be marked with '@kotlinx.coroutines.ExperimentalCoroutinesApi' or '@OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)'
+w: file:///Users/sandeepdhami/Documents/GitHub/OneOnOneArena-Workspace/video-clip-editor-visual-worktree/video-clip-editor-compose/src/commonTest/kotlin/com/oneononearena/videoclip/compose/ClipEditorLifecycleOwnerTest.kt:172:9 This declaration needs opt-in. Its usage should be marked with '@kotlinx.coroutines.ExperimentalCoroutinesApi' or '@OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)'
+w: file:///Users/sandeepdhami/Documents/GitHub/OneOnOneArena-Workspace/video-clip-editor-visual-worktree/video-clip-editor-compose/src/commonTest/kotlin/com/oneononearena/videoclip/compose/ClipEditorLifecycleOwnerTest.kt:176:9 This declaration needs opt-in. Its usage should be marked with '@kotlinx.coroutines.ExperimentalCoroutinesApi' or '@OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)'
+w: file:///Users/sandeepdhami/Documents/GitHub/OneOnOneArena-Workspace/video-clip-editor-visual-worktree/video-clip-editor-compose/src/commonTest/kotlin/com/oneononearena/videoclip/compose/ClipEditorLifecycleOwnerTest.kt:179:9 This declaration needs opt-in. Its usage should be marked with '@kotlinx.coroutines.ExperimentalCoroutinesApi' or '@OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)'
+w: file:///Users/sandeepdhami/Documents/GitHub/OneOnOneArena-Workspace/video-clip-editor-visual-worktree/video-clip-editor-compose/src/commonTest/kotlin/com/oneononearena/videoclip/compose/ClipEditorLifecycleOwnerTest.kt:181:9 This declaration needs opt-in. Its usage should be marked with '@kotlinx.coroutines.ExperimentalCoroutinesApi' or '@OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)'
+w: file:///Users/sandeepdhami/Documents/GitHub/OneOnOneArena-Workspace/video-clip-editor-visual-worktree/video-clip-editor-compose/src/commonTest/kotlin/com/oneononearena/videoclip/compose/ClipEditorLifecycleOwnerTest.kt:207:9 This declaration needs opt-in. Its usage should be marked with '@kotlinx.coroutines.ExperimentalCoroutinesApi' or '@OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)'
+w: file:///Users/sandeepdhami/Documents/GitHub/OneOnOneArena-Workspace/video-clip-editor-visual-worktree/video-clip-editor-compose/src/commonTest/kotlin/com/oneononearena/videoclip/compose/ClipEditorLifecycleOwnerTest.kt:209:9 This declaration needs opt-in. Its usage should be marked with '@kotlinx.coroutines.ExperimentalCoroutinesApi' or '@OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)'
+w: file:///Users/sandeepdhami/Documents/GitHub/OneOnOneArena-Workspace/video-clip-editor-visual-worktree/video-clip-editor-compose/src/commonTest/kotlin/com/oneononearena/videoclip/compose/ClipEditorLifecycleOwnerTest.kt:233:9 This declaration needs opt-in. Its usage should be marked with '@kotlinx.coroutines.ExperimentalCoroutinesApi' or '@OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)'
+w: file:///Users/sandeepdhami/Documents/GitHub/OneOnOneArena-Workspace/video-clip-editor-visual-worktree/video-clip-editor-compose/src/commonTest/kotlin/com/oneononearena/videoclip/compose/ClipEditorLifecycleOwnerTest.kt:235:9 This declaration needs opt-in. Its usage should be marked with '@kotlinx.coroutines.ExperimentalCoroutinesApi' or '@OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)'
+w: file:///Users/sandeepdhami/Documents/GitHub/OneOnOneArena-Workspace/video-clip-editor-visual-worktree/video-clip-editor-compose/src/commonTest/kotlin/com/oneononearena/videoclip/compose/ClipEditorLifecycleOwnerTest.kt:256:5 'lateinit' is unnecessary: definitely initialized in constructors.
+
+> Task :video-clip-editor-compose:computeLocalPackageDependencyInputFiles UP-TO-DATE
+> Task :video-clip-editor-compose:generateSyntheticLinkageSwiftPMImportProjectForCinteropsAndLdDump SKIPPED
+> Task :video-clip-editor-compose:serializeSwiftPMDependenciesMetadataForLockFiles UP-TO-DATE
+> Task :video-clip-editor-core:serializeSwiftPMDependenciesMetadataForLockFiles UP-TO-DATE
+> Task :video-clip-editor-compose:generateUmbrellaPackageIdentifierBasedResolutionForDefault SKIPPED
+> Task :video-clip-editor-compose:fetchUmbrellaPackageIdentifierForDefault SKIPPED
+> Task :video-clip-editor-compose:syncPersistedPackageResolvedToSynthetic SKIPPED
+> Task :video-clip-editor-compose:fetchSyntheticImportProjectPackages SKIPPED
+> Task :video-clip-editor-compose:convertSyntheticImportProjectIntoDefFileIphonesimulator UP-TO-DATE
+> Task :video-clip-editor-compose:assembleIosSimulatorArm64TestResources UP-TO-DATE
+> Task :video-clip-editor-compose:copyTestComposeResourcesForIosSimulatorArm64 UP-TO-DATE
+> Task :video-clip-editor-compose:linkDebugTestIosSimulatorArm64
+> Task :video-clip-editor-compose:iosSimulatorArm64Test
+> Task :video-clip-editor-compose:allTests
+
+[Incubating] Problems report is available at: file:///Users/sandeepdhami/Documents/GitHub/OneOnOneArena-Workspace/video-clip-editor-visual-worktree/build/reports/problems/problems-report.html
+
+BUILD SUCCESSFUL in 17s
+24 actionable tasks: 8 executed, 16 up-to-date
+Consider enabling configuration cache to speed up this build: https://docs.gradle.org/9.4.1/userguide/configuration_cache_enabling.html

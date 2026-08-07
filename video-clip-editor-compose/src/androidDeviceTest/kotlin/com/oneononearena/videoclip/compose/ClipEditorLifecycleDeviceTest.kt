@@ -1,7 +1,15 @@
 package com.oneononearena.videoclip.compose
 
+import android.app.Activity
+import android.content.ComponentName
 import android.content.Context
+import android.content.Intent
+import android.view.WindowManager
+import androidx.compose.ui.InternalComposeUiApi
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.platform.ComposeView
+import androidx.compose.ui.platform.WindowRecomposerFactory
+import androidx.compose.ui.platform.WindowRecomposerPolicy
 import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
@@ -13,7 +21,8 @@ import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.test.up
-import androidx.compose.ui.test.v2.runComposeUiTest
+import androidx.compose.ui.test.v2.runEmptyComposeUiTest
+import androidx.test.core.app.ActivityScenario
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import com.oneononearena.videoclip.ClipEditorSession
@@ -101,56 +110,80 @@ class ClipEditorLifecycleDeviceTest {
         }
     }
 
-    @OptIn(ExperimentalTestApi::class)
+    @OptIn(ExperimentalTestApi::class, InternalComposeUiApi::class)
+    @Suppress("DEPRECATION")
     @Test
     fun screenShowsLivePlayheadGestureAndLocksControlsDuringExport() {
-        runComposeUiTest {
-            val source = fixtures.copyAvcFixture()
-            val export = CompletableDeferred<ClipResult>()
-            val session = HoldingDeviceSession(export)
+        val source = fixtures.copyAvcFixture()
+        val export = CompletableDeferred<ClipResult>()
+        val session = HoldingDeviceSession(export)
+        val testContext = InstrumentationRegistry.getInstrumentation().context
+        val activityIntent = Intent.makeMainActivity(
+            ComponentName(testContext, "androidx.activity.ComponentActivity"),
+        )
+        val scenario = ActivityScenario.launch<Activity>(activityIntent)
+        var composeView: ComposeView? = null
 
-            setContent {
-                ClipEditorScreen(
-                    source = VideoSourcePath(source.absolutePath),
-                    editor = DeviceEditor(session),
-                    onResult = {},
-                    onCancel = {},
+        try {
+            runEmptyComposeUiTest {
+                scenario.onActivity { activity ->
+                    activity.window.addFlags(
+                        WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON or
+                            WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON or
+                            WindowManager.LayoutParams.FLAG_DISMISS_KEYGUARD or
+                            WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED,
+                    )
+                    WindowRecomposerPolicy.withFactory(WindowRecomposerFactory.LifecycleAware) {
+                        composeView = ComposeView(activity).also { view ->
+                            activity.setContentView(view)
+                            view.setContent {
+                                ClipEditorScreen(
+                                    source = VideoSourcePath(source.absolutePath),
+                                    editor = DeviceEditor(session),
+                                    onResult = {},
+                                    onCancel = {},
+                                )
+                            }
+                        }
+                    }
+                }
+                waitUntil(timeoutMillis = 15_000) {
+                    runCatching { onNodeWithTag("play-pause").assertIsEnabled() }.isSuccess
+                }
+                onNodeWithTag("play-pause").assertIsEnabled()
+                val initialPlayhead = onNodeWithTag("clip-playhead").getUnclippedBoundsInRoot().left
+
+                onNodeWithTag("clip-timeline").performTouchInput {
+                    click(center)
+                }
+                waitUntil(timeoutMillis = 15_000) {
+                    onNodeWithTag("clip-playhead").getUnclippedBoundsInRoot().left > initialPlayhead
+                }
+
+                onNodeWithTag("clip-end-handle").performTouchInput {
+                    down(center)
+                    moveBy(Offset(-80f, 0f))
+                    up()
+                }
+                waitForIdle()
+                onNodeWithTag("done").assertIsEnabled().performTouchInput { click(center) }
+                waitUntil(timeoutMillis = 15_000) { session.createCalls == 1 }
+
+                onNodeWithTag("back").assertIsNotEnabled()
+                assertTrue(onAllNodesWithTag("play-pause").fetchSemanticsNodes().isEmpty())
+                assertTrue(onAllNodesWithTag("done").fetchSemanticsNodes().isEmpty())
+                assertTrue(requireNotNull(session.createdRange).endExclusive < 10.seconds)
+
+                export.complete(
+                    ClipResult.Failed(
+                        VideoEditFailure(com.oneononearena.videoclip.FailureCode.EXPORT_FAILED, false, null),
+                    ),
                 )
+                waitForIdle()
             }
-
-            waitUntil(timeoutMillis = 15_000) {
-                onAllNodesWithTag("play-pause").fetchSemanticsNodes().isNotEmpty()
-            }
-            onNodeWithTag("play-pause").assertIsEnabled()
-            val initialPlayhead = onNodeWithTag("clip-playhead").getUnclippedBoundsInRoot().left
-
-            onNodeWithTag("clip-timeline").performTouchInput {
-                click(center)
-            }
-            waitUntil(timeoutMillis = 15_000) {
-                onNodeWithTag("clip-playhead").getUnclippedBoundsInRoot().left > initialPlayhead
-            }
-
-            onNodeWithTag("clip-end-handle").performTouchInput {
-                down(center)
-                moveBy(Offset(-80f, 0f))
-                up()
-            }
-            waitForIdle()
-            onNodeWithTag("done").assertIsEnabled().performTouchInput { click(center) }
-            waitUntil(timeoutMillis = 15_000) { session.createCalls == 1 }
-
-            onNodeWithTag("back").assertIsNotEnabled()
-            assertTrue(onAllNodesWithTag("play-pause").fetchSemanticsNodes().isEmpty())
-            assertTrue(onAllNodesWithTag("done").fetchSemanticsNodes().isEmpty())
-            assertTrue(requireNotNull(session.createdRange).endExclusive < 10.seconds)
-
-            export.complete(
-                ClipResult.Failed(
-                    VideoEditFailure(com.oneononearena.videoclip.FailureCode.EXPORT_FAILED, false, null),
-                ),
-            )
-            waitForIdle()
+        } finally {
+            scenario.onActivity { composeView?.disposeComposition() }
+            scenario.close()
         }
     }
 

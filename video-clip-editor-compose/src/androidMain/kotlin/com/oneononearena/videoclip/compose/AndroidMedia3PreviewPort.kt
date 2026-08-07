@@ -120,7 +120,7 @@ internal class AndroidMedia3PreviewPort(
         when (command) {
             is PreviewCommand.Bind -> acceptBinding(command.binding)
             is PreviewCommand.ReplaceRange -> acceptBinding(command.binding)
-            is PreviewCommand.Retry -> acceptBinding(command.binding, force = true)
+            is PreviewCommand.Retry -> acceptBinding(command.binding)
             is PreviewCommand.Seek -> seek(command)
             is PreviewCommand.SetPlayWhenReady -> setPlayWhenReady(command)
             is PreviewCommand.Release -> release(command.generation)
@@ -138,8 +138,8 @@ internal class AndroidMedia3PreviewPort(
         scope.cancel()
     }
 
-    private fun acceptBinding(binding: PreviewBinding, force: Boolean = false) {
-        if (!force && !binding.isLaterThan(appliedBinding) && binding != appliedBinding) return
+    private fun acceptBinding(binding: PreviewBinding) {
+        if (!binding.isLaterThan(appliedBinding) && binding != appliedBinding) return
 
         if (isPreparing) {
             val latest = pendingBinding

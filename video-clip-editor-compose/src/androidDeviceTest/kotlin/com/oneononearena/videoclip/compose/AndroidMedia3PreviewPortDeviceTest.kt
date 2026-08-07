@@ -14,6 +14,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
@@ -76,6 +77,54 @@ class AndroidMedia3PreviewPortDeviceTest {
             recorder.await { it is PreviewEvent.Ready && it.revision == PreviewRevision(2) }
             assertFalse(recorder.snapshot().any { it is PreviewEvent.Ready && it.revision == PreviewRevision(1) })
             assertEquals("1:2", onMain { port.playerForSurface?.currentMediaItem?.mediaId })
+        } finally {
+            onMain { port.dispatch(PreviewCommand.Release(PreviewGeneration(1))) }
+            recorder.close()
+        }
+    }
+
+    @Test
+    fun staleRetryCannotReplaceNewerReadyBindingOrPlaybackIntent() = runBlocking {
+        val source = fixtures.copyAvcFixture()
+        val port = onMain { AndroidMedia3PreviewPort(context) }
+        val recorder = EventRecorder(port)
+
+        try {
+            onMain {
+                port.dispatch(
+                    PreviewCommand.Bind(
+                        binding(source, revision = 2, startSeconds = 2, endSeconds = 4),
+                    ),
+                )
+            }
+            recorder.await { it == PreviewEvent.Ready(PreviewGeneration(1), PreviewRevision(2)) }
+            val player = onMain { checkNotNull(port.playerForSurface) }
+
+            onMain {
+                port.dispatch(
+                    PreviewCommand.Retry(
+                        binding(
+                            source = source,
+                            revision = 1,
+                            startSeconds = 0,
+                            endSeconds = 8,
+                            playWhenReady = true,
+                        ),
+                    ),
+                )
+            }
+            delay(2.seconds)
+
+            val item = onMain { checkNotNull(player.currentMediaItem) }
+            assertEquals("1:2", item.mediaId)
+            assertEquals(2_000L, item.clippingConfiguration.startPositionMs)
+            assertEquals(4_000L, item.clippingConfiguration.endPositionMs)
+            assertFalse(
+                recorder.snapshot().any {
+                    it == PreviewEvent.Ready(PreviewGeneration(1), PreviewRevision(1))
+                },
+            )
+            assertFalse(onMain { player.playWhenReady })
         } finally {
             onMain { port.dispatch(PreviewCommand.Release(PreviewGeneration(1))) }
             recorder.close()
@@ -154,6 +203,7 @@ class AndroidMedia3PreviewPortDeviceTest {
         revision: Long,
         startSeconds: Int,
         endSeconds: Int,
+        playWhenReady: Boolean = false,
     ) = PreviewBinding(
         generation = PreviewGeneration(1),
         revision = PreviewRevision(revision),
@@ -161,7 +211,7 @@ class AndroidMedia3PreviewPortDeviceTest {
         metadata = VideoMetadata(10.seconds, 320, 240, true),
         range = ClipRange(startSeconds.seconds, endSeconds.seconds),
         sourcePosition = startSeconds.seconds,
-        playWhenReady = false,
+        playWhenReady = playWhenReady,
     )
 }
 

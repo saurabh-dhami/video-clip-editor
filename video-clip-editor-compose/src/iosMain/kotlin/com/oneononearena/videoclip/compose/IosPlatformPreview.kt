@@ -11,6 +11,14 @@ import kotlinx.coroutines.flow.MutableSharedFlow
 internal actual fun rememberPlatformPreviewPort(): PreviewPort = remember { IosUnavailablePreviewPort() }
 
 @Composable
+internal actual fun rememberPlatformPreviewPortFactory(): PreviewPortFactory = remember {
+    object : PreviewPortFactory {
+        override fun create(): PreviewPort = IosUnavailablePreviewPort()
+        override fun dispose(port: PreviewPort) = Unit
+    }
+}
+
+@Composable
 internal actual fun PlatformPreviewSurface(
     port: PreviewPort,
     modifier: Modifier,

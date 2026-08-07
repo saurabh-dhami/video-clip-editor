@@ -182,6 +182,24 @@ class ClipEditorPresenterTest {
     }
 
     @Test
+    fun `create clip is inert while a provisional handle range exists`() = runTest {
+        val session = FakeSession(flow { emit(FrameStripEvent.Complete) })
+        val presenter = ClipEditorPresenter(this, {})
+        presenter.start(VideoSourcePath("/video.mp4"), FakeEditor(session))
+        testScheduler.advanceUntilIdle()
+        presenter.beginRangeGesture()
+        presenter.updateEndFromSelector(4.seconds)
+
+        presenter.createClip()
+        testScheduler.advanceUntilIdle()
+
+        assertEquals(0, session.createCalls)
+        val ready = assertIs<ClipEditorUiState.Ready>(presenter.state.value)
+        assertEquals(10.seconds, ready.range.endExclusive)
+        assertEquals(4.seconds, ready.provisionalRange?.endExclusive)
+    }
+
+    @Test
     fun `complete after failed frame strip cannot replace terminal failure`() = runTest {
         val presenter = ClipEditorPresenter(this, {})
         val failure = VideoEditFailure(FailureCode.FRAME_EXTRACTION_FAILED, false, "bad frame")

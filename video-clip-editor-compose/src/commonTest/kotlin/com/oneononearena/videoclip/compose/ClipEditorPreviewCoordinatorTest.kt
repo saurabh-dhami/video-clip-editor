@@ -52,7 +52,18 @@ class ClipEditorPreviewCoordinatorTest {
             calls += "released-$generation"
             emit(PreviewEvent.Released(generation))
         }
-        val coordinator = ClipEditorPreviewCoordinator(this, port)
+        val fresh = CoordinatorRecordingPort()
+        val factory = object : PreviewPortFactory {
+            var created = false
+            override fun create(): PreviewPort = if (!created) {
+                created = true
+                port
+            } else {
+                fresh
+            }
+            override fun dispose(port: PreviewPort) = Unit
+        }
+        val coordinator = ClipEditorPreviewCoordinator(this, portFactory = factory)
         testScheduler.runCurrent()
         coordinator.bind(binding())
 
@@ -64,6 +75,32 @@ class ClipEditorPreviewCoordinatorTest {
             calls,
         )
         assertEquals(PreviewGeneration(2), coordinator.state.value.binding?.generation)
+        coordinator.dispose()
+    }
+
+    @Test
+    fun terminalPortIsDisposedAfterAcknowledgedReleaseAndSessionCloseBeforeFreshPortBinds() = runTest {
+        val calls = mutableListOf<String>()
+        val old = CoordinatorRecordingPort { generation ->
+            calls += "released"
+            emit(PreviewEvent.Released(generation))
+        }
+        val fresh = CoordinatorRecordingPort()
+        val factory = object : PreviewPortFactory {
+            var creates = 0
+            override fun create(): PreviewPort = if (creates++ == 0) old else fresh
+            override fun dispose(port: PreviewPort) { calls += "dispose-${if (port === old) "old" else "fresh"}" }
+        }
+        val coordinator = ClipEditorPreviewCoordinator(this, portFactory = factory)
+        testScheduler.runCurrent()
+
+        coordinator.bind(binding())
+        coordinator.replaceSourceThen { calls += "close-session" }
+        coordinator.bind(binding(source = VideoSourcePath("/new.mp4")))
+
+        assertEquals(listOf("released", "close-session", "dispose-old"), calls)
+        assertEquals(2, factory.creates)
+        assertEquals(PreviewCommand.Bind::class, fresh.commands.single()::class)
         coordinator.dispose()
     }
 

@@ -198,6 +198,33 @@ class AndroidMedia3PreviewPortDeviceTest {
         }
     }
 
+    @Test
+    fun releaseIsTerminalAndReplacementRequiresAFreshActualPort() = runBlocking {
+        val source = fixtures.copyAvcFixture()
+        val old = onMain { AndroidMedia3PreviewPort(context) }
+        val oldRecorder = EventRecorder(old)
+        try {
+            onMain { old.dispatch(PreviewCommand.Release(PreviewGeneration(1))) }
+            oldRecorder.await { it == PreviewEvent.Released(PreviewGeneration(1)) }
+            onMain { old.dispatch(PreviewCommand.Bind(binding(source, revision = 1, startSeconds = 0, endSeconds = 2))) }
+            delay(250)
+            assertEquals(null, onMain { old.playerForSurface })
+            assertFalse(oldRecorder.snapshot().any { it is PreviewEvent.Ready })
+
+            val fresh = onMain { AndroidMedia3PreviewPort(context) }
+            val freshRecorder = EventRecorder(fresh)
+            try {
+                onMain { fresh.dispatch(PreviewCommand.Bind(binding(source, revision = 1, startSeconds = 0, endSeconds = 2))) }
+                freshRecorder.await { it is PreviewEvent.Ready }
+            } finally {
+                onMain { fresh.dispatch(PreviewCommand.Release(PreviewGeneration(1))) }
+                freshRecorder.close()
+            }
+        } finally {
+            oldRecorder.close()
+        }
+    }
+
     private fun binding(
         source: File,
         revision: Long,

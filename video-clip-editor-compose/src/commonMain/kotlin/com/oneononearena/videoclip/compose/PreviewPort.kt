@@ -42,6 +42,15 @@ internal interface PreviewPort {
     fun dispatch(command: PreviewCommand)
 }
 
+/** Internal ownership seam: Android Release is terminal, so each source needs a fresh port. */
+internal interface PreviewPortFactory {
+    fun create(): PreviewPort
+    fun dispose(port: PreviewPort)
+}
+
+@Composable
+internal expect fun rememberPlatformPreviewPortFactory(): PreviewPortFactory
+
 @Composable
 internal expect fun rememberPlatformPreviewPort(): PreviewPort
 

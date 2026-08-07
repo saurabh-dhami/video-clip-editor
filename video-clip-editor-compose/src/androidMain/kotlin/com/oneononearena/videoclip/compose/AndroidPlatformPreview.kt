@@ -1,7 +1,6 @@
 package com.oneononearena.videoclip.compose
 
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
@@ -12,10 +11,20 @@ import androidx.media3.ui.compose.ContentFrame
 internal actual fun rememberPlatformPreviewPort(): PreviewPort {
     val context = LocalContext.current.applicationContext
     val port = remember(context) { AndroidMedia3PreviewPort(context) }
-    DisposableEffect(port) {
-        onDispose { port.dispose() }
-    }
     return port
+}
+
+@Composable
+internal actual fun rememberPlatformPreviewPortFactory(): PreviewPortFactory {
+    val context = LocalContext.current.applicationContext
+    return remember(context) {
+        object : PreviewPortFactory {
+            override fun create(): PreviewPort = AndroidMedia3PreviewPort(context)
+            override fun dispose(port: PreviewPort) {
+                (port as? AndroidMedia3PreviewPort)?.dispose()
+            }
+        }
+    }
 }
 
 @Composable

@@ -80,26 +80,20 @@ fun ClipEditorScreen(
 ) {
     val scope = rememberCoroutineScope()
     val cleanupScope = remember { CoroutineScope(SupervisorJob() + Dispatchers.Main) }
-    val previewPort = rememberPlatformPreviewPort()
-    val coordinator = remember(previewPort, cleanupScope) { ClipEditorPreviewCoordinator(cleanupScope, previewPort) }
+    val previewPortFactory = rememberPlatformPreviewPortFactory()
+    val coordinator = remember(previewPortFactory, cleanupScope) { ClipEditorPreviewCoordinator(cleanupScope, portFactory = previewPortFactory) }
     val result by rememberUpdatedState(onResult)
     val cancel by rememberUpdatedState(onCancel)
     val presenter = remember { ClipEditorPresenter(scope) }
+    val lifecycle = remember(presenter, coordinator, cleanupScope) { ClipEditorScreenLifecycle(cleanupScope, coordinator, presenter) }
     SideEffect { presenter.updateCallbacks(result, cancel) }
     val state by presenter.state.collectAsState()
     LaunchedEffect(source, editor, presenter, coordinator) {
-        cleanupScope.launch {
-            coordinator.replaceSourceThen { presenter.close() }
-            presenter.start(source, editor)
-        }
+        lifecycle.replace(source, editor)
     }
-    DisposableEffect(presenter, coordinator, cleanupScope) {
+    DisposableEffect(lifecycle) {
         onDispose {
-            cleanupScope.launch {
-                coordinator.closeThen { presenter.close() }
-                coordinator.dispose()
-                cleanupScope.cancel()
-            }
+            lifecycle.close()
         }
     }
 
@@ -129,8 +123,7 @@ fun ClipEditorScreen(
                     preview = preview,
                     onBack = {
                         cleanupScope.launch {
-                            coordinator.closeThen { presenter.close() }
-                            presenter.cancelAfterClose()
+                            lifecycle.cancel()
                         }
                     },
                 )
@@ -147,8 +140,7 @@ fun ClipEditorScreen(
             Button(
                 onClick = {
                     cleanupScope.launch {
-                        coordinator.closeThen { presenter.close() }
-                        presenter.cancelAfterClose()
+                        lifecycle.cancel()
                     }
                 },
                 enabled = state != ClipEditorUiState.Exporting,
@@ -168,7 +160,7 @@ private fun EditorControls(
 ) {
     val visualRange = ready.provisionalRange ?: ready.range
     Box(Modifier.fillMaxWidth().height(220.dp).background(Color.Black)) {
-        PlatformPreviewSurface(port = coordinator.surfacePort, modifier = Modifier.fillMaxWidth())
+        coordinator.surfacePort?.let { PlatformPreviewSurface(port = it, modifier = Modifier.fillMaxWidth()) }
     }
     Text(visualRange.start.toString(), Modifier.semantics { testTag = "clip-start-time" })
     Text(visualRange.endExclusive.toString(), Modifier.semantics { testTag = "clip-end-time" })
@@ -202,7 +194,7 @@ private fun EditorControls(
         ) { Text(if (preview.isPlaying) "Pause" else "Play") }
         Button(
             onClick = { coordinator.pause(); presenter.createClip() },
-            enabled = preview.failure == null,
+            enabled = preview.failure == null && ready.provisionalRange == null,
             modifier = Modifier.semantics { testTag = "done" },
         ) { Text("Done") }
     }
@@ -398,6 +390,7 @@ internal class ClipEditorPresenter(
     )
 
     fun createClip() {
+        if (rangeGestureInProgress) return
         val ready = backingState.value as? ClipEditorUiState.Ready ?: return
         val opened = session ?: return
         backingState.value = ClipEditorUiState.Exporting
@@ -443,5 +436,42 @@ internal class ClipEditorPresenter(
         resultSent = true
         backingState.value = ClipEditorUiState.Terminal(result.toString())
         onResult(result)
+    }
+}
+
+/** One authority for source replacement and terminal close. Effect cancellation cannot reopen a presenter. */
+internal class ClipEditorScreenLifecycle(
+    private val scope: CoroutineScope,
+    private val coordinator: ClipEditorPreviewCoordinator,
+    private val presenter: ClipEditorPresenter,
+) {
+    private val mutex = Mutex()
+    private var closed = false
+
+    fun replace(source: VideoSourcePath, editor: VideoClipEditor) {
+        scope.launch {
+            mutex.withLock {
+                if (closed) return@withLock
+                coordinator.replaceSourceThen { presenter.close() }
+                if (!closed) presenter.start(source, editor)
+            }
+        }
+    }
+
+    fun cancel() = close(afterClose = presenter::cancelAfterClose)
+
+    fun close() = close(afterClose = {})
+
+    private fun close(afterClose: () -> Unit) {
+        scope.launch {
+            mutex.withLock {
+                if (closed) return@withLock
+                closed = true
+                coordinator.closeThen { presenter.close() }
+                afterClose()
+                coordinator.dispose()
+                scope.cancel()
+            }
+        }
     }
 }

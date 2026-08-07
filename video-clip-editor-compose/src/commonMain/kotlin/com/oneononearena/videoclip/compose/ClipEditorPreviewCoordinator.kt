@@ -33,20 +33,20 @@ internal sealed interface PreviewReleaseFence {
 /** Common ownership boundary for native preview. Session/export stay in [ClipEditorPresenter]. */
 internal class ClipEditorPreviewCoordinator(
     private val scope: CoroutineScope,
-    private val port: PreviewPort,
+    port: PreviewPort? = null,
+    private val portFactory: PreviewPortFactory? = null,
 ) {
-    val surfacePort: PreviewPort = port
+    private var port: PreviewPort? = port
+    val surfacePort: PreviewPort? get() = port
     private val backingState = MutableStateFlow(ClipEditorPreviewState())
     val state: StateFlow<ClipEditorPreviewState> = backingState.asStateFlow()
     private var released: Pair<PreviewGeneration, kotlinx.coroutines.CompletableDeferred<Unit>>? = null
     private var nextGeneration = 0L
     private val closeMutex = Mutex()
-    private val eventJob: kotlinx.coroutines.Job
+    private var eventJob: kotlinx.coroutines.Job? = null
 
     init {
-        eventJob = scope.launch {
-            port.events.collect(::onEvent)
-        }
+        port?.let(::observe)
     }
 
     fun bind(binding: PreviewBinding) {
@@ -58,7 +58,7 @@ internal class ClipEditorPreviewCoordinator(
         }
         val lifecycleBinding = binding.copy(generation = PreviewGeneration(++nextGeneration))
         backingState.value = ClipEditorPreviewState(binding = lifecycleBinding, playhead = lifecycleBinding.sourcePosition)
-        port.dispatch(PreviewCommand.Bind(lifecycleBinding))
+        ensurePort().dispatch(PreviewCommand.Bind(lifecycleBinding))
     }
 
     fun sync(source: PreviewBinding) {
@@ -76,7 +76,7 @@ internal class ClipEditorPreviewCoordinator(
         if (active.revision.value >= binding.revision.value) return
         val replacement = binding.copy(generation = active.generation)
         backingState.value = ClipEditorPreviewState(binding = replacement, playhead = replacement.sourcePosition)
-        port.dispatch(PreviewCommand.ReplaceRange(replacement))
+        port?.dispatch(PreviewCommand.ReplaceRange(replacement))
     }
 
     fun togglePlayPause() {
@@ -84,15 +84,15 @@ internal class ClipEditorPreviewCoordinator(
         val binding = current.binding ?: return
         if (!current.ready || current.failure != null || current.closing) return
         if (current.isPlaying) {
-            port.dispatch(PreviewCommand.SetPlayWhenReady(binding.generation, binding.revision, false))
+            port?.dispatch(PreviewCommand.SetPlayWhenReady(binding.generation, binding.revision, false))
             return
         }
         val playhead = current.playhead.takeIf { it in binding.range.start..binding.range.endExclusive }
             ?: binding.range.start
         if (playhead != current.playhead) {
-            port.dispatch(PreviewCommand.Seek(binding.generation, binding.revision, playhead))
+            port?.dispatch(PreviewCommand.Seek(binding.generation, binding.revision, playhead))
         }
-        port.dispatch(PreviewCommand.SetPlayWhenReady(binding.generation, binding.revision, true))
+        port?.dispatch(PreviewCommand.SetPlayWhenReady(binding.generation, binding.revision, true))
     }
 
     fun pause() = setPlaying(false)
@@ -101,8 +101,8 @@ internal class ClipEditorPreviewCoordinator(
         val binding = backingState.value.binding ?: return
         if (backingState.value.closing) return
         val bounded = sourcePosition.coerceIn(binding.range.start, binding.range.endExclusive)
-        port.dispatch(PreviewCommand.SetPlayWhenReady(binding.generation, binding.revision, false))
-        port.dispatch(PreviewCommand.Seek(binding.generation, binding.revision, bounded))
+        port?.dispatch(PreviewCommand.SetPlayWhenReady(binding.generation, binding.revision, false))
+        port?.dispatch(PreviewCommand.Seek(binding.generation, binding.revision, bounded))
         backingState.value = backingState.value.copy(playhead = bounded, isPlaying = false)
     }
 
@@ -117,7 +117,7 @@ internal class ClipEditorPreviewCoordinator(
         if (backingState.value.closing) return
         val retried = binding.copy(revision = PreviewRevision(binding.revision.value + 1), playWhenReady = false)
         backingState.value = ClipEditorPreviewState(binding = retried, playhead = retried.range.start)
-        port.dispatch(PreviewCommand.Retry(retried))
+        port?.dispatch(PreviewCommand.Retry(retried))
     }
 
     suspend fun closeThen(closeSession: suspend () -> Unit) {
@@ -126,6 +126,7 @@ internal class ClipEditorPreviewCoordinator(
             backingState.value = backingState.value.copy(closing = true, isPlaying = false)
             awaitRelease()
             closeSession()
+            disposeCurrentPort()
         }
     }
 
@@ -135,16 +136,20 @@ internal class ClipEditorPreviewCoordinator(
             if (backingState.value.closing) return
             awaitRelease()
             closePreviousSession()
+            disposeCurrentPort()
             backingState.value = ClipEditorPreviewState(releaseFence = backingState.value.releaseFence)
         }
     }
 
-    fun dispose() = eventJob.cancel()
+    fun dispose() {
+        eventJob?.cancel()
+        eventJob = null
+    }
 
     private fun setPlaying(value: Boolean) {
         val binding = backingState.value.binding ?: return
         if (!backingState.value.ready || backingState.value.closing) return
-        port.dispatch(PreviewCommand.SetPlayWhenReady(binding.generation, binding.revision, value))
+        port?.dispatch(PreviewCommand.SetPlayWhenReady(binding.generation, binding.revision, value))
     }
 
     private fun onEvent(event: PreviewEvent) {
@@ -185,7 +190,7 @@ internal class ClipEditorPreviewCoordinator(
         val acknowledgement = kotlinx.coroutines.CompletableDeferred<Unit>()
         released = binding.generation to acknowledgement
         backingState.value = backingState.value.copy(releaseFence = PreviewReleaseFence.Awaiting(binding.generation))
-        port.dispatch(PreviewCommand.Release(binding.generation))
+        port?.dispatch(PreviewCommand.Release(binding.generation))
         val releasedInTime = withTimeoutOrNull(releaseTimeout) { acknowledgement.await(); true } == true
         backingState.value = backingState.value.copy(
             releaseFence = if (releasedInTime) {
@@ -195,6 +200,26 @@ internal class ClipEditorPreviewCoordinator(
             },
         )
         released = null
+    }
+
+    private fun ensurePort(): PreviewPort = port ?: checkNotNull(portFactory) {
+        "A source replacement requires a PreviewPortFactory"
+    }.create().also {
+        port = it
+        observe(it)
+    }
+
+    private fun observe(newPort: PreviewPort) {
+        eventJob?.cancel()
+        eventJob = scope.launch { newPort.events.collect(::onEvent) }
+    }
+
+    private fun disposeCurrentPort() {
+        val current = port ?: return
+        port = null
+        eventJob?.cancel()
+        eventJob = null
+        portFactory?.dispose(current)
     }
 
     private companion object {

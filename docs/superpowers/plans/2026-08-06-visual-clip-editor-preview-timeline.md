@@ -8,6 +8,8 @@
 
 **Tech Stack:** Kotlin Multiplatform; Compose Multiplatform 1.11.0; Android API 23+; Media3 1.10.1; coroutines/Flow; Android instrumentation; API-23 emulator; Samsung SM-S928B/API-36.
 
+**IG1 reconciliation:** `docs/superpowers/specs/2026-08-07-visual-clip-editor-ig1-test-observability-reconciliation.md` is normative for Task 4. It records unresolved VUI-R10, materially new subtrigger VUI-R10A, rejected decision `dec_20260807_181452_13335a`, repair decision `dec_20260807_183016_c836b9`, bounded render-proxy transparency, compile/runtime preflights, and post-V3 revalidation.
+
 ## Global constraints
 
 - Work only in /Users/sandeepdhami/Documents/GitHub/OneOnOneArena-Workspace/video-clip-editor-visual-worktree on chore/visual-editor-execution. This is an isolated worktree of the standalone video-clip-editor repository.
@@ -79,6 +81,8 @@ internal interface PreviewPortFactory {
 
 Replacement V3 supersedes the original V3 chunk at `1774142` and rejected fixes `0501e57` and `24ec733..fdfe8e6`, not only direct-port ownership. Those revisions are historical evidence, never implementation input. The screen uses internal `rememberPlatformPreviewPortFactory()`; one lifecycle owner creates/disposes ports; `PlatformPreviewSurface` only renders its supplied active port. The legacy `rememberPlatformPreviewPort()` helper must be removed or left unused and cannot participate in V3 lifecycle. Release audit and lifecycle intent types remain internal and are frozen by blueprint §6A. The audit uses the closed `PreviewReleaseOutcome.Acknowledged` or `PreviewReleaseOutcome.TimedOut(PreviewReleaseDiagnostic.ReleaseTimeout)` contract; no free-form `String?` or exception is representable.
 
+IG1 adds one narrower internal-only selection seam after V3. `ClipEditorScreen` must still call `rememberPlatformPreviewPortFactory()` exactly. It selects `LocalPreviewPortFactoryOverride.current ?: platformPreviewPortFactory`, where the override is an internal nullable `CompositionLocal`, scoped to one composition, stable for that screen lifetime, and absent by default. A common internal `PreviewPortSurfaceDelegate` exposes only `surfacePort: PreviewPort?`; Android alone unwraps at most one delegate hop to exact `AndroidMedia3PreviewPort` before `ContentFrame`. Null, self-cycle, nested/cyclic delegate, and unrelated port resolve unavailable. Lifecycle identity remains the recording wrapper; its `events.onEach` records before lifecycle collection. Public `ClipEditorScreen` remains byte-for-byte unchanged. No global hook, platform type in common/public code, host/core/iOS actual/dependency/Media3 change.
+
 ## Ordered task map
 
 | Task | Scope/ownership | Dependencies | Hard handoff |
@@ -86,7 +90,8 @@ Replacement V3 supersedes the original V3 chunk at `1774142` and rejected fixes 
 | V1 | Common geometry, selector, port contract, fake-port tests | Approved blueprint | V2/V3 consume exact seam |
 | V2 | Android Media3 actual, iOS unavailable actual, device tests | V1 green | V3 gets source-clipped preview |
 | Replacement V3 | Serialized lifecycle owner, terminal port factory/order, durable closed audit, export mutation gate; **Sol/high floor** | V1/V2 green; VUI-R7–R9 reconcile three rejected V3 rounds | IG1 gets accepted assembled screen |
-| IG1 | Real Android integration flow test only | V1-V3 accepted | V4 blocked until API-23 green |
+| IG1-O1 | Per-composition factory seam + one-hop render-delegate bridge + compile/API23 runtime transparency preflights + affected V3 revalidation | V3 accepted at `661d16c`; unresolved VUI-R10/VUI-R10A | IG1 functional RED starts only after both preflights and author-distinct >=95 PASS |
+| IG1 | Real Android integration flow test; test-only wrappers around real factory/session/lease | IG1-O1 accepted | V4 blocked until API-23 green |
 | V4 | Standalone demo and API-23/Samsung evidence | IG1 green | V5 audit input |
 | V5 | Independent traceability/API/security/license audit | V1-V4/IG1 green | only PASS completes goal |
 
@@ -620,42 +625,186 @@ An author-distinct PASS completes only replacement V3. Then continue the existin
 
 ---
 
-### Task 4: IG1 — integration-only real editor-flow gate
+### Task 4: IG1 — observability prerequisite and real editor-flow gate
 
-**Scope:** Add no reusable production feature. Assemble V1–V3 in library-owned Android test host with real local fixture, Media3 actual, production editor/exporter, and test-only event recorder.
+**Current status:** BLOCKED. Original RED: `ClipEditorScreenIntegrationTest.kt:55:37 No parameter with name 'previewPortFactory' found.` First docs repair was author-distinct REJECT: wrapper lifecycle port fails `AndroidPlatformPreview.kt` direct `AndroidMedia3PreviewPort` cast, so compile could pass while `ContentFrame` never renders. VUI-R10 remains unresolved; VUI-R10A records this materially new evidence. Do not add public parameter or begin functional RED/GREEN.
+
+#### IG1-O1 — narrow internal test-observability prerequisite
+
+**Scope:** Add one internal per-composition factory selector, one platform-neutral surface-delegate contract, and one tightly bounded Android surface resolver. Prove compile visibility and runtime `ContentFrame` transparency before IG1. No public/test API, global hook, host/core/iOS actual/dependency/Media3/demo/OneOnOneArena change.
+
+**Files:**
+
+- Modify: `video-clip-editor-compose/src/commonMain/kotlin/com/oneononearena/videoclip/compose/PreviewPort.kt`
+- Modify body only; preserve public declaration byte-for-byte: `video-clip-editor-compose/src/commonMain/kotlin/com/oneononearena/videoclip/compose/ClipEditorScreen.kt`
+- Modify bridge only: `video-clip-editor-compose/src/androidMain/kotlin/com/oneononearena/videoclip/compose/AndroidPlatformPreview.kt`
+- Create: `video-clip-editor-compose/src/commonTest/kotlin/com/oneononearena/videoclip/compose/PreviewPortSurfaceDelegateTest.kt`
+- Create: `video-clip-editor-compose/src/androidDeviceTest/kotlin/com/oneononearena/videoclip/compose/PreviewPortSurfaceTransparencyDeviceTest.kt`
+- Use only for preflight/IG1 implementation: `video-clip-editor-compose/src/androidDeviceTest/kotlin/com/oneononearena/videoclip/compose/ClipEditorScreenIntegrationTest.kt`
+- Use only for preflight/IG1 implementation: `video-clip-editor-compose/src/androidDeviceTest/kotlin/com/oneononearena/videoclip/compose/RecordingClipEditorSession.kt`
+
+No other production/test file is allowed. `ClipEditorLifecycleDeviceTest.kt` is rerun, not modified.
+
+**Responsibilities:**
+
+- Declare `internal val LocalPreviewPortFactoryOverride` as a nullable `CompositionLocal<PreviewPortFactory?>` with default `null`. It is provider-scoped to one composition, never process-global mutable state.
+- Declare internal common `PreviewPortSurfaceDelegate { val surfacePort: PreviewPort? }`. No Android/Media3 type crosses common/public boundary.
+- Keep production factory creation exact: `val platformPreviewPortFactory = rememberPlatformPreviewPortFactory()`. Select `LocalPreviewPortFactoryOverride.current ?: platformPreviewPortFactory` before constructing `ClipEditorLifecycleOwner`.
+- Require stable remembered production editor, recording editor, real factory, and recording factory. Inline `RecordingVideoClipEditor`/factory construction is forbidden because `LaunchedEffect(source, editor, lifecycle)` would restart replacement on ordinary recomposition.
+- `RecordingPreviewPortFactory` delegates create/dispose to real factory. Returned `RecordingPreviewPort` remains lifecycle `activePort`, implements `PreviewPortSurfaceDelegate`, and exposes exact created actual as `surfacePort`.
+- Proxy `events = delegate.events.onEach(record)` assigns a synchronized sequence before lifecycle collector receives matching `Released`. This proves Released-before-close without timestamp race.
+- Android resolver accepts direct actual or exactly one delegate hop. Reject null, self-cycle, nested/two-node cycle, and unrelated proxy/port. `PlatformPreviewSurface` uses resolved exact actual for `ContentFrame`.
+- Test factory dispose validates wrapper identity, unwraps exact created actual, and invokes real factory dispose once. Silent cast/no-op forbidden.
+- `RecordingClipEditorSession` delegates production open/frames/export/close. It records export start/result, session-close entry/completion, and wraps only a successful `TemporaryClipLease` with a test-only delegating recorder for first/second cleanup result. It never fabricates metadata, frames, export, output, or cleanup.
+- `ClipEditorLifecycleOwner` remains sole port/session lifecycle owner. Composition-local provider owns only selection visibility; recorder owns only observation/delegation. Screen disposal still requests owner close; owner still enforces Release/audit before session close and factory disposal.
+
+**Interfaces:**
+
+~~~kotlin
+internal val LocalPreviewPortFactoryOverride =
+    staticCompositionLocalOf<PreviewPortFactory?> { null }
+
+internal interface PreviewPortSurfaceDelegate {
+    val surfacePort: PreviewPort?
+}
+
+// Inside unchanged public ClipEditorScreen body:
+val platformPreviewPortFactory = rememberPlatformPreviewPortFactory()
+val previewPortFactory = LocalPreviewPortFactoryOverride.current ?: platformPreviewPortFactory
+val lifecycle = remember(previewPortFactory) { ClipEditorLifecycleOwner(previewPortFactory) }
+~~~
+
+Android one-hop resolver:
+
+~~~kotlin
+internal fun resolveAndroidPreviewSurfacePort(port: PreviewPort): AndroidMedia3PreviewPort? {
+    if (port !is PreviewPortSurfaceDelegate) return port as? AndroidMedia3PreviewPort
+    val candidate = port.surfacePort ?: return null
+    if (candidate === port || candidate is PreviewPortSurfaceDelegate) return null
+    return candidate as? AndroidMedia3PreviewPort
+}
+~~~
+
+`PlatformPreviewSurface` alone consumes resolver. iOS actual unchanged. Public `ClipEditorScreen(source, editor, onResult, onCancel, modifier)` remains byte-for-byte frozen.
+
+**Dependencies:** Accepted V3 at `661d16c`; existing Compose runtime, internal factory/port, Android production actual/`ContentFrame`, source-set friend visibility. No added dependency.
+
+**Acceptance:**
+
+- Minimal `androidDeviceTest` skeleton compiles while directly reading the internal composition local, calling real `rememberPlatformPreviewPortFactory()`, constructing the real-delegating recorder, and providing it around the unchanged screen call.
+- API-23 runtime preflight proves lifecycle `activePort` remains wrapper while exact real actual reaches resolver and `ContentFrame`; `Modifier.testTag("ig1-surface-probe")` exists only when surface branch executes.
+- Direct actual resolves unchanged. One wrapper resolves exact actual. Null/self/nested/cycle/unrelated cases resolve null and never render.
+- Default `null` path calls and selects `rememberPlatformPreviewPortFactory()`; no port is created until lifecycle owner calls `create()`.
+- Override is composition-scoped, non-global, stable, removed with composition, and cannot leak into another screen/test composition.
+- Unrelated recomposition preserves editor/factory/wrapper identities; exactly one open/create/generation and no premature replacement/release/close.
+- Production `ClipEditorScreen` declaration and core/Android/iOS public declarations match baseline `92f78412796113f2abe27f55be0125e9373c9f1c` byte-for-byte.
+- Production open/session/metadata/24-frame request and real Frame/Complete; UI-tag pan/scrub/handle commit; actual binding/config/repeat/positions/loop; Done/export; synchronous Released-before-close; close completion; first/second lease cleanup all have exact hooks/no-fake gates in normative reconciliation §6.
+- Real factory create/dispose, actual configuration/positions/Released, production session/export/lease all observed. Fake, command-only, direct separately-owned port, timestamp-only ordering, or non-delegating recorder fails.
+- Existing V3 release/audit/session/factory ordering is unchanged and revalidated on common/iOS, API 23, and Samsung.
+
+**Test strategy:** Compile preflight → API-23 runtime transparency preflight → proxy/default/stability tests → common/iOS/declaration/lifecycle-device reruns → author-distinct V3 delta PASS → functional IG1. Compile-only/resolver-only/fake/direct-port/screenshot-only evidence cannot pass.
+
+**Rollback:** Revert common local/interface, screen selection, Android resolver, and focused tests/recorders only. Direct Android surface path returns to V3. Public baseline, iOS actual, core/dependencies, retained RED/report unchanged. IG1/V4/V5 blocked.
+
+**Integration:** Author-distinct principal V3 delta re-review applies: composition selection, common proxy, Android bridge/ContentFrame, stable effect keys, event/dispose order, exhaustive no-fake matrix, exact reruns. It does not reopen product outcome.
+
+- [ ] **Step 0: Proof-of-testability preflight before functional implementation**
+
+Reduce the integration test to a minimal compile skeleton that:
+
+1. accesses internal `LocalPreviewPortFactoryOverride` from `androidDeviceTest`;
+2. obtains `realFactory = rememberPlatformPreviewPortFactory()` inside the test composition;
+3. remembers `RecordingPreviewPortFactory(realFactory, events)`;
+4. provides it with `CompositionLocalProvider` around the unchanged five-parameter `ClipEditorScreen` call; and
+5. compiles real-delegating create/wrap/surface-delegate/unwrap/dispose paths without public parameter.
+
+Run before any functional IG1 RED/GREEN work:
+
+~~~bash
+./gradlew :video-clip-editor-compose:compileAndroidDeviceTest --rerun-tasks
+~~~
+
+Expected: `BUILD SUCCESSFUL`. Proves visibility/type topology only. It does not prove surface transparency. Any visibility/global/public/eager-create/identity/disposal failure leaves VUI-R10 unresolved.
+
+- [ ] **Step 1: API-23 runtime surface-transparency preflight**
+
+Focused `PreviewPortSurfaceTransparencyDeviceTest`: repository fixture + production editor/factory + real lifecycle owner. Keep recording wrapper as active port. Compose `PlatformPreviewSurface(activePort, Modifier.testTag("ig1-surface-probe"))`.
+
+~~~bash
+env ANDROID_HOME=/Users/sandeepdhami/Library/Android/sdk ANDROID_SERIAL=emulator-5554 \
+  ./gradlew :video-clip-editor-compose:connectedAndroidDeviceTest \
+  -Pandroid.testInstrumentationRunnerArguments.class=com.oneononearena.videoclip.compose.PreviewPortSurfaceTransparencyDeviceTest --rerun-tasks
+~~~
+
+Expected: active wrapper selected; exact actual resolved; surface probe exists/ContentFrame branch executes; player Ready; proxy Released sequence precedes session-close entry; actual disposed once. Null/self/nested/cycle/unrelated cases do not resolve/render. Failure blocks all later steps.
+
+- [ ] **Step 2: Verify proxy/default/stability RED, then minimal GREEN**
+
+Prove default path, composition isolation, one-hop resolver rejection matrix, event-onEach order, exact dispose, and stable remembered editor/factory across forced unrelated recomposition. Then run:
+
+~~~bash
+./gradlew :video-clip-editor-compose:allTests \
+  :video-clip-editor-compose:iosSimulatorArm64Test
+~~~
+
+Expected: `BUILD SUCCESSFUL`; iOS actual unchanged; no common platform import.
+
+- [ ] **Step 3: Revalidate affected V3 exactly and obtain author-distinct PASS**
+
+Run the declaration extraction/diff gate from Task 3 Step 5 unchanged. Then run `ClipEditorLifecycleDeviceTest` on both required targets:
+
+~~~bash
+env ANDROID_HOME=/Users/sandeepdhami/Library/Android/sdk ANDROID_SERIAL=emulator-5554 \
+  ./gradlew :video-clip-editor-compose:connectedAndroidDeviceTest \
+  -Pandroid.testInstrumentationRunnerArguments.class=com.oneononearena.videoclip.compose.ClipEditorLifecycleDeviceTest --rerun-tasks
+
+env ANDROID_HOME=/Users/sandeepdhami/Library/Android/sdk ANDROID_SERIAL=RZCX519T5FL \
+  ./gradlew :video-clip-editor-compose:connectedAndroidDeviceTest \
+  -Pandroid.testInstrumentationRunnerArguments.class=com.oneononearena.videoclip.compose.ClipEditorLifecycleDeviceTest --rerun-tasks
+~~~
+
+Expected: public declaration baseline unchanged; common/iOS suites green; targeted lifecycle class green on `ClipEditor_API23`/API 23 and `SM-S928B`/API 36. Author-distinct reviewer PASS required before IG1 functional RED resumes.
+
+#### IG1 functional real-flow gate
+
+**Scope:** Assemble V1–V3 through accepted IG1-O1 in a library-owned Android test host with real local fixture, UI-owned Media3 actual, production editor/exporter, and test-only delegating recorders. Add no reusable production feature beyond the accepted internal observability seam.
 
 **Files:**
 
 - Create: video-clip-editor-compose/src/androidDeviceTest/kotlin/com/oneononearena/videoclip/compose/ClipEditorScreenIntegrationTest.kt
 - Create: video-clip-editor-compose/src/androidDeviceTest/kotlin/com/oneononearena/videoclip/compose/RecordingClipEditorSession.kt
-- Modify: video-clip-editor-compose/src/androidDeviceTest/kotlin/com/oneononearena/videoclip/compose/PreviewFixtureFiles.kt
-- Modify: video-clip-editor-compose/build.gradle.kts only if test host proves an added test dependency necessary
+- Use unchanged: video-clip-editor-compose/src/androidDeviceTest/kotlin/com/oneononearena/videoclip/compose/PreviewFixtureFiles.kt
 
 **Responsibilities:**
 
 - Prove sequence: open source → extract frames → bind clipped preview → pan/scrub → commit range → selected-range loop → Done/export → preview Released → session close → issued lease first/second clear.
-- Test recorder timestamps commands/events/release/session close/export/cleanup. It is test-only and never public/demo.
+- Test ledger assigns synchronized sequence IDs to open/session/frame/UI-correlated commands/events/release/session close/export/cleanup. It is test-only and never public/demo.
+- Remember production editor, recording editor, real factory, and recording factory. Force ordinary recomposition and prove no identity churn/source replacement.
+- Use real tagged UI gestures for timeline pan, playhead scrub, and handle commit. Direct coordinator/presenter/port calls cannot satisfy these criteria.
 - Test real Media3 actual and production core exporter; no fake can satisfy this gate.
 
-**Interfaces:** frozen ClipEditorScreen, ClipResult.Success.sourceRange, internal port, test-only recorder only.
+**Interfaces:** unchanged public `ClipEditorScreen`; internal `LocalPreviewPortFactoryOverride`; frozen port contract; `ClipResult.Success.sourceRange`; test-only real-delegating port/session/lease recorders only.
 
-**Dependencies:** V1–V3 accepted. V4 cannot start without API-23 IG1 success.
+**Dependencies:** V1–V3 accepted; VUI-R10/R10A compile + API23 runtime preflights and author-distinct V3 delta PASS. V4 cannot start without API-23 IG1 success.
 
 **Acceptance:**
 
 - Export sourceRange equals committed UI range.
+- Exactly one production open; real metadata; bounded 24-frame request emits real Frame/Complete before ready UI.
+- Real UI tags prove pan, scrub/Seek/Position, and one committed ReplaceRange; no direct command injection.
+- Recording wrapper remains lifecycle active port while exact actual reaches `ContentFrame`.
 - Applied clip config equals committed source range and repeat mode ONE.
 - Source positions remain range-bounded and prove return to selected start while playing.
-- Released appears before wrapped session close.
+- Proxy `events.onEach` ledger sequence for matching Released precedes wrapped session close-entry; close-complete and exact actual disposal occur once.
 - First lease clear is Cleared; second is AlreadyCleared.
 
 **Test strategy:** Android instrumentation using repository AVC fixture copied to cache; Compose test tags and state/event waits only, no arbitrary sleeps.
 
-**Rollback:** never weaken IG1. Revert/fix owning V1/V2/V3 task then rerun IG1.
+**Rollback:** never weaken IG1. Revert/fix owning V1/V2/V3/IG1-O1 task, run its affected gates, then rerun IG1.
 
 **Integration:** green API-23 evidence unlocks V4.
 
-- [ ] **Step 1: Write failing real flow test**
+- [ ] **Step 4: Write failing real flow test after preflight/re-review PASS**
 
 ~~~
 @Test
@@ -676,17 +825,17 @@ fun editorFlow_clipsPreviewLoopsExportsThenReleasesBeforeClose() = runTest {
 }
 ~~~
 
-- [ ] **Step 2: Verify RED**
+- [ ] **Step 5: Verify functional RED**
 
 Run: ./gradlew :video-clip-editor-compose:connectedAndroidDeviceTest -Pandroid.testInstrumentationRunnerArguments.class=com.oneononearena.videoclip.compose.ClipEditorScreenIntegrationTest
 
-Expected: missing integration test/recorder, or an observable cross-module defect.
+Expected: an observable cross-module behavior defect only. Missing visibility, factory capture, or public `previewPortFactory` parameter is a failed Step 0 blueprint preflight, not an acceptable functional RED.
 
-- [ ] **Step 3: Add only test observability**
+- [ ] **Step 6: Complete only test observability and real flow**
 
-Wrap VideoClipEditor.openSession and ClipEditorSession.close; record internal preview events through a test-only wrapper. Use production source/open/export and actual player. Copy fixture to test cache, delete it in finally, and never touch user files.
+Use accepted composition-local + surface-delegate seams. Remember every editor/factory wrapper. Wrap real platform factory/actual port, `VideoClipEditor.openSession`, `ClipEditorSession`, and successful lease only with delegates. Record production open/metadata/frame events, UI-driven commands, actual applied clipping/repeat/positions, synchronous Released sequence, export, close entry/completion, dispose, and both cleanup results. Use existing repository fixture helper unchanged; delete copies in `finally`; never touch user files.
 
-- [ ] **Step 4: Verify GREEN on API 23**
+- [ ] **Step 7: Verify GREEN on API 23**
 
 Run:
 
@@ -698,7 +847,7 @@ env ANDROID_HOME=/Users/sandeepdhami/Library/Android/sdk ANDROID_SERIAL=emulator
 
 Expected: BUILD SUCCESSFUL. Test record proves range, loop, export, release-before-close, and idempotent cleanup. Reconnect/start existing API-23 emulator before claiming blocker.
 
-- [ ] **Step 5: Core regression proof**
+- [ ] **Step 8: Core regression proof**
 
 Run:
 
@@ -709,12 +858,18 @@ env ANDROID_HOME=/Users/sandeepdhami/Library/Android/sdk ANDROID_SERIAL=emulator
 
 Expected: all existing core session/frame/export/temporary ownership tests pass unchanged.
 
-- [ ] **Step 6: Independent IG1 review and commit**
+- [ ] **Step 9: Independent IG1 review and commit**
 
-Reject fake-only proof, arbitrary correctness delay, public test hook, or screen flow that skips real Media3/prod exporter.
+Reject fake-only proof, command-intent-only clipping proof, direct port outside UI ownership, arbitrary correctness delay, public/global test hook, or screen flow that skips real Media3/production exporter/lease cleanup.
 
 ~~~
-git add video-clip-editor-compose/src/androidDeviceTest video-clip-editor-compose/build.gradle.kts
+git add video-clip-editor-compose/src/commonMain/kotlin/com/oneononearena/videoclip/compose/PreviewPort.kt \
+  video-clip-editor-compose/src/commonMain/kotlin/com/oneononearena/videoclip/compose/ClipEditorScreen.kt \
+  video-clip-editor-compose/src/androidMain/kotlin/com/oneononearena/videoclip/compose/AndroidPlatformPreview.kt \
+  video-clip-editor-compose/src/commonTest/kotlin/com/oneononearena/videoclip/compose/PreviewPortSurfaceDelegateTest.kt \
+  video-clip-editor-compose/src/androidDeviceTest/kotlin/com/oneononearena/videoclip/compose/PreviewPortSurfaceTransparencyDeviceTest.kt \
+  video-clip-editor-compose/src/androidDeviceTest/kotlin/com/oneononearena/videoclip/compose/ClipEditorScreenIntegrationTest.kt \
+  video-clip-editor-compose/src/androidDeviceTest/kotlin/com/oneononearena/videoclip/compose/RecordingClipEditorSession.kt
 git commit -m "test(android): prove visual clip editor integration flow"
 ~~~
 
@@ -919,8 +1074,8 @@ Expected: independent PASS >=95/100 and no untracked/modified work except expres
 
 ## Plan self-review
 
-- Coverage: V1 selector/geometry, V2 Media3 source clipping/iOS seam, formally reconciled VUI-R7–R9 replacement V3 serialized terminal lifecycle/closed durable audit/export gate, IG1 real flow, V4 demo/device evidence, V5 independent traceability.
+- Coverage: V1 selector/geometry, V2 Media3 source clipping/iOS seam, completed VUI-R7–R9 replacement V3, unresolved VUI-R10 plus VUI-R10A per-composition factory/render-proxy transparency with compile/API23 runtime preflights and exhaustive wiring, IG1 real flow, V4, V5.
 - Placeholder scan: no deferred markers. Each task contains scope, responsibility, interfaces, dependencies, acceptance, test strategy, rollback, integration, RED/GREEN, review, and commit.
 - Type consistency: PreviewBinding/Command/Event/Port exactly match approved blueprint. Release audit accepts only the closed `Acknowledged` or `TimedOut(ReleaseTimeout)` outcome. No task alters public factory, ClipEditorScreen signature, ClipResult, or failure enums.
-- Ordering: V1 → V2 → replacement V3 → IG1 → V4 → V5. V4 requires API-23 IG1 green; V5 requires both device targets and independent PASS.
+- Ordering: V1 → V2 → replacement V3 → IG1-O1 author-distinct review → compile preflight → API23 runtime transparency → affected V3 delta gates → IG1 → V4 → V5.
 - Route/API gate: replacement V3 floor is Sol/high; exact working-tree public declarations are extracted and compared with baseline `92f78412796113f2abe27f55be0125e9373c9f1c`. Filename/import scans are supplemental only.

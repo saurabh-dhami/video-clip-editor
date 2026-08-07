@@ -2,7 +2,7 @@
 
 **Status:** Draft — visual design approved; no production implementation may begin until the Blueprint First review and user blueprint-approval gates pass.
 
-**Decision records:** initial blueprint `dec_20260806_183806_e9acff`; V3 lifecycle repair `dec_20260807_110710_be71b4`.
+**Decision records:** initial blueprint `dec_20260806_183806_e9acff`; V3 lifecycle repair `dec_20260807_110710_be71b4`; rejected IG1 observability `dec_20260807_181452_13335a`; VUI-R10A repair `dec_20260807_183016_c836b9`.
 
 **Scope boundary:** Standalone `video-clip-editor` repository only. No file in OneOnOneArena is changed, imported, or used as a test fixture.
 
@@ -312,6 +312,66 @@ Revert only the replacement V3 commit. Leave V1/V2 frozen and V3 blocked. Do not
 
 This is one replacement V3 chunk, not V3a/V3b or an IG1 substitute. Author-distinct principal review must verify the exact lifecycle order, durable bounded audit, terminal fake/actual evidence, close-wins race, export gate, public/API isolation, and all focused tests before acceptance. After V3 PASS, continue unchanged: IG1 real editor flow → V4 demo/device evidence → V5 independent completion audit.
 
+## 6B. IG1 Test-Observability Reconciliation (normative)
+
+V3 passed at `661d16c`. IG1 failed with `ClipEditorScreenIntegrationTest.kt:55:37 No parameter with name 'previewPortFactory' found.` VUI-R10 proposed per-composition factory selection. Author-distinct review rejected that repair: lifecycle would own `RecordingPreviewPort`, but current Android surface does `port as? AndroidMedia3PreviewPort ?: return`; wrapper produces blank/headless preview while compile preflight passes. `ClipEditorScreen` also keys `LaunchedEffect(source, editor, lifecycle)`, so inline recording editor recreation can cause unintended replacement. VUI-R10 remains unresolved. Materially new evidence is recorded as VUI-R10A, not a reset or renamed trigger.
+
+Normative detail: `docs/superpowers/specs/2026-08-07-visual-clip-editor-ig1-test-observability-reconciliation.md`.
+
+Narrow seam:
+
+~~~kotlin
+internal val LocalPreviewPortFactoryOverride =
+    staticCompositionLocalOf<PreviewPortFactory?> { null }
+
+internal interface PreviewPortSurfaceDelegate {
+    val surfacePort: PreviewPort?
+}
+
+// Inside the unchanged public ClipEditorScreen body:
+val platformPreviewPortFactory = rememberPlatformPreviewPortFactory()
+val previewPortFactory = LocalPreviewPortFactoryOverride.current ?: platformPreviewPortFactory
+val lifecycle = remember(previewPortFactory) { ClipEditorLifecycleOwner(previewPortFactory) }
+~~~
+
+Android bridge accepts direct actual or exactly one delegate hop:
+
+~~~kotlin
+internal fun resolveAndroidPreviewSurfacePort(port: PreviewPort): AndroidMedia3PreviewPort? {
+    if (port !is PreviewPortSurfaceDelegate) return port as? AndroidMedia3PreviewPort
+    val candidate = port.surfacePort ?: return null
+    if (candidate === port || candidate is PreviewPortSurfaceDelegate) return null
+    return candidate as? AndroidMedia3PreviewPort
+}
+~~~
+
+Scope/responsibility:
+
+- Local is internal, nullable, per-composition, stable for one screen composition, and non-global. It selects a factory only; it owns no port/session/resource.
+- Default production path still calls and selects exact `rememberPlatformPreviewPortFactory()`.
+- Recording wrapper remains lifecycle `activePort`; `surfacePort` exposes exact real factory-created port. Proxy events use `delegate.events.onEach(record)`, so matching Released is sequenced before lifecycle collector/ack/session close.
+- Android `PlatformPreviewSurface` owns bounded resolution and passes exact actual player to `ContentFrame`. Direct actual stays unchanged. Null/self/nested/cyclic/unrelated delegate returns unavailable; recursion forbidden.
+- Recording factory unwraps exact known actual for one real factory dispose; unrelated proxy hard-fails.
+- Production editor, recording editor, real factory, and recording factory are remembered with stable keys. Ordinary recomposition must not change `editor`/`lifecycle` effect keys or trigger replacement.
+- Production open/session/metadata/frame extraction, tagged pan/scrub/commit, actual config/loop, export, release, close, and twice cleanup have exact owner/hook/no-fake evidence in normative matrix.
+- Public declarations, core, host, V3 lifecycle order, iOS actual, dependencies, and Media3 1.10.1 remain frozen. Common interface contains no platform type.
+
+Two preflights precede functional IG1. Compile verifies visibility/type topology only:
+
+~~~bash
+./gradlew :video-clip-editor-compose:compileAndroidDeviceTest --rerun-tasks
+~~~
+
+API-23 runtime transparency then proves wrapper remains active lifecycle port while exact actual reaches `ContentFrame`:
+
+~~~bash
+env ANDROID_HOME=/Users/sandeepdhami/Library/Android/sdk ANDROID_SERIAL=emulator-5554 \
+  ./gradlew :video-clip-editor-compose:connectedAndroidDeviceTest \
+  -Pandroid.testInstrumentationRunnerArguments.class=com.oneononearena.videoclip.compose.PreviewPortSurfaceTransparencyDeviceTest --rerun-tasks
+~~~
+
+PASS requires active wrapper identity, exact actual resolver identity, a `ContentFrame`-path test tag, real Ready, synchronous Released-before-close sequence, exact disposal, and null/cycle/unrelated rejection. Then common/iOS, declaration baseline, targeted V3 lifecycle on API23/Samsung, and author-distinct V3 delta review must pass before functional IG1.
+
 ## 7. Backward necessary-condition pass
 
 | Outcome criterion | Direct predecessor | Why necessary | Evidence/assumption | Owner | Stop condition |
@@ -363,11 +423,13 @@ The forward pass has no contradictory state owner: range/export remain presenter
 | VUI-R4 | evidence-owned | First independent principal review | Position polling after trim end could render unselected media | Range enforcement | Media3 preview, range loop requirement, public API isolation | UI-poll loop decision | Principal finding + Media3 clipping API | Codex | Replace poll boundary with source-level `ClippingConfiguration` and one-period repeat | V2 playback rules and failure matrix | 1 | Resolved | V2 acceptance strengthened |
 | VUI-R5 | evidence-owned | First independent principal review | Preview contract did not define command order, stale events, retry, or close fence | Preview protocol | Internal-only seam and presenter ownership | Responsibility-only seam description | Principal finding | Codex | Freeze generation/revision binding, commands/events/port, and state table | V1–V3 | 1 | Resolved | V1/V2/V3 interfaces frozen |
 | VUI-R6 | evidence-owned | First independent principal review | Historical predecessor blueprint was untracked | Compatibility evidence | Accepted implementation and committed API/release baseline | Link to untracked file as evidence | `git ls-tree` of `f7c868e` | Codex | Link committed baseline/release gate; label historical file non-evidence | Compatibility evidence | 1 | Resolved | No production module effect |
-| VUI-R7 | evidence-owned | Original V3 review rejection | `1774142` used source-derived generations, could start a new presenter before the old release fence completed, and let composition-owned cleanup cancel teardown | Original V3 lifecycle ownership, generation, close/replacement order | Approved visual composition, canonical range/export ownership, V1/V2 contracts, public/core/iOS scope | Original V3 lifecycle implementation and its coordinator-owned jobs/generation | Rejection record in task-3 report plus source/diff evidence | Replacement V3 owner; principal reviewer verifies | Replace with one serialized owner, monotonic generations, audit-before-close ordering, and no composition-owned cleanup | `compose/commonMain` lifecycle/screen/coordinator plus focused `commonTest`; no V1/V2 production rerun | 1 | Resolved in blueprint; execution pending | Original V3 remains invalid; replacement V3 provisional; V1/V2 preserved |
-| VUI-R8 | evidence-owned | V3 fix-round-1 rejection | `0501e57` attempted to reuse terminal Android ports and left disposal, close-race, and provisional/export mutation gaps | Port factory ownership, terminal disposal, replace-vs-close, export gate | V1 selector semantics, V2 clipped/repeat player behaviour, public/core/iOS scope | Released-port reuse, surface disposal authority, close-loses paths, provisional export | Fix-round-1 review and terminal actual evidence | Replacement V3 owner + Android adapter reviewer | Factory owns create/dispose; render-only surface; close latch wins; export mutation gate is centralized | `compose/commonMain`, `compose/androidMain/AndroidPlatformPreview.kt`, focused common/Android device tests; V2 media semantics unchanged | 1 | Resolved in blueprint; execution pending | Replacement V3 gains Android factory/surface responsibility; V2 remains frozen |
-| VUI-R9 | evidence-owned | V3 fix-round-2 rejection | `24ec733..fdfe8e6` left timeout evidence transient and omitted executable terminal-fence and replacement-vs-close proofs | Durable release audit and lifecycle verification | Fresh-port ownership/order repair, canonical range, visual design, public/core/iOS scope | Transient/free-form diagnostic record and partial order/race test claims | Fix-round-2 review, `496bf2e` review at 86/100, exact lifecycle sequence requirement | Replacement V3 owner; author-distinct Sol/high principal review | Closed allowlisted audit; acknowledgement and timeout each assert full order through `start(g2)`/`Bind(g2)`; close race asserts zero fresh start | Replacement V3 blueprint/plan and `commonTest` lifecycle harness plus focused Android lifecycle proof; IG1/V4/V5 order unchanged | 1 | Resolved in blueprint; execution pending | Replacement V3 remains blocked until >=95/100 independent review; no other module invalidated |
+| VUI-R7 | evidence-owned | Original V3 review rejection | `1774142` used source-derived generations, could start a new presenter before the old release fence completed, and let composition-owned cleanup cancel teardown | Original V3 lifecycle ownership, generation, close/replacement order | Approved visual composition, canonical range/export ownership, V1/V2 contracts, public/core/iOS scope | Original V3 lifecycle implementation and its coordinator-owned jobs/generation | Rejection record in task-3 report plus source/diff evidence | Replacement V3 owner; principal reviewer verifies | Replace with one serialized owner, monotonic generations, audit-before-close ordering, and no composition-owned cleanup | `compose/commonMain` lifecycle/screen/coordinator plus focused `commonTest`; no V1/V2 production rerun | 1 | Resolved; executed and accepted at `661d16c` | Original V3 remains invalid; replacement V3 accepted; V1/V2 preserved |
+| VUI-R8 | evidence-owned | V3 fix-round-1 rejection | `0501e57` attempted to reuse terminal Android ports and left disposal, close-race, and provisional/export mutation gaps | Port factory ownership, terminal disposal, replace-vs-close, export gate | V1 selector semantics, V2 clipped/repeat player behaviour, public/core/iOS scope | Released-port reuse, surface disposal authority, close-loses paths, provisional export | Fix-round-1 review and terminal actual evidence | Replacement V3 owner + Android adapter reviewer | Factory owns create/dispose; render-only surface; close latch wins; export mutation gate is centralized | `compose/commonMain`, `compose/androidMain/AndroidPlatformPreview.kt`, focused common/Android device tests; V2 media semantics unchanged | 1 | Resolved; executed and accepted at `661d16c` | Replacement V3 owns Android factory/surface boundary; V2 remains frozen |
+| VUI-R9 | evidence-owned | V3 fix-round-2 rejection | `24ec733..fdfe8e6` left timeout evidence transient and omitted executable terminal-fence and replacement-vs-close proofs | Durable release audit and lifecycle verification | Fresh-port ownership/order repair, canonical range, visual design, public/core/iOS scope | Transient/free-form diagnostic record and partial order/race test claims | Fix-round-2 review, `496bf2e` review at 86/100, exact lifecycle sequence requirement | Replacement V3 owner; author-distinct Sol/high principal review | Closed allowlisted audit; acknowledgement and timeout each assert full order through `start(g2)`/`Bind(g2)`; close race asserts zero fresh start | Replacement V3 blueprint/plan and `commonTest` lifecycle harness plus focused Android lifecycle proof; IG1/V4/V5 order unchanged | 1 | Resolved; 98/100 author-distinct PASS at `661d16c` | Replacement V3 accepted; no other module invalidated |
+| VUI-R10 | evidence-owned | IG1 functional RED after accepted V3 `661d16c` | Frozen screen owns real factory internally, but approved recorder had no internal hook to wrap that UI-owned port; attempted public parameter failed compile | IG1 testability, common screen factory selection, affected V3 lifecycle/API evidence | Outcome, all public declarations, V1/V2, V3 lifecycle state machine/order/audit/export lock, core/export/lease, Android actual/version, iOS actual/scope, V4/V5 order | Existing-seam testability assumption and IG1 test-files-only scope | IG1-O1 owner; author-distinct principal reviewer | Preserve internal nullable per-composition override/default production path, but completion now depends on VUI-R10A transparent surface bridge and complete wiring | Common selector/screen + Android bridge/preflights/wrappers; declaration; common/iOS; lifecycle devices; IG1 | 1 | Unresolved after rejected first repair | V3 product acceptance preserved; IG1/V4/V5 blocked |
+| VUI-R10A | evidence-owned, materially new subtrigger | Author-distinct review of VUI-R10 repair | Recording wrapper becomes lifecycle active port but Android surface concrete-casts direct actual and returns; compile preflight false-passes. Inline editor identity and criterion matrix incomplete | Android surface bridge, common proxy contract, wrapper/editor stability, runtime preflight, full IG1 traceability | VUI-R10 need for internal per-composition selection; exact production default; real delegation; public/core/iOS/dependency/V3 lifecycle constraints | Wrapper-alone transparency, compile-only sufficiency, original resolved claim, inline editor wrapper, incomplete matrix | IG1-O1 owner; author-distinct V3 delta reviewer | Add common platform-neutral surface delegate, one-hop Android resolver, stable remembered wrappers, API23 ContentFrame preflight, exhaustive owner/hook/no-fake matrix | Adds `AndroidPlatformPreview.kt`, focused common/Android proxy tests, API23 transparency; then same VUI-R10 affected reruns | 1 | Approved blueprint repair; runtime preflights pending | Does not reset VUI-R10; module remains unscorable until >=95 PASS |
 
-**Module-freeze status: BLOCKED pending author-distinct principal-engineer re-review of this VUI-R7–R9 reconciliation.** Outcome and architecture evidence are recorded; no user-owned ambiguity remains. The original V3 and both fix rounds stay invalid. V1/V2 and the approved public/visual/core/iOS scope are preserved. Replacement V3 alone is rerun once across the exact module/test scope above; IG1/V4/V5 remain ordered and blocked behind it. Modules stay provisional until the reviewer verifies state ownership, lifecycle, closed diagnostics, declaration-aware API compatibility, device compatibility, and every chunk at >=95/100 readiness.
+**Current module-freeze status: BLOCKED and unscorable for unresolved VUI-R10/VUI-R10A.** Historical V3 product acceptance at `661d16c` remains preserved. First observability repair was author-distinct REJECT below 95. Compile and API23 runtime transparency preflights, exhaustive wiring proof, common/iOS/declaration/API23/Samsung affected reruns, and new author-distinct V3 delta PASS are mandatory before functional IG1. No user ambiguity.
 
 ## 11. Provisional module structure
 
@@ -386,7 +448,8 @@ The forward pass has no contradictory state owner: range/export remain presenter
 | --- | --- | --- | --- | --- | --- |
 | V1 common selector/state | Terra / medium | Ordered first; freezes the pure common port used by V2/V3 | Workspace routing policy: normal Compose/state implementation; independent review required | None | Blueprint author model profile not externally verifiable; record as planned until execution |
 | V2 Android Media3 adapter | Sol / high | Depends on frozen V1; ordered before V3 | High-risk decoder/surface/lifecycle/concurrency boundary; principal review and device evidence required | None | Planned |
-| Replacement V3 lifecycle integration | **Sol / high** | Depends on frozen V1+V2; one owner spans common screen/session lifecycle and Android port disposal, so it cannot parallelize | Floor raised for concurrency-sensitive serialized teardown and three successive V3 rejection triggers (VUI-R7–R9); author-distinct principal re-review required | No below-floor override | Planned; any observed route below Sol/high blocks execution |
+| Replacement V3 lifecycle integration | **Sol / high** | Depends on frozen V1+V2; one owner spans common screen/session lifecycle and Android port disposal, so it cannot parallelize | Floor raised for concurrency-sensitive serialized teardown and three successive V3 rejection triggers (VUI-R7–R9); author-distinct principal re-review required | No below-floor override | Accepted at `661d16c`; 98/100 review and required device/declaration evidence |
+| IG1-O1 observability prerequisite | Sol / high | Ordered after accepted V3, before IG1; common selection/proxy + Android surface bridge + tests | First repair rejected; VUI-R10A requires compile and API23 runtime consumer preflights plus author-distinct V3 delta review | None | Repaired docs pending independent review; implementation blocked |
 | IG1 integration gate | Sol / high | Depends on V1–V3; integration-only | Cross-module lifecycle/range/export proof; principal review | None | Planned |
 | V4 device/demo evidence | Terra / medium | Depends on IG1 | Bounded device verification and evidence collection | None | Planned |
 | V5 final audit | Sol / high | Depends on V4 | Independent architecture/API/security/device audit | None | Planned |
@@ -434,13 +497,13 @@ Each chunk must independently pass its completion gate. A later chunk cannot rep
 
 ### IG1 — Integration-only editor-flow gate
 
-* **Scope:** No new reusable feature. Compose V1, Android V2, and screen V3 are assembled in one library-owned Android test host.
-* **Responsibilities:** Prove the cross-module ordering that unit tests cannot: open source → extract frames → bind clipped preview → pan/scrub/commit range → selected-range loop → Done/export → preview release/session close/temp lease cleanup.
-* **Interfaces:** The frozen §4 internal port and existing public `ClipEditorScreen`/`ClipResult` only. No demo-only hook becomes public.
-* **Dependencies:** Accepted V1, V2, and V3 completion gates; legal deterministic local fixture.
-* **Acceptance criteria:** One test session observes no stale generation event, selected source range equals exported range, clipped preview configuration equals committed selector range, playback repeats the selected clipped period, release completes before session close, and lease cleanup remains idempotent.
-* **Test strategy:** Android instrumentation against the real Media3 actual and repository fixture; a test-only event recorder timestamps port events, player release, session close, export result, and cleanup result. Existing core HEVC/AVC integration suite also passes unchanged.
-* **Rollback strategy:** Revert V1–V3 as one ordered unit if integration exposes a contract conflict; do not hide an integration failure by weakening IG1.
+* **Scope:** Complete §6B internal selection + common surface delegate + Android one-hop bridge; pass compile and API23 runtime transparency preflights; then assemble full screen flow. No public/global hook or reusable product behavior.
+* **Responsibilities:** Prove production open/session/metadata/frames → wrapper-active real ContentFrame → tagged pan/scrub/commit → actual binding/loop → Done/production export → proxy-synchronous Released → real close/dispose → real twice cleanup. Remember editor/factory wrappers so ordinary recomposition causes no replacement.
+* **Interfaces:** Unchanged public `ClipEditorScreen`; frozen port; internal composition local + platform-neutral surface delegate; Android one-hop resolver; `ClipResult`; real-delegating test wrappers. No public/platform type leak.
+* **Dependencies:** Accepted V1/V2/V3; VUI-R10/R10A compile/runtime preflights, exhaustive matrix, affected reruns, author-distinct >=95 PASS; legal fixture.
+* **Acceptance criteria:** Normative §6 matrix fully green. Active lifecycle identity is wrapper while exact actual reaches ContentFrame; UI gestures—not direct calls—produce committed range; matching Released ledger sequence precedes close-entry; cleanup is `Cleared` then `AlreadyCleared`.
+* **Test strategy:** Compile visibility then API23 real runtime surface preflight; common/iOS/declaration/lifecycle-device delta gates; full real Android flow. Compile-only/resolver-only/direct-port/fake/timestamp evidence rejected. Existing core suite unchanged.
+* **Rollback strategy:** Revert only IG1-O1 internal selection and its tests if seam fails; otherwise repair the owning V1–V3/IG1-O1 contract. Never weaken IG1 or add a public parameter.
 * **Integration strategy:** **IG1 is a hard gate.** V4 cannot start until IG1 is green on an API 23 emulator. Samsung evidence may begin only after IG1's API 23 pass.
 
 ### V4 — Demo and visual acceptance evidence
@@ -525,8 +588,9 @@ Each chunk must independently pass its completion gate. A later chunk cannot rep
 | Pan/scrub | VUI-04 | V1, V3, IG1 | Geometry + Android seek test | Pending |
 | Range looping | VUI-01/VUI-03 | V2, V3, IG1 | Device loop test | Pending |
 | Existing clip/export lease | Existing contract | V3, IG1, V4 | Export/cleanup regression | Pending |
+| IG1 proxy transparency + release-before-close | VUI-R10/VUI-R10A | IG1-O1, IG1 | Compile + API23 ContentFrame runtime preflights; synchronous real-delegating ledger | Blocked pending author-distinct review/preflights |
 | API/platform isolation | VUI-02/VUI-06 | V1–V5 | Public API diff + iOS compile | Pending |
 | API 23/Samsung support | VUI-05 | V4, V5 | Both device results | Pending |
 | No OneOnOneArena changes | Scope boundary | V5 | Repository diff/path audit | Pending |
 
-**Next gate:** independent principal-engineer review. A PASS at >=95/100 freezes V1–V5 and IG1 contracts. Then the user reviews this written blueprint. Only user approval of the reviewed blueprint permits the implementation plan and production code.
+**Next gate:** author-distinct principal review of VUI-R10/R10A repair. Then compile wiring and API23 runtime surface-transparency preflights. Functional IG1 remains blocked through affected V3 delta PASS.

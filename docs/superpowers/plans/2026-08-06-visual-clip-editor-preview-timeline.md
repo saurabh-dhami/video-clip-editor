@@ -77,7 +77,7 @@ internal interface PreviewPortFactory {
 @Composable internal expect fun PlatformPreviewSurface(port: PreviewPort, modifier: Modifier = Modifier)
 ~~~
 
-Replacement V3 supersedes direct-port ownership: the screen uses internal `rememberPlatformPreviewPortFactory()`; one lifecycle owner creates/disposes ports; `PlatformPreviewSurface` only renders its supplied active port. The legacy `rememberPlatformPreviewPort()` helper must be removed or left unused and cannot participate in V3 lifecycle. Release audit and lifecycle intent types remain internal and are frozen by blueprint §6A.
+Replacement V3 supersedes the original V3 chunk at `1774142` and rejected fixes `0501e57` and `24ec733..fdfe8e6`, not only direct-port ownership. Those revisions are historical evidence, never implementation input. The screen uses internal `rememberPlatformPreviewPortFactory()`; one lifecycle owner creates/disposes ports; `PlatformPreviewSurface` only renders its supplied active port. The legacy `rememberPlatformPreviewPort()` helper must be removed or left unused and cannot participate in V3 lifecycle. Release audit and lifecycle intent types remain internal and are frozen by blueprint §6A. The audit uses the closed `PreviewReleaseOutcome.Acknowledged` or `PreviewReleaseOutcome.TimedOut(PreviewReleaseDiagnostic.ReleaseTimeout)` contract; no free-form `String?` or exception is representable.
 
 ## Ordered task map
 
@@ -85,7 +85,7 @@ Replacement V3 supersedes direct-port ownership: the screen uses internal `remem
 | --- | --- | --- | --- |
 | V1 | Common geometry, selector, port contract, fake-port tests | Approved blueprint | V2/V3 consume exact seam |
 | V2 | Android Media3 actual, iOS unavailable actual, device tests | V1 green | V3 gets source-clipped preview |
-| Replacement V3 | Serialized lifecycle owner, terminal port factory/order, durable audit, export mutation gate | V1/V2 green; rejected V3 history | IG1 gets accepted assembled screen |
+| Replacement V3 | Serialized lifecycle owner, terminal port factory/order, durable closed audit, export mutation gate; **Sol/high floor** | V1/V2 green; VUI-R7–R9 reconcile three rejected V3 rounds | IG1 gets accepted assembled screen |
 | IG1 | Real Android integration flow test only | V1-V3 accepted | V4 blocked until API-23 green |
 | V4 | Standalone demo and API-23/Samsung evidence | IG1 green | V5 audit input |
 | V5 | Independent traceability/API/security/license audit | V1-V4/IG1 green | only PASS completes goal |
@@ -360,6 +360,8 @@ git commit -m "feat(android): add Media3 clip preview adapter"
 
 This single task supersedes the rejected V3 implementation and every earlier V3 fix-round instruction. Do not split it into another production chunk. IG1 remains the next task.
 
+**Model route:** Sol/high, ordered single owner. Required by cross-coroutine/session/native-port concurrency, close-versus-replace races, and three successive V3 rejection triggers VUI-R7–R9. Terra or any lower route is a below-floor override and blocks task start. The author-distinct principal reviewer must verify the observed execution route.
+
 #### Scope
 
 Re-architect only internal Compose preview/session lifecycle ownership and focused common/Android tests. No public API, core, dependency, standalone demo, OneOnOneArena, or exposed iOS type change.
@@ -381,16 +383,16 @@ Re-architect only internal Compose preview/session lifecycle ownership and focus
 
 - `ClipEditorLifecycleOwner` is the only replacement/close authority. It owns one independent lifecycle scope/actor, presenter lifetime, event collector, monotonic generation epoch, current port/factory, release waiter, durable release audit, and session start/close ordering.
 - `requestClose()` synchronously latches terminal state before enqueuing cleanup. It wins over queued, suspended, and late replacements. After every suspension, replacement rechecks the latch before session start, factory create, and Bind.
-- Replacement order is exact: old `Release` → matching `Released` or recorded bounded timeout → old session close → old native port disposal → terminal recheck → fresh factory create → fresh session/`Bind`. Android Release remains terminal. No post-Release command or port reuse.
+- Replacement order is exact on both branches: old `Release` → matching `Released` or bounded timeout → acknowledgement/timeout audit committed → old session close → old native port disposal → terminal recheck → fresh factory create → fresh presenter/session start at the next generation → fresh `Bind` for that generation. Android Release remains terminal. No post-Release command or port reuse.
 - Composable effects enqueue intents only. They never own cleanup jobs or cancel lifecycle resources. Owner self-cancels only after terminal release/session close/native disposal completes.
 - `ClipEditorPreviewCoordinator` becomes scope-free reducer/command policy if retained. It does not allocate generations, launch/collect, create/dispose ports, or sequence sessions.
 - `PlatformPreviewSurface` renders the supplied active port only. No native disposal or release ordering.
-- Preserve a separate latest `PreviewReleaseAudit` across fresh binding: generation, revision, acknowledged/timed-out outcome, source-replacement/terminal-close reason, bounded code only; never path/URI/media/stack/host data.
+- Preserve a separate latest `PreviewReleaseAudit` across fresh binding: generation, revision, closed acknowledged/timed-out outcome, and source-replacement/terminal-close reason only. `TimedOut` carries only allowlisted enum `PreviewReleaseDiagnostic.ReleaseTimeout`. No free-form string, path, URI, media value, stack fragment, exception type/message, `Throwable`, or host data is representable.
 - Preserve range/playhead semantics. Provisional range cannot export. Export-in-progress disables/no-ops Back, Done, Play/Pause, Retry, seek, playhead, and trim mutations; terminal lifecycle close remains enabled.
 
 #### Interfaces
 
-Consume unchanged V1 `PreviewBinding`/commands/events/port and V2 Android actual. Retain internal `PreviewPortFactory.create()/dispose()` and `rememberPlatformPreviewPortFactory()`. Add only internal lifecycle intent/audit types from blueprint §6A. `PlatformPreviewSurface(port)` stays render-only. Preserve exact public `ClipEditorScreen`, `ClipResult`, `ClipEditorSession`, and callback contracts.
+Consume unchanged V1 `PreviewBinding`/commands/events/port and V2 Android actual. Retain internal `PreviewPortFactory.create()/dispose()` and `rememberPlatformPreviewPortFactory()`. Add only internal lifecycle intent/audit types from blueprint §6A, including sealed `PreviewReleaseOutcome` and enum `PreviewReleaseDiagnostic`. `PlatformPreviewSurface(port)` stays render-only. Preserve exact public `ClipEditorScreen`, `ClipResult`, `ClipEditorSession`, and callback contracts.
 
 #### Dependencies
 
@@ -398,14 +400,15 @@ Accepted V1/V2 commits and existing Media3 1.10.1 actual. Existing coroutines te
 
 #### Acceptance Criteria
 
-1. Terminal fake records/rejects all commands after Release. Wrong-generation `Released` while the matching fence is pending performs no close/dispose/create/bind; matching acknowledgement yields exact order `Release, Released, session-close, port-dispose, port-create, Bind`.
-2. Timeout is recorded before close/dispose and remains observable after fresh Bind with exact old generation/revision and `SourceReplacement`; audit has no host media path.
-3. Controlled replace-versus-close race proves close wins, old session/port teardown exact once, no fresh start/create/bind, and queued/late replacements no-op.
+1. Terminal fake records/rejects all commands after Release. Wrong-generation `Released` while the matching fence is pending performs no audit/close/dispose/create/start/bind. Matching acknowledgement asserts the entire exact order: `Release:g1:r1`, `Released:g1`, `audit:g1:r1:Acknowledged:SourceReplacement`, `session-close:g1`, `port-dispose:g1`, `port-create:g2`, `session-start:g2`, `Bind:g2:r1`.
+2. Timeout asserts the entire exact order: `Release:g1:r1`, `audit:g1:r1:TimedOut(ReleaseTimeout):SourceReplacement`, `session-close:g1`, `port-dispose:g1`, `port-create:g2`, `session-start:g2`, `Bind:g2:r1`. The audit precedes close and remains observable after fresh Bind with exact old generation/revision/reason.
+3. Controlled replace-versus-close race proves close wins, old session/port teardown exact once, zero fresh factory creates, zero fresh session starts, zero fresh binds, and queued/late replacements no-op.
 4. Generations increase monotonically and never derive from source/path or reset after teardown. No detached child, composition-cancelled cleanup, or session-close-first route.
 5. Matching live Position updates playhead. Real tagged trim/playhead gestures pause and stay range-bounded; one completed trim emits one ReplaceRange. Existing 500 ms/source-time rules unchanged.
 6. Provisional Done is disabled/inert. Once export starts, every control mutation is disabled/inert; only committed canonical range reaches createClip once.
 7. Android actual is terminal after Release; owner disposes old actual in required order; distinct factory-created actual binds and emits Ready. Focused device UI proves live playhead/gesture and export lockout.
-8. Common/iOS regressions and API/platform scans pass. No public, core, dependency, OneOnOneArena, or exposed iOS type diff.
+8. Common/iOS regressions pass. A declaration-aware gate extracts the actual working-tree public `ClipEditorScreen` declaration and compares it byte-for-byte to baseline commit `92f78412796113f2abe27f55be0125e9373c9f1c`; it also compares the frozen public core/Android/iOS declarations with that baseline. Filename/import scans alone cannot pass this gate. No public, core, dependency, OneOnOneArena, or exposed iOS type diff.
+9. Hostile diagnostic tests inject arbitrary absolute paths, `file://`/`content://` URIs, stack-shaped strings, exception class/messages, and `Throwable` values at the lower timeout seam. Every audit contains only `TimedOut(ReleaseTimeout)` and none of the injected data.
 
 #### Test Strategy
 
@@ -429,7 +432,16 @@ fun wrongAckCannotAdvanceReplacement_thenMatchingAckUsesExactOrder() = runTest {
     rig.oldPort.emit(PreviewEvent.Released(PreviewGeneration(1)))
     rig.awaitBound(sourceB)
     assertEquals(
-        listOf("Release:g1:r1", "Released:g1", "session-close:g1", "port-dispose:g1", "port-create:g2", "Bind:g2:r1"),
+        listOf(
+            "Release:g1:r1",
+            "Released:g1",
+            "audit:g1:r1:Acknowledged:SourceReplacement",
+            "session-close:g1",
+            "port-dispose:g1",
+            "port-create:g2",
+            "session-start:g2",
+            "Bind:g2:r1",
+        ),
         rig.calls,
     )
     assertEquals(emptyList(), rig.oldPort.commandsAfterRelease)
@@ -445,12 +457,46 @@ fun timeoutAuditSurvivesFreshBindingWithoutMediaPath() = runTest {
     rig.awaitBound(sourceB)
 
     assertEquals(
-        PreviewReleaseAudit(PreviewGeneration(1), PreviewRevision(1), PreviewReleaseOutcome.TimedOut, PreviewReleaseReason.SourceReplacement, "RELEASE_TIMEOUT"),
+        PreviewReleaseAudit(
+            PreviewGeneration(1),
+            PreviewRevision(1),
+            PreviewReleaseOutcome.TimedOut(PreviewReleaseDiagnostic.ReleaseTimeout),
+            PreviewReleaseReason.SourceReplacement,
+        ),
         rig.owner.releaseAudit.value,
     )
+    assertEquals(
+        listOf(
+            "Release:g1:r1",
+            "audit:g1:r1:TimedOut(ReleaseTimeout):SourceReplacement",
+            "session-close:g1",
+            "port-dispose:g1",
+            "port-create:g2",
+            "session-start:g2",
+            "Bind:g2:r1",
+        ),
+        rig.calls,
+    )
     assertFalse(rig.owner.releaseAudit.value.toString().contains("fixture.mp4"))
-    assertTrue(rig.calls.indexOf("session-close:g1") < rig.calls.indexOf("port-dispose:g1"))
-    assertTrue(rig.calls.indexOf("port-dispose:g1") < rig.calls.indexOf("port-create:g2"))
+}
+
+@Test
+fun timeoutDiagnosticIsClosedAndDropsArbitrarySensitiveInputs() = runTest {
+    val hostile = listOf(
+        "/private/var/mobile/source.mp4",
+        "file:///data/user/0/app/cache/source.mp4",
+        "content://media/external/video/42",
+        "java.lang.IllegalStateException: decoder\n\tat Player.release(Player.kt:41)",
+    )
+
+    hostile.forEach { raw ->
+        val audit = lifecycleRig(releaseTimeoutCause = IllegalStateException(raw)).timeoutAudit()
+        assertEquals(
+            PreviewReleaseOutcome.TimedOut(PreviewReleaseDiagnostic.ReleaseTimeout),
+            audit.outcome,
+        )
+        assertFalse(audit.toString().contains(raw))
+    }
 }
 ~~~
 
@@ -472,7 +518,9 @@ fun terminalCloseWinsReplacementPendingAtReleaseFence() = runTest {
 
     assertEquals(1, rig.calls.count { it == "session-close:g1" })
     assertEquals(1, rig.calls.count { it == "port-dispose:g1" })
-    assertEquals(0, rig.calls.count { it.startsWith("port-create:g2") || it.startsWith("Bind:g2") })
+    assertEquals(0, rig.calls.count { it == "port-create:g2" })
+    assertEquals(0, rig.calls.count { it == "session-start:g2" })
+    assertEquals(0, rig.calls.count { it == "Bind:g2:r1" })
 }
 
 @Test
@@ -499,23 +547,40 @@ Expected: FAIL because serialized lifecycle owner/audit and close-wins guarantee
 
 - [ ] **Step 4: Implement the minimum serialized owner**
 
-Use one owner scope and one serialized intent loop. `requestClose()` latches terminal synchronously. Allocate generation only when a fresh binding is authorized. Keep release audit outside replaceable preview state. A matching waiter alone advances release. After acknowledgement/timeout, close old session, dispose old port, recheck terminal, then optionally create/bind. Surface receives `owner.activePort`; it never disposes. Remove screen use of the legacy direct-port helper and every detached/composition-owned cleanup launch.
+Use one owner scope and one serialized intent loop. `requestClose()` latches terminal synchronously. Allocate generation only when a fresh binding is authorized. Keep release audit outside replaceable preview state. A matching waiter alone advances release. Commit the closed acknowledgement/timeout audit, close old session, dispose old port, recheck terminal, then optionally create the fresh port, start the fresh presenter/session at the next generation, and Bind that same generation. Surface receives `owner.activePort`; it never disposes. Remove screen use of the legacy direct-port helper and every detached/composition-owned cleanup launch.
 
 Export gate is centralized at the presenter/owner boundary and mirrored by disabled UI semantics. Range commit remains the only ReplaceRange producer.
 
-- [ ] **Step 5: Verify common/iOS GREEN and isolation**
+- [ ] **Step 5: Verify common/iOS GREEN, declaration-level API compatibility, and isolation**
 
 Run:
 
 ~~~bash
 ./gradlew :video-clip-editor-compose:allTests \
   :video-clip-editor-compose:iosSimulatorArm64Test
+BASELINE=92f78412796113f2abe27f55be0125e9373c9f1c
+SCREEN=video-clip-editor-compose/src/commonMain/kotlin/com/oneononearena/videoclip/compose/ClipEditorScreen.kt
+ANDROID_FACTORY=video-clip-editor-core/src/androidMain/kotlin/com/oneononearena/videoclip/AndroidVideoClipEditor.kt
+API_TMP=$(mktemp -d)
+git show "$BASELINE:$SCREEN" | perl -0ne 'print "$1\n" if /(\@Composable\nfun ClipEditorScreen\([\s\S]*?\n\))/m' > "$API_TMP/screen-baseline"
+perl -0ne 'print "$1\n" if /(\@Composable\nfun ClipEditorScreen\([\s\S]*?\n\))/m' "$SCREEN" > "$API_TMP/screen-current"
+git show "$BASELINE:$ANDROID_FACTORY" | perl -0ne 'print "$1\n" if /(public fun createAndroidVideoClipEditor\([\s\S]*?\): VideoClipEditor)(?:\s*=|\s*\{)/m' > "$API_TMP/android-baseline"
+perl -0ne 'print "$1\n" if /(public fun createAndroidVideoClipEditor\([\s\S]*?\): VideoClipEditor)(?:\s*=|\s*\{)/m' "$ANDROID_FACTORY" > "$API_TMP/android-current"
+test -s "$API_TMP/screen-baseline" && test -s "$API_TMP/screen-current"
+test -s "$API_TMP/android-baseline" && test -s "$API_TMP/android-current"
+diff -u "$API_TMP/screen-baseline" "$API_TMP/screen-current"
+diff -u "$API_TMP/android-baseline" "$API_TMP/android-current"
+git diff --exit-code "$BASELINE" -- \
+  video-clip-editor-core/src/commonMain/kotlin/com/oneononearena/videoclip/VideoClipEditorContract.kt \
+  video-clip-editor-core/src/commonMain/kotlin/com/oneononearena/videoclip/FeasibilityMarker.kt \
+  video-clip-editor-core/src/iosMain/kotlin/com/oneononearena/videoclip/IosClipEditorFactory.kt
+rm -r "$API_TMP"
 rg -n 'android\.|androidx\.media3|ExoPlayer|MediaItem|AVFoundation|UIKit' \
   video-clip-editor-compose/src/commonMain
 git diff --name-only HEAD^ -- video-clip-editor-core OneOnOneArena gradle/libs.versions.toml
 ~~~
 
-Expected: `BUILD SUCCESSFUL`; platform scan empty; scope scan empty. All terminal/wrong-ack/timeout/race/live-gesture/export tests pass.
+Expected: `BUILD SUCCESSFUL`; both extracted public declarations match baseline byte-for-byte; frozen common/iOS contract sources have zero diff; platform and scope scans are supplemental and empty. All terminal/wrong-ack/timeout/diagnostic/race/live-gesture/export tests pass. Any empty extraction is a gate failure, preventing a false pass.
 
 - [ ] **Step 6: Prove actual/device behavior on both required targets**
 
@@ -854,7 +919,8 @@ Expected: independent PASS >=95/100 and no untracked/modified work except expres
 
 ## Plan self-review
 
-- Coverage: V1 selector/geometry, V2 Media3 source clipping/iOS seam, replacement V3 serialized terminal lifecycle/durable audit/export gate, IG1 real flow, V4 demo/device evidence, V5 independent traceability.
+- Coverage: V1 selector/geometry, V2 Media3 source clipping/iOS seam, formally reconciled VUI-R7–R9 replacement V3 serialized terminal lifecycle/closed durable audit/export gate, IG1 real flow, V4 demo/device evidence, V5 independent traceability.
 - Placeholder scan: no deferred markers. Each task contains scope, responsibility, interfaces, dependencies, acceptance, test strategy, rollback, integration, RED/GREEN, review, and commit.
-- Type consistency: PreviewBinding/Command/Event/Port exactly match approved blueprint. No task alters public factory, ClipEditorScreen signature, ClipResult, or failure enums.
+- Type consistency: PreviewBinding/Command/Event/Port exactly match approved blueprint. Release audit accepts only the closed `Acknowledged` or `TimedOut(ReleaseTimeout)` outcome. No task alters public factory, ClipEditorScreen signature, ClipResult, or failure enums.
 - Ordering: V1 → V2 → replacement V3 → IG1 → V4 → V5. V4 requires API-23 IG1 green; V5 requires both device targets and independent PASS.
+- Route/API gate: replacement V3 floor is Sol/high; exact working-tree public declarations are extracted and compared with baseline `92f78412796113f2abe27f55be0125e9373c9f1c`. Filename/import scans are supplemental only.

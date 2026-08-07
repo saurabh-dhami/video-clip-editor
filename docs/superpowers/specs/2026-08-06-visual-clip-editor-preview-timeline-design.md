@@ -2,7 +2,7 @@
 
 **Status:** Draft — visual design approved; no production implementation may begin until the Blueprint First review and user blueprint-approval gates pass.
 
-**Decision record:** `dec_20260806_183806_e9acff`.
+**Decision records:** initial blueprint `dec_20260806_183806_e9acff`; V3 lifecycle repair `dec_20260807_110710_be71b4`.
 
 **Scope boundary:** Standalone `video-clip-editor` repository only. No file in OneOnOneArena is changed, imported, or used as a test fixture.
 
@@ -231,7 +231,7 @@ Rules:
 
 ## 6A. V3 Lifecycle Re-architecture Addendum (normative)
 
-This addendum supersedes the V3 lifecycle ownership, port creation/disposal, release-fence, and export-mutation text elsewhere in this blueprint. V1 selector semantics, V2 source-clipped Media3 behaviour, the public ABI, core contracts, dependencies, and the IG1 → V4 → V5 sequence remain frozen. The rejected V3 implementation is not an integration input; one replacement V3 task must satisfy this complete chunk before IG1 starts.
+This addendum and the replacement V3 chunk supersede the original V3 chunk, its implementation at `1774142`, and rejected fix rounds `0501e57` and `24ec733..fdfe8e6`. Those revisions are historical rejection evidence only and are not implementation or integration inputs. V1 selector semantics, V2 source-clipped Media3 behaviour, the approved visual design, the public ABI, core contracts, dependencies, iOS scope, and the IG1 → V4 → V5 sequence remain frozen. One replacement V3 task must satisfy this complete chunk before IG1 starts; no instruction in an earlier V3 chunk or report can weaken it.
 
 ### Scope
 
@@ -241,10 +241,10 @@ Re-architect only the internal Compose preview lifecycle and its focused fake/An
 
 - One serialized `ClipEditorLifecycleOwner` accepts source-replacement and terminal-close intents. It owns the lifecycle scope/actor, event collector, current port, monotonic generation epoch, release waiter, durable release audit, and presenter session start/close sequencing. A composable may enqueue intents only; effect cancellation or disposal cannot launch cleanup, start a session, dispose a port, or cancel the owner before cleanup finishes.
 - Terminal close latches synchronously and wins over queued, suspended, or late replacement. After the latch, every replacement is a no-op. A replacement already awaiting release may finish teardown, but must not start a new session, create a new port, or bind after terminal close.
-- Android `PreviewCommand.Release` is terminal. For replacement, the owner must execute exactly: old-port `Release` → matching `Released` **or** bounded timeout recorded → old `ClipEditorSession.close()` → old native port disposal → terminal-latch recheck → fresh factory creation → new-session bind. No released port may receive `Bind`, `Retry`, range, seek, or play commands.
+- Android `PreviewCommand.Release` is terminal. For replacement, the owner must execute exactly: old-port `Release` → matching `Released` or bounded timeout → matching acknowledgement/timeout audit committed → old `ClipEditorSession.close()` → old native port disposal → terminal-latch recheck → fresh factory creation → fresh presenter/session start with the next generation → fresh `Bind` for that generation. No released port may receive `Bind`, `Retry`, range, seek, or play commands.
 - `ClipEditorPreviewCoordinator` may remain only as a scope-free preview reducer/command policy. It cannot own generation allocation, coroutine jobs, port creation/disposal, session sequencing, or lifecycle intent serialization.
 - `PlatformPreviewSurface(port)` renders the supplied active port. It neither creates nor disposes a native port and has no `DisposableEffect` teardown authority.
-- Release evidence is stored separately from binding state as a durable internal audit. The latest record survives a fresh binding and contains only generation, revision, outcome (`Acknowledged` or `TimedOut`), reason (`SourceReplacement` or `TerminalClose`), and a bounded internal diagnostic code. It contains no source path, URI, media content, stack trace, or host callback data.
+- Release evidence is stored separately from binding state as a durable internal audit. The latest record survives a fresh binding and contains only generation, revision, closed outcome (`Acknowledged` or `TimedOut(ReleaseTimeout)`), and reason (`SourceReplacement` or `TerminalClose`). No free-form diagnostic string or exception is stored. A lower-layer path, URI, stack fragment, exception type/message, media content, or host callback value cannot be represented in the audit.
 - Canonical range/playhead rules remain unchanged. A provisional range can render and pause preview but cannot be exported. Once export starts, Back, Done, Play/Pause, retry, seek, playhead, and trim mutations are disabled/no-op; lifecycle disposal/terminal close still runs.
 
 ### Interfaces
@@ -257,17 +257,25 @@ internal interface PreviewPortFactory {
     fun dispose(port: PreviewPort)
 }
 
-internal enum class PreviewReleaseOutcome { Acknowledged, TimedOut }
 internal enum class PreviewReleaseReason { SourceReplacement, TerminalClose }
+internal enum class PreviewReleaseDiagnostic { ReleaseTimeout }
+
+internal sealed interface PreviewReleaseOutcome {
+    data object Acknowledged : PreviewReleaseOutcome
+    data class TimedOut(
+        val diagnostic: PreviewReleaseDiagnostic,
+    ) : PreviewReleaseOutcome
+}
 
 internal data class PreviewReleaseAudit(
     val generation: PreviewGeneration,
     val revision: PreviewRevision,
     val outcome: PreviewReleaseOutcome,
     val reason: PreviewReleaseReason,
-    val diagnosticCode: String? = null,
 )
 ```
+
+`PreviewReleaseDiagnostic` is the complete V1 allowlist. Timeout infrastructure may observe arbitrary raw text or `Throwable` values, but the owner discards that payload and records only `PreviewReleaseDiagnostic.ReleaseTimeout`; acknowledgement records `PreviewReleaseOutcome.Acknowledged`. Adding another diagnostic requires a reviewed blueprint/API-internal-contract revision and its own sanitization tests. No `String?`, path, URI, stack, exception class/message, or platform error object enters `PreviewReleaseAudit`.
 
 `rememberPlatformPreviewPortFactory()` supplies the lifecycle-owned factory. `PlatformPreviewSurface(port)` receives only the current active port. The legacy direct-port helper must not be used by the screen. None of these declarations becomes public or enters core/iOS host contracts.
 
@@ -275,22 +283,23 @@ internal data class PreviewReleaseAudit(
 
 V1 and V2 accepted commits plus the existing internal Media3 actual. No new library, Gradle coordinate, core seam, public parameter/result, iOS exposed type, host navigation contract, or OneOnOneArena fixture. The owner runs on the existing UI-safe dispatcher; timeout is deterministic under coroutine test time.
 
-Backward necessity: terminal Android release requires a fresh port; fresh creation requires old native disposal; safe disposal requires release evidence and old-session close ordering; replacement/close safety requires one authority and a close-wins latch. Forward feasibility: intent → serialized owner → matching fence/audit → session close → native disposal → terminal recheck → optional fresh session/port/bind. A wrong acknowledgement, timeout, or close race has an explicit bounded route and verification point.
+Backward necessity: terminal Android release requires a fresh port; fresh creation requires old native disposal; safe disposal requires release evidence and old-session close ordering; replacement/close safety requires one authority and a close-wins latch. Forward feasibility: intent → serialized owner → matching fence → closed audit → old-session close → native disposal → terminal recheck → optional fresh factory create → fresh session start at the next generation → Bind for that generation. A wrong acknowledgement, timeout, or close race has an explicit bounded route and verification point.
 
 ### Acceptance Criteria
 
 1. A terminal fake rejects/records every command after `Release`; no production path binds or reuses it.
-2. While release is pending, wrong-generation `Released` causes no audit completion, session close, disposal, factory creation, or bind. Matching acknowledgement produces exact order: `Release`, `Released`, session close, old-port disposal, fresh-port create, fresh `Bind`.
-3. Timeout produces a bounded `TimedOut` audit before session close; the record retains generation/revision/reason after the next binding. Fresh creation still occurs only after close and disposal.
-4. In a controlled replace-versus-close race, close wins: exact-once old-session close/disposal, no presenter start/fresh bind, and all pending/late replacements no-op. No detached child or composition-owned cleanup job survives.
+2. While release is pending, wrong-generation `Released` causes no audit completion, session close, disposal, factory creation, fresh session start, or bind. Matching acknowledgement proves the entire exact sequence: `Release(g1,r1)` → `Released(g1)` → `Audit(g1,r1,Acknowledged,SourceReplacement)` → old session close → old-port disposal → fresh factory create → fresh presenter/session start `(g2)` → `Bind(g2,r1)`.
+3. Timeout proves the entire exact sequence: `Release(g1,r1)` → `Audit(g1,r1,TimedOut(ReleaseTimeout),SourceReplacement)` → old session close → old-port disposal → fresh factory create → fresh presenter/session start `(g2)` → `Bind(g2,r1)`. The audit is committed before close and retains the old generation/revision/reason after the fresh binding.
+4. In a controlled replace-versus-close race, close wins: exact-once old-session close/disposal, zero fresh factory creation, zero fresh presenter/session start, zero fresh bind, and all pending/late replacements no-op. No detached child or composition-owned cleanup job survives.
 5. Live matching `Position` updates the playhead; a trim/playhead gesture pauses and remains range-bounded; one completed range gesture emits one `ReplaceRange`. Existing 500 ms and source-time semantics remain unchanged.
 6. Done is disabled/no-op for a provisional range. After export begins, all control mutations are disabled/no-op and the committed canonical range alone reaches `createClip`.
 7. Android actual proof shows `Release` is terminal, native disposal is owner-ordered, and a distinct newly created actual can bind/emit `Ready`. Focused UI device proof covers live playhead/gesture and export lockout.
-8. Public signature/API diff, core, dependencies, OneOnOneArena, and exposed iOS types are unchanged; common and iOS tests compile.
+8. A declaration-aware V3 gate extracts the actual public `ClipEditorScreen` declaration from the working tree and compares it byte-for-byte with the declaration at baseline commit `92f78412796113f2abe27f55be0125e9373c9f1c`; the frozen public core/Android/iOS contract sources are also compared with that baseline. Filename and forbidden-import scans are supplemental, not API compatibility evidence. Core, dependencies, OneOnOneArena, and exposed iOS types remain unchanged; common and iOS tests compile.
 
 ### Test Strategy
 
-- Common coroutine tests use a terminal fake, controllable release waiter, virtual timeout, call-order recorder, and close/replacement barrier. They prove wrong versus matching acknowledgement, timeout then fresh binding with durable audit, close-wins interleaving, monotonic generations, exact-once teardown, and zero commands after terminal release.
+- Common coroutine tests use a terminal fake, controllable release waiter, virtual timeout, call-order recorder, and close/replacement barrier. Acknowledgement and timeout cases each assert their complete audit/fence → old close → old disposal → fresh create → fresh session start `(g2)` → `Bind(g2)` sequence. The close-race case asserts zero fresh session starts as well as zero fresh create/bind. Tests also prove monotonic generations, exact-once teardown, and zero commands after terminal release.
+- Diagnostic tests inject arbitrary absolute paths, `file://` and `content://` URIs, stack-shaped strings, exception class/messages, and `Throwable` values at the lower-layer timeout seam. Every case yields only `TimedOut(ReleaseTimeout)`; neither the audit fields nor `toString()` contains an injected value.
 - Common presenter/Compose tests emit live matching positions, drive actual tagged handle/playhead gestures, assert one committed range replacement, assert provisional Done lockout, then hold export pending and assert every control callback is inert.
 - Android instrumentation uses the repository fixture and actual `AndroidMedia3PreviewPort`: release old actual, attempt forbidden post-release commands, dispose it through the factory, create a distinct actual, bind, and await matching `Ready`. A focused screen test proves live playhead/gesture and export lockout on a test device. Run the focused classes on API 23 and Samsung SM-S928B/API 36; fake-only or compile-only evidence cannot pass.
 - Regression gates: `:video-clip-editor-compose:allTests`, `:video-clip-editor-compose:iosSimulatorArm64Test`, public/common platform scans, and focused Android device tests.
@@ -346,16 +355,19 @@ The forward pass has no contradictory state owner: range/export remain presenter
 
 ## 10. Reconciliation history and module-freeze decision
 
-| Trigger ID | Trigger type | Discovered at stage | Conflict | Preserved findings | Invalidated findings | Required input/evidence | Owner | Decision/rationale | Rerun scope | Rerun count | State | Module impact |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | ---: | --- | --- |
-| VUI-R1 | user-owned | Outcome definition | Stop/reset versus loop | Shared selector, Media3 adapter, frozen API | Stop/reset assumption | User decision | User | Continuous selected-range looping approved | Playback rules only | 1 | Resolved | No public API effect |
-| VUI-R2 | evidence-owned | Architecture review | Existing UI has frames but not a selector | Core/export/temp contract, 24-frame bound | Claim that visual outcome was complete | Current source read | Codex | Replace detached bar/row with shared selector; no core contract change | Compose/UI integration | 1 | Resolved | Compose modules only |
-| VUI-R3 | technical | Preview evaluation | `PlayerView` AndroidView would add Compose surface risk | Media3 dependency/version, Android player choice | PlayerView wrapper proposal | Official Media3 surface guidance | Codex | Use Compose-native Media3 surface APIs | Android preview | 1 | Resolved | Android Compose actual |
-| VUI-R4 | evidence-owned | First independent principal review | Position polling after trim end could render unselected media | Media3 preview, range loop requirement, public API isolation | UI-poll loop decision | Principal finding + Media3 clipping API | Codex | Replace poll boundary with source-level `ClippingConfiguration` and one-period repeat | V2 playback rules and failure matrix | 1 | Resolved | V2 acceptance strengthened |
-| VUI-R5 | evidence-owned | First independent principal review | Preview contract did not define command order, stale events, retry, or close fence | Internal-only seam and presenter ownership | Responsibility-only seam description | Principal finding | Codex | Freeze generation/revision binding, commands/events/port, and state table | V1–V3 | 1 | Resolved | V1/V2/V3 interfaces frozen |
-| VUI-R6 | evidence-owned | First independent principal review | Historical predecessor blueprint was untracked | Accepted implementation and committed API/release baseline | Link to untracked file as evidence | `git ls-tree` of `f7c868e` | Codex | Link committed baseline/release gate; label historical file non-evidence | Compatibility evidence | 1 | Resolved | No production module effect |
+| Trigger ID | Trigger type | Discovered at stage | Conflict | Affected findings | Preserved findings | Invalidated findings | Required input/evidence | Owner | Decision/rationale | Rerun scope | Rerun count | State | Module-freeze impact |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | ---: | --- | --- |
+| VUI-R1 | user-owned | Outcome definition | Stop/reset versus loop | Playback terminal behaviour | Shared selector, Media3 adapter, frozen API | Stop/reset assumption | User decision | User | Continuous selected-range looping approved | Playback rules only | 1 | Resolved | No public API effect |
+| VUI-R2 | evidence-owned | Architecture review | Existing UI has frames but not a selector | Visual completion claim | Core/export/temp contract, 24-frame bound | Claim that visual outcome was complete | Current source read | Codex | Replace detached bar/row with shared selector; no core contract change | Compose/UI integration | 1 | Resolved | Compose modules only |
+| VUI-R3 | technical | Preview evaluation | `PlayerView` AndroidView would add Compose surface risk | Android preview surface choice | Media3 dependency/version, Android player choice | PlayerView wrapper proposal | Official Media3 surface guidance | Codex | Use Compose-native Media3 surface APIs | Android preview | 1 | Resolved | Android Compose actual |
+| VUI-R4 | evidence-owned | First independent principal review | Position polling after trim end could render unselected media | Range enforcement | Media3 preview, range loop requirement, public API isolation | UI-poll loop decision | Principal finding + Media3 clipping API | Codex | Replace poll boundary with source-level `ClippingConfiguration` and one-period repeat | V2 playback rules and failure matrix | 1 | Resolved | V2 acceptance strengthened |
+| VUI-R5 | evidence-owned | First independent principal review | Preview contract did not define command order, stale events, retry, or close fence | Preview protocol | Internal-only seam and presenter ownership | Responsibility-only seam description | Principal finding | Codex | Freeze generation/revision binding, commands/events/port, and state table | V1–V3 | 1 | Resolved | V1/V2/V3 interfaces frozen |
+| VUI-R6 | evidence-owned | First independent principal review | Historical predecessor blueprint was untracked | Compatibility evidence | Accepted implementation and committed API/release baseline | Link to untracked file as evidence | `git ls-tree` of `f7c868e` | Codex | Link committed baseline/release gate; label historical file non-evidence | Compatibility evidence | 1 | Resolved | No production module effect |
+| VUI-R7 | evidence-owned | Original V3 review rejection | `1774142` used source-derived generations, could start a new presenter before the old release fence completed, and let composition-owned cleanup cancel teardown | Original V3 lifecycle ownership, generation, close/replacement order | Approved visual composition, canonical range/export ownership, V1/V2 contracts, public/core/iOS scope | Original V3 lifecycle implementation and its coordinator-owned jobs/generation | Rejection record in task-3 report plus source/diff evidence | Replacement V3 owner; principal reviewer verifies | Replace with one serialized owner, monotonic generations, audit-before-close ordering, and no composition-owned cleanup | `compose/commonMain` lifecycle/screen/coordinator plus focused `commonTest`; no V1/V2 production rerun | 1 | Resolved in blueprint; execution pending | Original V3 remains invalid; replacement V3 provisional; V1/V2 preserved |
+| VUI-R8 | evidence-owned | V3 fix-round-1 rejection | `0501e57` attempted to reuse terminal Android ports and left disposal, close-race, and provisional/export mutation gaps | Port factory ownership, terminal disposal, replace-vs-close, export gate | V1 selector semantics, V2 clipped/repeat player behaviour, public/core/iOS scope | Released-port reuse, surface disposal authority, close-loses paths, provisional export | Fix-round-1 review and terminal actual evidence | Replacement V3 owner + Android adapter reviewer | Factory owns create/dispose; render-only surface; close latch wins; export mutation gate is centralized | `compose/commonMain`, `compose/androidMain/AndroidPlatformPreview.kt`, focused common/Android device tests; V2 media semantics unchanged | 1 | Resolved in blueprint; execution pending | Replacement V3 gains Android factory/surface responsibility; V2 remains frozen |
+| VUI-R9 | evidence-owned | V3 fix-round-2 rejection | `24ec733..fdfe8e6` left timeout evidence transient and omitted executable terminal-fence and replacement-vs-close proofs | Durable release audit and lifecycle verification | Fresh-port ownership/order repair, canonical range, visual design, public/core/iOS scope | Transient/free-form diagnostic record and partial order/race test claims | Fix-round-2 review, `496bf2e` review at 86/100, exact lifecycle sequence requirement | Replacement V3 owner; author-distinct Sol/high principal review | Closed allowlisted audit; acknowledgement and timeout each assert full order through `start(g2)`/`Bind(g2)`; close race asserts zero fresh start | Replacement V3 blueprint/plan and `commonTest` lifecycle harness plus focused Android lifecycle proof; IG1/V4/V5 order unchanged | 1 | Resolved in blueprint; execution pending | Replacement V3 remains blocked until >=95/100 independent review; no other module invalidated |
 
-**Module-freeze status: BLOCKED pending independent principal-engineer review.** Outcome and architecture evidence are recorded; no user-owned ambiguity remains. Modules stay provisional until the reviewer verifies state ownership, lifecycle, API isolation, device compatibility, and every chunk at >=95/100 readiness.
+**Module-freeze status: BLOCKED pending author-distinct principal-engineer re-review of this VUI-R7–R9 reconciliation.** Outcome and architecture evidence are recorded; no user-owned ambiguity remains. The original V3 and both fix rounds stay invalid. V1/V2 and the approved public/visual/core/iOS scope are preserved. Replacement V3 alone is rerun once across the exact module/test scope above; IG1/V4/V5 remain ordered and blocked behind it. Modules stay provisional until the reviewer verifies state ownership, lifecycle, closed diagnostics, declaration-aware API compatibility, device compatibility, and every chunk at >=95/100 readiness.
 
 ## 11. Provisional module structure
 
@@ -374,12 +386,12 @@ The forward pass has no contradictory state owner: range/export remain presenter
 | --- | --- | --- | --- | --- | --- |
 | V1 common selector/state | Terra / medium | Ordered first; freezes the pure common port used by V2/V3 | Workspace routing policy: normal Compose/state implementation; independent review required | None | Blueprint author model profile not externally verifiable; record as planned until execution |
 | V2 Android Media3 adapter | Sol / high | Depends on frozen V1; ordered before V3 | High-risk decoder/surface/lifecycle/concurrency boundary; principal review and device evidence required | None | Planned |
-| V3 screen integration | Terra / medium | Depends on V1+V2; cannot parallelize because it owns common screen composition | Existing presenter and disposal integration | None | Planned |
+| Replacement V3 lifecycle integration | **Sol / high** | Depends on frozen V1+V2; one owner spans common screen/session lifecycle and Android port disposal, so it cannot parallelize | Floor raised for concurrency-sensitive serialized teardown and three successive V3 rejection triggers (VUI-R7–R9); author-distinct principal re-review required | No below-floor override | Planned; any observed route below Sol/high blocks execution |
 | IG1 integration gate | Sol / high | Depends on V1–V3; integration-only | Cross-module lifecycle/range/export proof; principal review | None | Planned |
 | V4 device/demo evidence | Terra / medium | Depends on IG1 | Bounded device verification and evidence collection | None | Planned |
 | V5 final audit | Sol / high | Depends on V4 | Independent architecture/API/security/device audit | None | Planned |
 
-Mapping digest: the active workspace routing policy selects Terra for normal implementation and Sol for cross-cutting/high-risk architecture. The target library has no local `AGENTS.md`; the user-approved scope, this blueprint, and the frozen public baseline are the target-specific authority. No below-floor override is permitted. There is no implementation execution record yet.
+Mapping digest: the active workspace routing policy selects Terra for normal implementation and Sol for cross-cutting/high-risk architecture. Replacement V3 is explicitly Sol/high because serialized concurrency spans presenter sessions, release acknowledgement/timeout, terminal native ports, composition disposal, and a close race, and the same chunk has failed three review rounds. The target library has no local `AGENTS.md`; the user-approved scope, this blueprint, and the frozen public baseline are the target-specific authority. No below-floor override is permitted. There is no replacement V3 execution record yet.
 
 ## 13. Ordered delivery chunks
 
@@ -408,6 +420,8 @@ Each chunk must independently pass its completion gate. A later chunk cannot rep
 * **Integration strategy:** Wire only through `ClipEditorScreen` after V1 tests pass; use original existing export integration tests unchanged.
 
 ### V3 — `ClipEditorScreen` composition and lifecycle integration
+
+**Superseded.** This original V3 chunk is retained only for historical traceability. It is not executable and cannot be used as an implementation or review input. The normative replacement is §6A plus implementation-plan Task 3, at a Sol/high floor.
 
 * **Scope:** Replace current `EditorControls` bar/row with preview + selector + footer, connect common presenter and internal controller.
 * **Responsibilities:** Loading/retry/render transitions, player command dispatch, Back/Done controls, disposal ordering, disable controls during export/failure.

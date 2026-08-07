@@ -57,6 +57,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancelAndJoin
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -80,16 +81,25 @@ fun ClipEditorScreen(
     val scope = rememberCoroutineScope()
     val cleanupScope = remember { CoroutineScope(SupervisorJob() + Dispatchers.Main) }
     val previewPort = rememberPlatformPreviewPort()
-    val coordinator = remember(previewPort, scope) { ClipEditorPreviewCoordinator(scope, previewPort) }
+    val coordinator = remember(previewPort, cleanupScope) { ClipEditorPreviewCoordinator(cleanupScope, previewPort) }
     val result by rememberUpdatedState(onResult)
     val cancel by rememberUpdatedState(onCancel)
     val presenter = remember { ClipEditorPresenter(scope) }
     SideEffect { presenter.updateCallbacks(result, cancel) }
     val state by presenter.state.collectAsState()
-    LaunchedEffect(source, editor, presenter) { presenter.start(source, editor) }
-    DisposableEffect(presenter, coordinator) {
+    LaunchedEffect(source, editor, presenter, coordinator) {
+        cleanupScope.launch {
+            coordinator.replaceSourceThen { presenter.close() }
+            presenter.start(source, editor)
+        }
+    }
+    DisposableEffect(presenter, coordinator, cleanupScope) {
         onDispose {
-            cleanupScope.launch { coordinator.closeThen { presenter.close() }; coordinator.dispose() }
+            cleanupScope.launch {
+                coordinator.closeThen { presenter.close() }
+                coordinator.dispose()
+                cleanupScope.cancel()
+            }
         }
     }
 
@@ -102,7 +112,7 @@ fun ClipEditorScreen(
                 LaunchedEffect(current.range, source, current.metadata) {
                     coordinator.sync(
                         PreviewBinding(
-                            generation = PreviewGeneration(source.value.hashCode().toLong()),
+                            generation = PreviewGeneration(0),
                             revision = PreviewRevision(0),
                             source = source,
                             metadata = current.metadata,
@@ -112,7 +122,18 @@ fun ClipEditorScreen(
                         ),
                     )
                 }
-                EditorControls(current, presenter, coordinator, preview)
+                EditorControls(
+                    ready = current,
+                    presenter = presenter,
+                    coordinator = coordinator,
+                    preview = preview,
+                    onBack = {
+                        cleanupScope.launch {
+                            coordinator.closeThen { presenter.close() }
+                            presenter.cancelAfterClose()
+                        }
+                    },
+                )
             }
             ClipEditorUiState.Exporting -> Text("Creating clip")
             is ClipEditorUiState.Retry -> {
@@ -122,9 +143,15 @@ fun ClipEditorScreen(
             is ClipEditorUiState.Terminal -> Text(current.message)
             ClipEditorUiState.Cancelled -> Text("Cancelled")
         }
-        if (state !is ClipEditorUiState.Terminal && state != ClipEditorUiState.Cancelled) {
+        if (state !is ClipEditorUiState.Ready && state !is ClipEditorUiState.Terminal && state != ClipEditorUiState.Cancelled) {
             Button(
-                onClick = { scope.launch { coordinator.closeThen { presenter.close() }; presenter.cancel() } },
+                onClick = {
+                    cleanupScope.launch {
+                        coordinator.closeThen { presenter.close() }
+                        presenter.cancelAfterClose()
+                    }
+                },
+                enabled = state != ClipEditorUiState.Exporting,
                 modifier = Modifier.semantics { testTag = "back" },
             ) { Text("Back") }
         }
@@ -137,16 +164,20 @@ private fun EditorControls(
     presenter: ClipEditorPresenter,
     coordinator: ClipEditorPreviewCoordinator,
     preview: ClipEditorPreviewState,
+    onBack: () -> Unit,
 ) {
     val visualRange = ready.provisionalRange ?: ready.range
     Box(Modifier.fillMaxWidth().height(220.dp).background(Color.Black)) {
         PlatformPreviewSurface(port = coordinator.surfacePort, modifier = Modifier.fillMaxWidth())
     }
+    Text(visualRange.start.toString(), Modifier.semantics { testTag = "clip-start-time" })
+    Text(visualRange.endExclusive.toString(), Modifier.semantics { testTag = "clip-end-time" })
+    LaunchedEffect(visualRange) { coordinator.constrainPlayhead(visualRange) }
     ClipRangeSelector(
         frames = ready.frames,
         metadata = ready.metadata,
         range = visualRange,
-        playhead = visualRange.start,
+        playhead = clampPlayhead(preview.playhead, visualRange),
         onRangeGestureStart = { coordinator.pause(); presenter.beginRangeGesture() },
         onRangeChange = { boundary, value ->
             when (boundary) {
@@ -159,18 +190,22 @@ private fun EditorControls(
         onSeek = coordinator::seekPaused,
         onPlayheadDragStart = coordinator::pause,
     )
-    Text(visualRange.start.toString(), Modifier.semantics { testTag = "clip-start-time" })
-    Text(visualRange.endExclusive.toString(), Modifier.semantics { testTag = "clip-end-time" })
-    Button(
-        onClick = coordinator::togglePlayPause,
-        enabled = preview.ready && preview.failure == null,
-        modifier = Modifier.semantics { testTag = "play-pause" },
-    ) { Text(if (preview.isPlaying) "Pause" else "Play") }
-    Button(
-        onClick = presenter::createClip,
-        enabled = preview.failure == null,
-        modifier = Modifier.semantics { testTag = "done" },
-    ) { Text("Done") }
+    Row(Modifier.fillMaxWidth()) {
+        Button(
+            onClick = onBack,
+            modifier = Modifier.semantics { testTag = "back" },
+        ) { Text("Back") }
+        Button(
+            onClick = coordinator::togglePlayPause,
+            enabled = preview.ready && preview.failure == null,
+            modifier = Modifier.semantics { testTag = "play-pause" },
+        ) { Text(if (preview.isPlaying) "Pause" else "Play") }
+        Button(
+            onClick = { coordinator.pause(); presenter.createClip() },
+            enabled = preview.failure == null,
+            modifier = Modifier.semantics { testTag = "done" },
+        ) { Text("Done") }
+    }
     if (preview.failure != null) {
         Text(preview.failure)
         Button(coordinator::retry, Modifier.semantics { testTag = "retry-preview" }) { Text("Retry") }
@@ -379,6 +414,12 @@ internal class ClipEditorPresenter(
         if (cancelSent) return
         cancelSent = true
         scope.launch { close() }
+        backingState.value = ClipEditorUiState.Cancelled
+        onCancel()
+    }
+    fun cancelAfterClose() {
+        if (cancelSent) return
+        cancelSent = true
         backingState.value = ClipEditorUiState.Cancelled
         onCancel()
     }

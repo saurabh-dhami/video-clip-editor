@@ -21,7 +21,14 @@ internal data class ClipEditorPreviewState(
     val isPlaying: Boolean = false,
     val failure: String? = null,
     val closing: Boolean = false,
+    val releaseFence: PreviewReleaseFence? = null,
 )
+
+internal sealed interface PreviewReleaseFence {
+    data class Awaiting(val generation: PreviewGeneration) : PreviewReleaseFence
+    data class Acknowledged(val generation: PreviewGeneration) : PreviewReleaseFence
+    data class Timeout(val generation: PreviewGeneration) : PreviewReleaseFence
+}
 
 /** Common ownership boundary for native preview. Session/export stay in [ClipEditorPresenter]. */
 internal class ClipEditorPreviewCoordinator(
@@ -31,7 +38,8 @@ internal class ClipEditorPreviewCoordinator(
     val surfacePort: PreviewPort = port
     private val backingState = MutableStateFlow(ClipEditorPreviewState())
     val state: StateFlow<ClipEditorPreviewState> = backingState.asStateFlow()
-    private var released: kotlinx.coroutines.CompletableDeferred<PreviewGeneration>? = null
+    private var released: Pair<PreviewGeneration, kotlinx.coroutines.CompletableDeferred<Unit>>? = null
+    private var nextGeneration = 0L
     private val closeMutex = Mutex()
     private val eventJob: kotlinx.coroutines.Job
 
@@ -44,15 +52,20 @@ internal class ClipEditorPreviewCoordinator(
     fun bind(binding: PreviewBinding) {
         if (backingState.value.closing) return
         val previous = backingState.value.binding
-        if (previous == binding) return
-        backingState.value = ClipEditorPreviewState(binding = binding, playhead = binding.sourcePosition)
-        port.dispatch(PreviewCommand.Bind(binding))
+        if (previous != null) {
+            if (previous.source != binding.source) return
+            if (previous == binding) return
+        }
+        val lifecycleBinding = binding.copy(generation = PreviewGeneration(++nextGeneration))
+        backingState.value = ClipEditorPreviewState(binding = lifecycleBinding, playhead = lifecycleBinding.sourcePosition)
+        port.dispatch(PreviewCommand.Bind(lifecycleBinding))
     }
 
     fun sync(source: PreviewBinding) {
         val active = backingState.value.binding
         when {
-            active == null || active.generation != source.generation -> bind(source)
+            active == null -> bind(source)
+            active.source != source.source -> Unit
             active.range != source.range -> replaceRange(source.copy(revision = PreviewRevision(active.revision.value + 1)))
         }
     }
@@ -60,9 +73,10 @@ internal class ClipEditorPreviewCoordinator(
     fun replaceRange(binding: PreviewBinding) {
         if (backingState.value.closing) return
         val active = backingState.value.binding ?: return bind(binding)
-        if (active.generation != binding.generation || active.revision.value >= binding.revision.value) return
-        backingState.value = ClipEditorPreviewState(binding = binding, playhead = binding.sourcePosition)
-        port.dispatch(PreviewCommand.ReplaceRange(binding))
+        if (active.revision.value >= binding.revision.value) return
+        val replacement = binding.copy(generation = active.generation)
+        backingState.value = ClipEditorPreviewState(binding = replacement, playhead = replacement.sourcePosition)
+        port.dispatch(PreviewCommand.ReplaceRange(replacement))
     }
 
     fun togglePlayPause() {
@@ -92,6 +106,12 @@ internal class ClipEditorPreviewCoordinator(
         backingState.value = backingState.value.copy(playhead = bounded, isPlaying = false)
     }
 
+    fun constrainPlayhead(range: ClipRange) {
+        val current = backingState.value
+        if (current.closing || current.playhead in range.start..range.endExclusive) return
+        seekPaused(current.playhead.coerceIn(range.start, range.endExclusive))
+    }
+
     fun retry() {
         val binding = backingState.value.binding ?: return
         if (backingState.value.closing) return
@@ -103,16 +123,19 @@ internal class ClipEditorPreviewCoordinator(
     suspend fun closeThen(closeSession: suspend () -> Unit) {
         closeMutex.withLock {
             if (backingState.value.closing) return
-            val binding = backingState.value.binding
             backingState.value = backingState.value.copy(closing = true, isPlaying = false)
-            if (binding != null) {
-                val acknowledgement = kotlinx.coroutines.CompletableDeferred<PreviewGeneration>()
-                released = acknowledgement
-                port.dispatch(PreviewCommand.Release(binding.generation))
-                withTimeoutOrNull(releaseTimeout) { acknowledgement.await() }
-                released = null
-            }
+            awaitRelease()
             closeSession()
+        }
+    }
+
+    /** Release current platform binding before its owning core session can be closed. */
+    suspend fun replaceSourceThen(closePreviousSession: suspend () -> Unit) {
+        closeMutex.withLock {
+            if (backingState.value.closing) return
+            awaitRelease()
+            closePreviousSession()
+            backingState.value = ClipEditorPreviewState(releaseFence = backingState.value.releaseFence)
         }
     }
 
@@ -128,7 +151,10 @@ internal class ClipEditorPreviewCoordinator(
         val current = backingState.value
         val active = current.binding
         when (event) {
-            is PreviewEvent.Released -> if (event.generation == active?.generation) released?.complete(event.generation)
+            is PreviewEvent.Released -> {
+                val acknowledgement = released
+                if (acknowledgement?.first == event.generation) acknowledgement.second.complete(Unit)
+            }
             is PreviewEvent.Ready -> if (event.acceptedBy(active)) {
                 backingState.value = current.copy(ready = true, failure = null)
             }
@@ -153,6 +179,23 @@ internal class ClipEditorPreviewCoordinator(
 
     private fun PreviewEvent.RecoverableFailure.acceptedBy(active: PreviewBinding?): Boolean =
         active != null && generation == active.generation && revision == active.revision
+
+    private suspend fun awaitRelease() {
+        val binding = backingState.value.binding ?: return
+        val acknowledgement = kotlinx.coroutines.CompletableDeferred<Unit>()
+        released = binding.generation to acknowledgement
+        backingState.value = backingState.value.copy(releaseFence = PreviewReleaseFence.Awaiting(binding.generation))
+        port.dispatch(PreviewCommand.Release(binding.generation))
+        val releasedInTime = withTimeoutOrNull(releaseTimeout) { acknowledgement.await(); true } == true
+        backingState.value = backingState.value.copy(
+            releaseFence = if (releasedInTime) {
+                PreviewReleaseFence.Acknowledged(binding.generation)
+            } else {
+                PreviewReleaseFence.Timeout(binding.generation)
+            },
+        )
+        released = null
+    }
 
     private companion object {
         val releaseTimeout = 100.milliseconds

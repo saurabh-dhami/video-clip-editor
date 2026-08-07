@@ -22,6 +22,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
 import kotlin.test.assertTrue
+import kotlin.time.Duration
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
 import kotlinx.coroutines.CoroutineScope
@@ -165,6 +166,22 @@ class ClipEditorPresenterTest {
     }
 
     @Test
+    fun `create clip receives committed canonical range not provisional range`() = runTest {
+        val session = FakeSession(flow { emit(FrameStripEvent.Complete) })
+        val presenter = ClipEditorPresenter(this, {})
+        presenter.start(VideoSourcePath("/video.mp4"), FakeEditor(session))
+        testScheduler.advanceUntilIdle()
+        presenter.beginRangeGesture()
+        presenter.updateEndFromSelector(4.seconds)
+        presenter.commitRangeGesture()
+
+        presenter.createClip()
+        testScheduler.advanceUntilIdle()
+
+        assertEquals(ClipRange(Duration.ZERO, 4.seconds), session.createdRange)
+    }
+
+    @Test
     fun `complete after failed frame strip cannot replace terminal failure`() = runTest {
         val presenter = ClipEditorPresenter(this, {})
         val failure = VideoEditFailure(FailureCode.FRAME_EXTRACTION_FAILED, false, "bad frame")
@@ -275,10 +292,12 @@ private class FakeSession(private val events: Flow<FrameStripEvent>) : ClipEdito
     override val metadata = VideoMetadata(10_000.milliseconds, 100, 100, false)
     var createCalls = 0
     var closeCalls = 0
+    var createdRange: ClipRange? = null
     val closed = kotlinx.coroutines.CompletableDeferred<Unit>()
     override fun frames(request: FrameStripRequest): Flow<FrameStripEvent> = events
     override suspend fun createClip(range: ClipRange): ClipResult {
         createCalls++
+        createdRange = range
         return ClipResult.Failed(VideoEditFailure(com.oneononearena.videoclip.FailureCode.EXPORT_FAILED, false, null))
     }
     override suspend fun close() {

@@ -26,6 +26,62 @@ class ClipEditorPreviewCoordinatorTest {
     }
 
     @Test
+    fun everyStaleRevisionEventIsIgnored() = runTest {
+        val port = CoordinatorRecordingPort()
+        val coordinator = ClipEditorPreviewCoordinator(this, port)
+        testScheduler.runCurrent()
+        coordinator.bind(binding(revision = 1))
+        coordinator.replaceRange(binding(revision = 2, sourcePosition = 3.seconds))
+
+        port.emit(PreviewEvent.Ready(PreviewGeneration(1), PreviewRevision(1)))
+        port.emit(PreviewEvent.Position(PreviewGeneration(7), PreviewRevision(1), 9.seconds, true))
+        port.emit(PreviewEvent.RecoverableFailure(PreviewGeneration(7), PreviewRevision(1), "stale"))
+        port.emit(PreviewEvent.Released(PreviewGeneration(99)))
+        testScheduler.runCurrent()
+
+        assertEquals(false, coordinator.state.value.ready)
+        assertEquals(3.seconds, coordinator.state.value.playhead)
+        assertEquals(null, coordinator.state.value.failure)
+        coordinator.dispose()
+    }
+
+    @Test
+    fun replacementReleasesBeforeOldSessionClosesAndNewBindingStarts() = runTest {
+        val calls = mutableListOf<String>()
+        val port = CoordinatorRecordingPort { generation ->
+            calls += "released-$generation"
+            emit(PreviewEvent.Released(generation))
+        }
+        val coordinator = ClipEditorPreviewCoordinator(this, port)
+        testScheduler.runCurrent()
+        coordinator.bind(binding())
+
+        coordinator.replaceSourceThen { calls += "close-session" }
+        coordinator.bind(binding(source = VideoSourcePath("/new.mp4")))
+
+        assertEquals(
+            listOf("released-PreviewGeneration(value=1)", "close-session"),
+            calls,
+        )
+        assertEquals(PreviewGeneration(2), coordinator.state.value.binding?.generation)
+        coordinator.dispose()
+    }
+
+    @Test
+    fun timeoutFallbackIsRecordedBeforeSessionClose() = runTest {
+        val calls = mutableListOf<String>()
+        val coordinator = ClipEditorPreviewCoordinator(this, CoordinatorRecordingPort())
+        testScheduler.runCurrent()
+        coordinator.bind(binding())
+
+        coordinator.closeThen { calls += "session" }
+
+        assertEquals(PreviewReleaseFence.Timeout(PreviewGeneration(1)), coordinator.state.value.releaseFence)
+        assertEquals(listOf("session"), calls)
+        coordinator.dispose()
+    }
+
+    @Test
     fun releasedAcknowledgementPrecedesSessionClose() = runTest {
         val calls = mutableListOf<String>()
         val port = CoordinatorRecordingPort { generation ->
@@ -43,6 +99,21 @@ class ClipEditorPreviewCoordinatorTest {
     }
 
     @Test
+    fun closeThenIsExactOnce() = runTest {
+        var closes = 0
+        val port = CoordinatorRecordingPort { emit(PreviewEvent.Released(it)) }
+        val coordinator = ClipEditorPreviewCoordinator(this, port)
+        testScheduler.runCurrent()
+        coordinator.bind(binding())
+
+        coordinator.closeThen { closes++ }
+        coordinator.closeThen { closes++ }
+
+        assertEquals(1, closes)
+        coordinator.dispose()
+    }
+
+    @Test
     fun playFromOutsideRangeSeeksSelectedStartAndWaitsForReady() = runTest {
         val port = CoordinatorRecordingPort()
         val coordinator = ClipEditorPreviewCoordinator(this, port)
@@ -52,24 +123,28 @@ class ClipEditorPreviewCoordinatorTest {
         coordinator.togglePlayPause()
         assertEquals(emptyList(), port.commands.drop(1))
 
-        port.emit(PreviewEvent.Ready(PreviewGeneration(7), PreviewRevision(1)))
+        port.emit(PreviewEvent.Ready(PreviewGeneration(1), PreviewRevision(1)))
         testScheduler.runCurrent()
         coordinator.togglePlayPause()
 
         assertEquals(
             listOf(
-                PreviewCommand.Seek(PreviewGeneration(7), PreviewRevision(1), 2.seconds),
-                PreviewCommand.SetPlayWhenReady(PreviewGeneration(7), PreviewRevision(1), true),
+                PreviewCommand.Seek(PreviewGeneration(1), PreviewRevision(1), 2.seconds),
+                PreviewCommand.SetPlayWhenReady(PreviewGeneration(1), PreviewRevision(1), true),
             ),
             port.commands.drop(1),
         )
         coordinator.dispose()
     }
 
-    private fun binding(revision: Long = 1, sourcePosition: kotlin.time.Duration = 2.seconds) = PreviewBinding(
+    private fun binding(
+        revision: Long = 1,
+        sourcePosition: kotlin.time.Duration = 2.seconds,
+        source: VideoSourcePath = VideoSourcePath("/video.mp4"),
+    ) = PreviewBinding(
         generation = PreviewGeneration(7),
         revision = PreviewRevision(revision),
-        source = VideoSourcePath("/video.mp4"),
+        source = source,
         metadata = VideoMetadata(10.seconds, 100, 100, false),
         range = ClipRange(2.seconds, 4.seconds),
         sourcePosition = sourcePosition,

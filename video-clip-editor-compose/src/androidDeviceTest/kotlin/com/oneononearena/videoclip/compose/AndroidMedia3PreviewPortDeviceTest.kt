@@ -8,11 +8,15 @@ import com.oneononearena.videoclip.VideoMetadata
 import com.oneononearena.videoclip.VideoSourcePath
 import java.io.File
 import kotlin.time.Duration.Companion.seconds
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CoroutineStart
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeout
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -33,10 +37,10 @@ class AndroidMedia3PreviewPortDeviceTest {
     }
 
     @Test
-    fun bindingUsesExactSourceClipAndOnePeriodLoop() = runTest {
+    fun bindingUsesExactSourceClipAndOnePeriodLoop() = runBlocking {
         val source = fixtures.copyAvcFixture()
         val port = onMain { AndroidMedia3PreviewPort(context) }
-        val recorder = EventRecorder(this, port)
+        val recorder = EventRecorder(port)
 
         try {
             onMain {
@@ -53,14 +57,15 @@ class AndroidMedia3PreviewPortDeviceTest {
             assertTrue(onMain { player.currentPosition } in 0L..250L)
         } finally {
             onMain { port.dispatch(PreviewCommand.Release(PreviewGeneration(1))) }
+            recorder.close()
         }
     }
 
     @Test
-    fun obsoleteReadyDoesNotReachEventsWhenLatestRangeIsPending() = runTest {
+    fun obsoleteReadyDoesNotReachEventsWhenLatestRangeIsPending() = runBlocking {
         val source = fixtures.copyAvcFixture()
         val port = onMain { AndroidMedia3PreviewPort(context) }
-        val recorder = EventRecorder(this, port)
+        val recorder = EventRecorder(port)
 
         try {
             onMain {
@@ -73,14 +78,15 @@ class AndroidMedia3PreviewPortDeviceTest {
             assertEquals("1:2", onMain { port.playerForSurface?.currentMediaItem?.mediaId })
         } finally {
             onMain { port.dispatch(PreviewCommand.Release(PreviewGeneration(1))) }
+            recorder.close()
         }
     }
 
     @Test
-    fun sourcePositionEventsStayInsideSelectedRange() = runTest {
+    fun sourcePositionEventsStayInsideSelectedRange() = runBlocking {
         val source = fixtures.copyAvcFixture()
         val port = onMain { AndroidMedia3PreviewPort(context) }
-        val recorder = EventRecorder(this, port)
+        val recorder = EventRecorder(port)
 
         try {
             onMain { port.dispatch(PreviewCommand.Bind(binding(source, revision = 3, startSeconds = 2, endSeconds = 4))) }
@@ -100,14 +106,15 @@ class AndroidMedia3PreviewPortDeviceTest {
             assertTrue(positions.all { it.sourcePosition >= 2.seconds && it.sourcePosition <= 4.seconds })
         } finally {
             onMain { port.dispatch(PreviewCommand.Release(PreviewGeneration(1))) }
+            recorder.close()
         }
     }
 
     @Test
-    fun playerFailureEmitsOnlyBoundedSafeDiagnostic() = runTest {
+    fun playerFailureEmitsOnlyBoundedSafeDiagnostic() = runBlocking {
         val missing = File(context.cacheDir, "missing-preview-${System.nanoTime()}.mp4")
         val port = onMain { AndroidMedia3PreviewPort(context) }
-        val recorder = EventRecorder(this, port)
+        val recorder = EventRecorder(port)
 
         try {
             onMain { port.dispatch(PreviewCommand.Bind(binding(missing, revision = 4, startSeconds = 0, endSeconds = 2))) }
@@ -120,21 +127,26 @@ class AndroidMedia3PreviewPortDeviceTest {
             assertFalse(diagnostic.contains("Exception"))
         } finally {
             onMain { port.dispatch(PreviewCommand.Release(PreviewGeneration(1))) }
+            recorder.close()
         }
     }
 
     @Test
-    fun repeatedReleaseEmitsOneAcknowledgement() = runTest {
+    fun repeatedReleaseEmitsOneAcknowledgement() = runBlocking {
         val port = onMain { AndroidMedia3PreviewPort(context) }
-        val recorder = EventRecorder(this, port)
+        val recorder = EventRecorder(port)
 
-        onMain {
-            port.dispatch(PreviewCommand.Release(PreviewGeneration(9)))
-            port.dispatch(PreviewCommand.Release(PreviewGeneration(9)))
+        try {
+            onMain {
+                port.dispatch(PreviewCommand.Release(PreviewGeneration(9)))
+                port.dispatch(PreviewCommand.Release(PreviewGeneration(9)))
+            }
+
+            recorder.await { it == PreviewEvent.Released(PreviewGeneration(9)) }
+            assertEquals(1, recorder.snapshot().count { it == PreviewEvent.Released(PreviewGeneration(9)) })
+        } finally {
+            recorder.close()
         }
-
-        recorder.await { it == PreviewEvent.Released(PreviewGeneration(9)) }
-        assertEquals(1, recorder.snapshot().count { it == PreviewEvent.Released(PreviewGeneration(9)) })
     }
 
     private fun binding(
@@ -153,10 +165,8 @@ class AndroidMedia3PreviewPortDeviceTest {
     )
 }
 
-private class EventRecorder(
-    scope: kotlinx.coroutines.CoroutineScope,
-    port: PreviewPort,
-) {
+private class EventRecorder(port: PreviewPort) {
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default.limitedParallelism(1))
     private val channel = Channel<PreviewEvent>(Channel.UNLIMITED)
     private val events = mutableListOf<PreviewEvent>()
 
@@ -178,6 +188,10 @@ private class EventRecorder(
     }
 
     fun snapshot(): List<PreviewEvent> = synchronized(events) { events.toList() }
+
+    fun close() {
+        scope.cancel()
+    }
 }
 
 private fun <T> onMain(block: () -> T): T {

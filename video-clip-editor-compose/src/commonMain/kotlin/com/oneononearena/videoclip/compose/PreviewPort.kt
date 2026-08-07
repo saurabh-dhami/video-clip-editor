@@ -48,6 +48,24 @@ internal interface PreviewPortFactory {
     fun dispose(port: PreviewPort)
 }
 
+internal enum class PreviewReleaseReason { SourceReplacement, TerminalClose }
+
+internal enum class PreviewReleaseDiagnostic { ReleaseTimeout }
+
+internal sealed interface PreviewReleaseOutcome {
+    data object Acknowledged : PreviewReleaseOutcome
+    data class TimedOut(
+        val diagnostic: PreviewReleaseDiagnostic,
+    ) : PreviewReleaseOutcome
+}
+
+internal data class PreviewReleaseAudit(
+    val generation: PreviewGeneration,
+    val revision: PreviewRevision,
+    val outcome: PreviewReleaseOutcome,
+    val reason: PreviewReleaseReason,
+)
+
 @Composable
 internal expect fun rememberPlatformPreviewPortFactory(): PreviewPortFactory
 

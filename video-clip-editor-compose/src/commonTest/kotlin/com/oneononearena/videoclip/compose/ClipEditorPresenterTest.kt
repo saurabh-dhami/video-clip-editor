@@ -31,6 +31,7 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.test.runTest
 
 class ClipEditorPresenterTest {
@@ -200,6 +201,41 @@ class ClipEditorPresenterTest {
     }
 
     @Test
+    fun exportingRejectsRetryCancelAndEveryControlMutation() = runTest {
+        val result = CompletableDeferred<ClipResult>()
+        val session = HoldingExportSession(result)
+        val editor = CountingEditor(session)
+        val port = RecordingPreviewPort()
+        var cancels = 0
+        val presenter = ClipEditorPresenter(this, onCancel = { cancels++ }, previewPort = port)
+        presenter.start(VideoSourcePath("/video.mp4"), editor)
+        testScheduler.advanceUntilIdle()
+        presenter.createClip()
+        testScheduler.runCurrent()
+        val commandsAtExportStart = port.commands.toList()
+
+        presenter.retry()
+        presenter.cancel()
+        presenter.beginRangeGesture()
+        presenter.updateStartFromSelector(2.seconds)
+        presenter.updateEndFromSelector(5.seconds)
+        presenter.commitRangeGesture()
+        presenter.cancelRangeGesture()
+        presenter.pausePreview()
+        presenter.seekFromSelector(3.seconds)
+        presenter.createClip()
+        testScheduler.runCurrent()
+
+        assertEquals(1, editor.opens)
+        assertEquals(1, session.createCalls)
+        assertEquals(0, cancels)
+        assertEquals(commandsAtExportStart, port.commands)
+        assertIs<ClipEditorUiState.Exporting>(presenter.state.value)
+        result.complete(ClipResult.Failed(VideoEditFailure(FailureCode.EXPORT_FAILED, false, null)))
+        testScheduler.advanceUntilIdle()
+    }
+
+    @Test
     fun `complete after failed frame strip cannot replace terminal failure`() = runTest {
         val presenter = ClipEditorPresenter(this, {})
         val failure = VideoEditFailure(FailureCode.FRAME_EXTRACTION_FAILED, false, "bad frame")
@@ -295,6 +331,27 @@ class ClipEditorPresenterTest {
 
 private class FakeEditor(private val session: ClipEditorSession) : VideoClipEditor {
     override suspend fun openSession(source: VideoSourcePath): OpenSessionResult = OpenSessionResult.Open(session)
+}
+
+private class CountingEditor(private val session: ClipEditorSession) : VideoClipEditor {
+    var opens = 0
+    override suspend fun openSession(source: VideoSourcePath): OpenSessionResult {
+        opens++
+        return OpenSessionResult.Open(session)
+    }
+}
+
+private class HoldingExportSession(
+    private val result: CompletableDeferred<ClipResult>,
+) : ClipEditorSession {
+    override val metadata = VideoMetadata(10.seconds, 100, 100, false)
+    var createCalls = 0
+    override fun frames(request: FrameStripRequest): Flow<FrameStripEvent> = flow { emit(FrameStripEvent.Complete) }
+    override suspend fun createClip(range: ClipRange): ClipResult {
+        createCalls++
+        return result.await()
+    }
+    override suspend fun close() = Unit
 }
 
 private class RecordingPreviewPort : PreviewPort {

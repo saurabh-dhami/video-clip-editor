@@ -207,7 +207,14 @@ class AndroidMedia3PreviewPortDeviceTest {
             try {
                 onMain { old.dispatch(PreviewCommand.Release(PreviewGeneration(1))) }
                 oldRecorder.await { it == PreviewEvent.Released(PreviewGeneration(1)) }
-                onMain { old.dispatch(PreviewCommand.Bind(binding(source, revision = 1, startSeconds = 0, endSeconds = 2))) }
+                onMain {
+                    val forbiddenBinding = binding(source, revision = 2, startSeconds = 0, endSeconds = 2)
+                    old.dispatch(PreviewCommand.Bind(forbiddenBinding))
+                    old.dispatch(PreviewCommand.ReplaceRange(forbiddenBinding))
+                    old.dispatch(PreviewCommand.Retry(forbiddenBinding))
+                    old.dispatch(PreviewCommand.Seek(PreviewGeneration(1), PreviewRevision(2), 1.seconds))
+                    old.dispatch(PreviewCommand.SetPlayWhenReady(PreviewGeneration(1), PreviewRevision(2), true))
+                }
                 delay(250)
                 assertEquals(null, onMain { old.playerForSurface })
                 assertFalse(oldRecorder.snapshot().any { it is PreviewEvent.Ready })

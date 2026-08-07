@@ -1,6 +1,7 @@
 package com.oneononearena.videoclip.compose
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Modifier
 import com.oneononearena.videoclip.ClipRange
 import com.oneononearena.videoclip.VideoMetadata
@@ -40,6 +41,13 @@ internal sealed interface PreviewEvent {
 internal interface PreviewPort {
     val events: Flow<PreviewEvent>
     fun dispatch(command: PreviewCommand)
+}
+
+internal val LocalPreviewPortFactoryOverride =
+    staticCompositionLocalOf<PreviewPortFactory?> { null }
+
+internal interface PreviewPortSurfaceDelegate {
+    val surfacePort: PreviewPort?
 }
 
 /** Internal ownership seam: Android Release is terminal, so each source needs a fresh port. */

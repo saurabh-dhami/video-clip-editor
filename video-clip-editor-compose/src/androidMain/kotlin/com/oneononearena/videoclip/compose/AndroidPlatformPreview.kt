@@ -32,11 +32,18 @@ internal actual fun PlatformPreviewSurface(
     port: PreviewPort,
     modifier: Modifier,
 ) {
-    val androidPort = port as? AndroidMedia3PreviewPort ?: return
+    val androidPort = resolveAndroidPreviewSurfacePort(port) ?: return
     val player = androidPort.playerForSurface ?: return
     ContentFrame(
         player = player,
         modifier = modifier,
         contentScale = ContentScale.Fit,
     )
+}
+
+internal fun resolveAndroidPreviewSurfacePort(port: PreviewPort): AndroidMedia3PreviewPort? {
+    if (port !is PreviewPortSurfaceDelegate) return port as? AndroidMedia3PreviewPort
+    val candidate = port.surfacePort ?: return null
+    if (candidate === port || candidate is PreviewPortSurfaceDelegate) return null
+    return candidate as? AndroidMedia3PreviewPort
 }

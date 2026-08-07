@@ -74,7 +74,8 @@ fun ClipEditorScreen(
     onCancel: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val previewPortFactory = rememberPlatformPreviewPortFactory()
+    val platformPreviewPortFactory = rememberPlatformPreviewPortFactory()
+    val previewPortFactory = LocalPreviewPortFactoryOverride.current ?: platformPreviewPortFactory
     val lifecycle = remember(previewPortFactory) { ClipEditorLifecycleOwner(previewPortFactory) }
     val result by rememberUpdatedState(onResult)
     val cancel by rememberUpdatedState(onCancel)

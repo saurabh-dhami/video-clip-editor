@@ -78,16 +78,18 @@ fun ClipEditorScreen(
     modifier: Modifier = Modifier,
 ) {
     val scope = rememberCoroutineScope()
-    val cleanupScope = remember { CoroutineScope(SupervisorJob() + Dispatchers.Default) }
+    val cleanupScope = remember { CoroutineScope(SupervisorJob() + Dispatchers.Main) }
+    val previewPort = rememberPlatformPreviewPort()
+    val coordinator = remember(previewPort, scope) { ClipEditorPreviewCoordinator(scope, previewPort) }
     val result by rememberUpdatedState(onResult)
     val cancel by rememberUpdatedState(onCancel)
     val presenter = remember { ClipEditorPresenter(scope) }
     SideEffect { presenter.updateCallbacks(result, cancel) }
     val state by presenter.state.collectAsState()
     LaunchedEffect(source, editor, presenter) { presenter.start(source, editor) }
-    DisposableEffect(presenter) {
+    DisposableEffect(presenter, coordinator) {
         onDispose {
-            cleanupScope.launch { presenter.close() }
+            cleanupScope.launch { coordinator.closeThen { presenter.close() }; coordinator.dispose() }
         }
     }
 
@@ -95,7 +97,23 @@ fun ClipEditorScreen(
         when (val current = state) {
             ClipEditorUiState.LoadingMetadata -> Text("Loading metadata")
             ClipEditorUiState.LoadingFrames -> Text("Loading frames")
-            is ClipEditorUiState.Ready -> EditorControls(current, presenter)
+            is ClipEditorUiState.Ready -> {
+                val preview by coordinator.state.collectAsState()
+                LaunchedEffect(current.range, source, current.metadata) {
+                    coordinator.sync(
+                        PreviewBinding(
+                            generation = PreviewGeneration(source.value.hashCode().toLong()),
+                            revision = PreviewRevision(0),
+                            source = source,
+                            metadata = current.metadata,
+                            range = current.range,
+                            sourcePosition = current.range.start,
+                            playWhenReady = false,
+                        ),
+                    )
+                }
+                EditorControls(current, presenter, coordinator, preview)
+            }
             ClipEditorUiState.Exporting -> Text("Creating clip")
             is ClipEditorUiState.Retry -> {
                 Text(current.message)
@@ -105,20 +123,31 @@ fun ClipEditorScreen(
             ClipEditorUiState.Cancelled -> Text("Cancelled")
         }
         if (state !is ClipEditorUiState.Terminal && state != ClipEditorUiState.Cancelled) {
-            Button(presenter::cancel, Modifier.semantics { testTag = "back" }) { Text("Cancel") }
+            Button(
+                onClick = { scope.launch { coordinator.closeThen { presenter.close() }; presenter.cancel() } },
+                modifier = Modifier.semantics { testTag = "back" },
+            ) { Text("Back") }
         }
     }
 }
 
 @Composable
-private fun EditorControls(ready: ClipEditorUiState.Ready, presenter: ClipEditorPresenter) {
+private fun EditorControls(
+    ready: ClipEditorUiState.Ready,
+    presenter: ClipEditorPresenter,
+    coordinator: ClipEditorPreviewCoordinator,
+    preview: ClipEditorPreviewState,
+) {
     val visualRange = ready.provisionalRange ?: ready.range
+    Box(Modifier.fillMaxWidth().height(220.dp).background(Color.Black)) {
+        PlatformPreviewSurface(port = coordinator.surfacePort, modifier = Modifier.fillMaxWidth())
+    }
     ClipRangeSelector(
         frames = ready.frames,
         metadata = ready.metadata,
         range = visualRange,
         playhead = visualRange.start,
-        onRangeGestureStart = presenter::beginRangeGesture,
+        onRangeGestureStart = { coordinator.pause(); presenter.beginRangeGesture() },
         onRangeChange = { boundary, value ->
             when (boundary) {
                 RangeBoundary.Start -> presenter.updateStartFromSelector(value)
@@ -127,13 +156,25 @@ private fun EditorControls(ready: ClipEditorUiState.Ready, presenter: ClipEditor
         },
         onRangeGestureEnd = presenter::commitRangeGesture,
         onRangeGestureCancel = presenter::cancelRangeGesture,
-        onSeek = presenter::seekFromSelector,
-        onPlayheadDragStart = presenter::pausePreview,
+        onSeek = coordinator::seekPaused,
+        onPlayheadDragStart = coordinator::pause,
     )
     Text(visualRange.start.toString(), Modifier.semantics { testTag = "clip-start-time" })
     Text(visualRange.endExclusive.toString(), Modifier.semantics { testTag = "clip-end-time" })
-    Button({}, Modifier.semantics { testTag = "play-pause" }) { Text("Play") }
-    Button(presenter::createClip, Modifier.semantics { testTag = "done" }) { Text("Create clip") }
+    Button(
+        onClick = coordinator::togglePlayPause,
+        enabled = preview.ready && preview.failure == null,
+        modifier = Modifier.semantics { testTag = "play-pause" },
+    ) { Text(if (preview.isPlaying) "Pause" else "Play") }
+    Button(
+        onClick = presenter::createClip,
+        enabled = preview.failure == null,
+        modifier = Modifier.semantics { testTag = "done" },
+    ) { Text("Done") }
+    if (preview.failure != null) {
+        Text(preview.failure)
+        Button(coordinator::retry, Modifier.semantics { testTag = "retry-preview" }) { Text("Retry") }
+    }
 }
 
 internal expect fun decodeJpegForRender(bytes: ByteArray): ImageBitmap?

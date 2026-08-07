@@ -229,6 +229,80 @@ Rules:
 6. Range and playhead updates are clamped centrally. The player is a mirror of canonical common range/playhead state, never an alternate source of truth.
 7. Recomposition must not recreate a player for an unchanged source/session generation. Source change releases the prior player before preparing the next one.
 
+## 6A. V3 Lifecycle Re-architecture Addendum (normative)
+
+This addendum supersedes the V3 lifecycle ownership, port creation/disposal, release-fence, and export-mutation text elsewhere in this blueprint. V1 selector semantics, V2 source-clipped Media3 behaviour, the public ABI, core contracts, dependencies, and the IG1 → V4 → V5 sequence remain frozen. The rejected V3 implementation is not an integration input; one replacement V3 task must satisfy this complete chunk before IG1 starts.
+
+### Scope
+
+Re-architect only the internal Compose preview lifecycle and its focused fake/Android-device proofs. `PreviewPort`, `PreviewPortFactory`, lifecycle intents/audit, and platform helpers remain `internal`. No public API, `video-clip-editor-core`, dependency, OneOnOneArena, or exposed iOS type changes are permitted.
+
+### Responsibilities
+
+- One serialized `ClipEditorLifecycleOwner` accepts source-replacement and terminal-close intents. It owns the lifecycle scope/actor, event collector, current port, monotonic generation epoch, release waiter, durable release audit, and presenter session start/close sequencing. A composable may enqueue intents only; effect cancellation or disposal cannot launch cleanup, start a session, dispose a port, or cancel the owner before cleanup finishes.
+- Terminal close latches synchronously and wins over queued, suspended, or late replacement. After the latch, every replacement is a no-op. A replacement already awaiting release may finish teardown, but must not start a new session, create a new port, or bind after terminal close.
+- Android `PreviewCommand.Release` is terminal. For replacement, the owner must execute exactly: old-port `Release` → matching `Released` **or** bounded timeout recorded → old `ClipEditorSession.close()` → old native port disposal → terminal-latch recheck → fresh factory creation → new-session bind. No released port may receive `Bind`, `Retry`, range, seek, or play commands.
+- `ClipEditorPreviewCoordinator` may remain only as a scope-free preview reducer/command policy. It cannot own generation allocation, coroutine jobs, port creation/disposal, session sequencing, or lifecycle intent serialization.
+- `PlatformPreviewSurface(port)` renders the supplied active port. It neither creates nor disposes a native port and has no `DisposableEffect` teardown authority.
+- Release evidence is stored separately from binding state as a durable internal audit. The latest record survives a fresh binding and contains only generation, revision, outcome (`Acknowledged` or `TimedOut`), reason (`SourceReplacement` or `TerminalClose`), and a bounded internal diagnostic code. It contains no source path, URI, media content, stack trace, or host callback data.
+- Canonical range/playhead rules remain unchanged. A provisional range can render and pause preview but cannot be exported. Once export starts, Back, Done, Play/Pause, retry, seek, playhead, and trim mutations are disabled/no-op; lifecycle disposal/terminal close still runs.
+
+### Interfaces
+
+The frozen `PreviewBinding`, `PreviewCommand`, `PreviewEvent`, and `PreviewPort` declarations remain unchanged. The internal ownership seam is:
+
+```kotlin
+internal interface PreviewPortFactory {
+    fun create(): PreviewPort
+    fun dispose(port: PreviewPort)
+}
+
+internal enum class PreviewReleaseOutcome { Acknowledged, TimedOut }
+internal enum class PreviewReleaseReason { SourceReplacement, TerminalClose }
+
+internal data class PreviewReleaseAudit(
+    val generation: PreviewGeneration,
+    val revision: PreviewRevision,
+    val outcome: PreviewReleaseOutcome,
+    val reason: PreviewReleaseReason,
+    val diagnosticCode: String? = null,
+)
+```
+
+`rememberPlatformPreviewPortFactory()` supplies the lifecycle-owned factory. `PlatformPreviewSurface(port)` receives only the current active port. The legacy direct-port helper must not be used by the screen. None of these declarations becomes public or enters core/iOS host contracts.
+
+### Dependencies
+
+V1 and V2 accepted commits plus the existing internal Media3 actual. No new library, Gradle coordinate, core seam, public parameter/result, iOS exposed type, host navigation contract, or OneOnOneArena fixture. The owner runs on the existing UI-safe dispatcher; timeout is deterministic under coroutine test time.
+
+Backward necessity: terminal Android release requires a fresh port; fresh creation requires old native disposal; safe disposal requires release evidence and old-session close ordering; replacement/close safety requires one authority and a close-wins latch. Forward feasibility: intent → serialized owner → matching fence/audit → session close → native disposal → terminal recheck → optional fresh session/port/bind. A wrong acknowledgement, timeout, or close race has an explicit bounded route and verification point.
+
+### Acceptance Criteria
+
+1. A terminal fake rejects/records every command after `Release`; no production path binds or reuses it.
+2. While release is pending, wrong-generation `Released` causes no audit completion, session close, disposal, factory creation, or bind. Matching acknowledgement produces exact order: `Release`, `Released`, session close, old-port disposal, fresh-port create, fresh `Bind`.
+3. Timeout produces a bounded `TimedOut` audit before session close; the record retains generation/revision/reason after the next binding. Fresh creation still occurs only after close and disposal.
+4. In a controlled replace-versus-close race, close wins: exact-once old-session close/disposal, no presenter start/fresh bind, and all pending/late replacements no-op. No detached child or composition-owned cleanup job survives.
+5. Live matching `Position` updates the playhead; a trim/playhead gesture pauses and remains range-bounded; one completed range gesture emits one `ReplaceRange`. Existing 500 ms and source-time semantics remain unchanged.
+6. Done is disabled/no-op for a provisional range. After export begins, all control mutations are disabled/no-op and the committed canonical range alone reaches `createClip`.
+7. Android actual proof shows `Release` is terminal, native disposal is owner-ordered, and a distinct newly created actual can bind/emit `Ready`. Focused UI device proof covers live playhead/gesture and export lockout.
+8. Public signature/API diff, core, dependencies, OneOnOneArena, and exposed iOS types are unchanged; common and iOS tests compile.
+
+### Test Strategy
+
+- Common coroutine tests use a terminal fake, controllable release waiter, virtual timeout, call-order recorder, and close/replacement barrier. They prove wrong versus matching acknowledgement, timeout then fresh binding with durable audit, close-wins interleaving, monotonic generations, exact-once teardown, and zero commands after terminal release.
+- Common presenter/Compose tests emit live matching positions, drive actual tagged handle/playhead gestures, assert one committed range replacement, assert provisional Done lockout, then hold export pending and assert every control callback is inert.
+- Android instrumentation uses the repository fixture and actual `AndroidMedia3PreviewPort`: release old actual, attempt forbidden post-release commands, dispose it through the factory, create a distinct actual, bind, and await matching `Ready`. A focused screen test proves live playhead/gesture and export lockout on a test device. Run the focused classes on API 23 and Samsung SM-S928B/API 36; fake-only or compile-only evidence cannot pass.
+- Regression gates: `:video-clip-editor-compose:allTests`, `:video-clip-editor-compose:iosSimulatorArm64Test`, public/common platform scans, and focused Android device tests.
+
+### Rollback Strategy
+
+Revert only the replacement V3 commit. Leave V1/V2 frozen and V3 blocked. Do not restore released-port reuse, surface-owned disposal, session-close-first cleanup, transient timeout evidence, or detached cleanup launches. IG1 remains blocked until a corrected replacement V3 passes again.
+
+### Integration Strategy
+
+This is one replacement V3 chunk, not V3a/V3b or an IG1 substitute. Author-distinct principal review must verify the exact lifecycle order, durable bounded audit, terminal fake/actual evidence, close-wins race, export gate, public/API isolation, and all focused tests before acceptance. After V3 PASS, continue unchanged: IG1 real editor flow → V4 demo/device evidence → V5 independent completion audit.
+
 ## 7. Backward necessary-condition pass
 
 | Outcome criterion | Direct predecessor | Why necessary | Evidence/assumption | Owner | Stop condition |

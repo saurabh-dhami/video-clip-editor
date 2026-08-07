@@ -68,9 +68,16 @@ Generation changes only for new source/session. Revision increases for each comp
 V1 freezes the value and port declarations above, which compile without platform code. V2 adds the internal helper declarations below with Android/iOS actuals in the same commit; this keeps V1 independently green while retaining the exact internal future seam.
 
 ~~~
-@Composable internal expect fun rememberPlatformPreviewPort(): PreviewPort
+internal interface PreviewPortFactory {
+    fun create(): PreviewPort
+    fun dispose(port: PreviewPort)
+}
+
+@Composable internal expect fun rememberPlatformPreviewPortFactory(): PreviewPortFactory
 @Composable internal expect fun PlatformPreviewSurface(port: PreviewPort, modifier: Modifier = Modifier)
 ~~~
+
+Replacement V3 supersedes direct-port ownership: the screen uses internal `rememberPlatformPreviewPortFactory()`; one lifecycle owner creates/disposes ports; `PlatformPreviewSurface` only renders its supplied active port. The legacy `rememberPlatformPreviewPort()` helper must be removed or left unused and cannot participate in V3 lifecycle. Release audit and lifecycle intent types remain internal and are frozen by blueprint §6A.
 
 ## Ordered task map
 
@@ -78,7 +85,7 @@ V1 freezes the value and port declarations above, which compile without platform
 | --- | --- | --- | --- |
 | V1 | Common geometry, selector, port contract, fake-port tests | Approved blueprint | V2/V3 consume exact seam |
 | V2 | Android Media3 actual, iOS unavailable actual, device tests | V1 green | V3 gets source-clipped preview |
-| V3 | Screen/presenter wiring and release fence | V1/V2 green | IG1 gets assembled screen |
+| Replacement V3 | Serialized lifecycle owner, terminal port factory/order, durable audit, export mutation gate | V1/V2 green; rejected V3 history | IG1 gets accepted assembled screen |
 | IG1 | Real Android integration flow test only | V1-V3 accepted | V4 blocked until API-23 green |
 | V4 | Standalone demo and API-23/Samsung evidence | IG1 green | V5 audit input |
 | V5 | Independent traceability/API/security/license audit | V1-V4/IG1 green | only PASS completes goal |
@@ -349,111 +356,202 @@ git commit -m "feat(android): add Media3 clip preview adapter"
 
 ---
 
-### Task 3: V3 — screen composition, presenter ownership, release fence
+### Task 3: Replacement V3 — serialized lifecycle ownership and terminal preview ports
 
-**Scope:** Wire V1/V2 into ClipEditorScreen and presenter. Do not change core engine/export/lease code or standalone demo.
+This single task supersedes the rejected V3 implementation and every earlier V3 fix-round instruction. Do not split it into another production chunk. IG1 remains the next task.
+
+#### Scope
+
+Re-architect only internal Compose preview/session lifecycle ownership and focused common/Android tests. No public API, core, dependency, standalone demo, OneOnOneArena, or exposed iOS type change.
 
 **Files:**
 
+- Create: video-clip-editor-compose/src/commonMain/kotlin/com/oneononearena/videoclip/compose/ClipEditorLifecycleOwner.kt
+- Modify: video-clip-editor-compose/src/commonMain/kotlin/com/oneononearena/videoclip/compose/PreviewPort.kt
+- Modify: video-clip-editor-compose/src/commonMain/kotlin/com/oneononearena/videoclip/compose/ClipEditorPreviewCoordinator.kt
 - Modify: video-clip-editor-compose/src/commonMain/kotlin/com/oneononearena/videoclip/compose/ClipEditorScreen.kt
-- Create: video-clip-editor-compose/src/commonMain/kotlin/com/oneononearena/videoclip/compose/ClipEditorPreviewCoordinator.kt
-- Create: video-clip-editor-compose/src/commonTest/kotlin/com/oneononearena/videoclip/compose/ClipEditorPreviewCoordinatorTest.kt
+- Create: video-clip-editor-compose/src/commonTest/kotlin/com/oneononearena/videoclip/compose/ClipEditorLifecycleOwnerTest.kt
+- Modify: video-clip-editor-compose/src/commonTest/kotlin/com/oneononearena/videoclip/compose/ClipEditorPreviewCoordinatorTest.kt
 - Modify: video-clip-editor-compose/src/commonTest/kotlin/com/oneononearena/videoclip/compose/ClipEditorPresenterTest.kt
+- Modify: video-clip-editor-compose/src/androidMain/kotlin/com/oneononearena/videoclip/compose/AndroidPlatformPreview.kt only to keep factory-owned disposal and render-only surface behaviour
 - Modify: video-clip-editor-compose/src/androidDeviceTest/kotlin/com/oneononearena/videoclip/compose/AndroidMedia3PreviewPortDeviceTest.kt
+- Create: video-clip-editor-compose/src/androidDeviceTest/kotlin/com/oneononearena/videoclip/compose/ClipEditorLifecycleDeviceTest.kt
 
-**Responsibilities:**
+#### Responsibilities
 
-- Screen order: fitted black preview surface; source start/end labels; selector; Back, Play/Pause, Done footer.
-- Presenter owns session, metadata, frames, canonical range, export, cleanup, result/cancel. Coordinator owns active binding and port command/event filtering.
-- Initial binding is paused at range start. Play starts current position only if inside range; otherwise starts selected range start. Ready gate enables Play. Preview failure disables Play/Done and permits Retry.
-- Handle drag pauses and provisional visual change; only commit sends one ReplaceRange. Playhead gestures pause/seek/remain paused. Export disables player/control mutations.
-- On disposal/cancel/source replacement: dispatch Release, wait matching Released with bounded timeout/fallback record, then presenter.close. No session close first.
+- `ClipEditorLifecycleOwner` is the only replacement/close authority. It owns one independent lifecycle scope/actor, presenter lifetime, event collector, monotonic generation epoch, current port/factory, release waiter, durable release audit, and session start/close ordering.
+- `requestClose()` synchronously latches terminal state before enqueuing cleanup. It wins over queued, suspended, and late replacements. After every suspension, replacement rechecks the latch before session start, factory create, and Bind.
+- Replacement order is exact: old `Release` → matching `Released` or recorded bounded timeout → old session close → old native port disposal → terminal recheck → fresh factory create → fresh session/`Bind`. Android Release remains terminal. No post-Release command or port reuse.
+- Composable effects enqueue intents only. They never own cleanup jobs or cancel lifecycle resources. Owner self-cancels only after terminal release/session close/native disposal completes.
+- `ClipEditorPreviewCoordinator` becomes scope-free reducer/command policy if retained. It does not allocate generations, launch/collect, create/dispose ports, or sequence sessions.
+- `PlatformPreviewSurface` renders the supplied active port only. No native disposal or release ordering.
+- Preserve a separate latest `PreviewReleaseAudit` across fresh binding: generation, revision, acknowledged/timed-out outcome, source-replacement/terminal-close reason, bounded code only; never path/URI/media/stack/host data.
+- Preserve range/playhead semantics. Provisional range cannot export. Export-in-progress disables/no-ops Back, Done, Play/Pause, Retry, seek, playhead, and trim mutations; terminal lifecycle close remains enabled.
 
-**Interfaces:** V1 common selector/port; V2 actual; frozen public ClipEditorScreen/ClipResult/ClipEditorSession only.
+#### Interfaces
 
-**Dependencies:** V1 + V2 independent green gates.
+Consume unchanged V1 `PreviewBinding`/commands/events/port and V2 Android actual. Retain internal `PreviewPortFactory.create()/dispose()` and `rememberPlatformPreviewPortFactory()`. Add only internal lifecycle intent/audit types from blueprint §6A. `PlatformPreviewSurface(port)` stays render-only. Preserve exact public `ClipEditorScreen`, `ClipResult`, `ClipEditorSession`, and callback contracts.
 
-**Acceptance:**
+#### Dependencies
 
-- Rendered range is the range passed to existing createClip.
-- Stale source/revision events never change playhead/state.
-- onResult/onCancel still fire once.
-- Player release acknowledgement precedes session close.
-- No new public parameter/type/result code.
+Accepted V1/V2 commits and existing Media3 1.10.1 actual. Existing coroutines test scheduler supplies deterministic timeout/race control. No Gradle, core, iOS exposed API, host, or fixture dependency changes.
 
-**Test strategy:** Common fake-port tests, Compose semantics tests, V2 device control test. Core regression runs later at IG1.
+#### Acceptance Criteria
 
-**Rollback:** revert V3 files only. V1/V2 remain unused; core untouched.
+1. Terminal fake records/rejects all commands after Release. Wrong-generation `Released` while the matching fence is pending performs no close/dispose/create/bind; matching acknowledgement yields exact order `Release, Released, session-close, port-dispose, port-create, Bind`.
+2. Timeout is recorded before close/dispose and remains observable after fresh Bind with exact old generation/revision and `SourceReplacement`; audit has no host media path.
+3. Controlled replace-versus-close race proves close wins, old session/port teardown exact once, no fresh start/create/bind, and queued/late replacements no-op.
+4. Generations increase monotonically and never derive from source/path or reset after teardown. No detached child, composition-cancelled cleanup, or session-close-first route.
+5. Matching live Position updates playhead. Real tagged trim/playhead gestures pause and stay range-bounded; one completed trim emits one ReplaceRange. Existing 500 ms/source-time rules unchanged.
+6. Provisional Done is disabled/inert. Once export starts, every control mutation is disabled/inert; only committed canonical range reaches createClip once.
+7. Android actual is terminal after Release; owner disposes old actual in required order; distinct factory-created actual binds and emits Ready. Focused device UI proves live playhead/gesture and export lockout.
+8. Common/iOS regressions and API/platform scans pass. No public, core, dependency, OneOnOneArena, or exposed iOS type diff.
 
-**Integration:** IG1 uses real screen + Media3 actual + production core session/export.
+#### Test Strategy
 
-- [ ] **Step 1: Write failing coordinator tests**
+Common tests use a terminal fake, virtual timeout, release barrier, lifecycle-intent barrier, and exact call recorder. Android instrumentation uses the repository fixture and actual port. Fake-only, compile-only, arbitrary-delay, or wrong-device evidence cannot satisfy device acceptance.
 
-~~~
+- [ ] **Step 1: Write terminal-fence, durable-audit, and exact-order RED tests**
+
+~~~kotlin
 @Test
-fun stalePositionDoesNotMutateCurrentBinding() = runTest {
-    val coordinator = ClipEditorPreviewCoordinator(fakePort)
-    coordinator.bind(binding(generation = 7, revision = 1, sourcePosition = 2.seconds))
-    coordinator.replaceRange(binding(generation = 7, revision = 2, sourcePosition = 2.seconds))
-    fakePort.emit(PreviewEvent.Position(PreviewGeneration(7), PreviewRevision(1), 8.seconds, true))
+fun wrongAckCannotAdvanceReplacement_thenMatchingAckUsesExactOrder() = runTest {
+    val rig = lifecycleRig(terminalPort = true)
+    rig.owner.requestReplace(sourceA)
+    rig.awaitBound(sourceA)
+    rig.owner.requestReplace(sourceB)
+    rig.awaitCall("Release:g1:r1")
 
-    assertEquals(2.seconds, coordinator.state.value.playhead)
+    rig.oldPort.emit(PreviewEvent.Released(PreviewGeneration(99)))
+    runCurrent()
+    assertEquals(listOf("Release:g1:r1"), rig.calls)
+
+    rig.oldPort.emit(PreviewEvent.Released(PreviewGeneration(1)))
+    rig.awaitBound(sourceB)
+    assertEquals(
+        listOf("Release:g1:r1", "Released:g1", "session-close:g1", "port-dispose:g1", "port-create:g2", "Bind:g2:r1"),
+        rig.calls,
+    )
+    assertEquals(emptyList(), rig.oldPort.commandsAfterRelease)
 }
 
 @Test
-fun closeReleasesPreviewBeforeSession() = runTest {
-    val calls = mutableListOf<String>()
-    val port = RecordingPreviewPort(onRelease = { calls += "released" })
-    val coordinator = ClipEditorPreviewCoordinator(port)
+fun timeoutAuditSurvivesFreshBindingWithoutMediaPath() = runTest {
+    val rig = lifecycleRig(terminalPort = true, sourcePath = "/fixture.mp4")
+    rig.owner.requestReplace(sourceA)
+    rig.awaitBound(sourceA)
+    rig.owner.requestReplace(sourceB)
+    advanceTimeBy(RELEASE_TIMEOUT.inWholeMilliseconds)
+    rig.awaitBound(sourceB)
 
-    coordinator.closeThen { calls += "session" }
-
-    assertEquals(listOf("released", "session"), calls)
+    assertEquals(
+        PreviewReleaseAudit(PreviewGeneration(1), PreviewRevision(1), PreviewReleaseOutcome.TimedOut, PreviewReleaseReason.SourceReplacement, "RELEASE_TIMEOUT"),
+        rig.owner.releaseAudit.value,
+    )
+    assertFalse(rig.owner.releaseAudit.value.toString().contains("fixture.mp4"))
+    assertTrue(rig.calls.indexOf("session-close:g1") < rig.calls.indexOf("port-dispose:g1"))
+    assertTrue(rig.calls.indexOf("port-dispose:g1") < rig.calls.indexOf("port-create:g2"))
 }
 ~~~
 
-- [ ] **Step 2: Verify RED**
+- [ ] **Step 2: Write close-wins, live-gesture, and export-lockout RED tests**
 
-Run: ./gradlew :video-clip-editor-compose:allTests --tests '*ClipEditorPreviewCoordinatorTest'
+~~~kotlin
+@Test
+fun terminalCloseWinsReplacementPendingAtReleaseFence() = runTest {
+    val rig = lifecycleRig(terminalPort = true)
+    rig.owner.requestReplace(sourceA)
+    rig.awaitBound(sourceA)
+    rig.owner.requestReplace(sourceB)
+    rig.awaitReleasePending(PreviewGeneration(1))
+    rig.owner.requestClose()
+    rig.oldPort.emit(PreviewEvent.Released(PreviewGeneration(1)))
+    rig.awaitClosed()
+    rig.owner.requestReplace(sourceC)
+    runCurrent()
 
-Expected: coordinator/release ordering API unresolved.
+    assertEquals(1, rig.calls.count { it == "session-close:g1" })
+    assertEquals(1, rig.calls.count { it == "port-dispose:g1" })
+    assertEquals(0, rig.calls.count { it.startsWith("port-create:g2") || it.startsWith("Bind:g2") })
+}
 
-- [ ] **Step 3: Implement minimal wiring**
-
-~~~
-private fun accepts(event: PreviewEvent, active: PreviewBinding): Boolean = when (event) {
-    is PreviewEvent.Ready -> event.generation == active.generation && event.revision == active.revision
-    is PreviewEvent.Position -> event.generation == active.generation && event.revision == active.revision
-    is PreviewEvent.RecoverableFailure -> event.generation == active.generation && event.revision == active.revision
-    is PreviewEvent.Released -> event.generation == active.generation
+@Test
+fun provisionalAndExportingStatesRejectEveryControlMutation() = runTest {
+    val rig = readyScreenRig()
+    rig.dragHandleWithoutRelease(end = 5.seconds)
+    rig.clickDone()
+    assertEquals(0, rig.session.createClipCalls)
+    rig.releaseHandle()
+    rig.clickDoneAndHoldExport()
+    rig.performAllControlGestures()
+    assertEquals(listOf(ClipRange(2.seconds, 5.seconds)), rig.session.createClipRanges)
+    assertEquals(rig.commandsAtExportStart, rig.port.commands)
 }
 ~~~
 
-Use one LaunchedEffect per port/source generation, not per recomposition. Use withTimeoutOrNull only around awaiting Released. On timeout prevent further commands for old generation, record fallback internally, then close exactly once. Do not create one cleanup scope per recomposition.
+Also emit a matching live Position before real tagged handle/playhead gestures; assert visible playhead movement, pause command, bounded playhead, and exactly one ReplaceRange after trim release.
 
-- [ ] **Step 4: Verify GREEN**
+- [ ] **Step 3: Verify RED with the supported aggregate target**
 
-Run: ./gradlew :video-clip-editor-compose:allTests :video-clip-editor-compose:iosSimulatorArm64Test
+Run: `./gradlew :video-clip-editor-compose:allTests`
 
-Expected: BUILD SUCCESSFUL. Old disposal/range/callback tests and new stale-event/release/export-range tests pass.
+Expected: FAIL because serialized lifecycle owner/audit and close-wins guarantees are absent, timeout audit is overwritten, or terminal fake rejects current reuse.
 
-- [ ] **Step 5: Device behavior check**
+- [ ] **Step 4: Implement the minimum serialized owner**
 
-Run: ./gradlew :video-clip-editor-compose:connectedAndroidDeviceTest -Pandroid.testInstrumentationRunnerArguments.class=com.oneononearena.videoclip.compose.AndroidMedia3PreviewPortDeviceTest
+Use one owner scope and one serialized intent loop. `requestClose()` latches terminal synchronously. Allocate generation only when a fresh binding is authorized. Keep release audit outside replaceable preview state. A matching waiter alone advances release. After acknowledgement/timeout, close old session, dispose old port, recheck terminal, then optionally create/bind. Surface receives `owner.activePort`; it never disposes. Remove screen use of the legacy direct-port helper and every detached/composition-owned cleanup launch.
 
-Expected: initial pause at selected start; scrub stays range-bounded; Play loops clipped item; release event precedes recorded session close.
+Export gate is centralized at the presenter/owner boundary and mirrored by disabled UI semantics. Range commit remains the only ReplaceRange producer.
 
-- [ ] **Step 6: Independent V3 review and commit**
+- [ ] **Step 5: Verify common/iOS GREEN and isolation**
 
-Review public ABI, one-export gate, range canonicality, source/revision filtering, failure behavior, fitted preview, and Release → session close. Reject any cleanup path that closes session first.
+Run:
 
+~~~bash
+./gradlew :video-clip-editor-compose:allTests \
+  :video-clip-editor-compose:iosSimulatorArm64Test
+rg -n 'android\.|androidx\.media3|ExoPlayer|MediaItem|AVFoundation|UIKit' \
+  video-clip-editor-compose/src/commonMain
+git diff --name-only HEAD^ -- video-clip-editor-core OneOnOneArena gradle/libs.versions.toml
 ~~~
-git add video-clip-editor-compose/src/commonMain/kotlin/com/oneononearena/videoclip/compose/ClipEditorScreen.kt \
-  video-clip-editor-compose/src/commonMain/kotlin/com/oneononearena/videoclip/compose/ClipEditorPreviewCoordinator.kt \
+
+Expected: `BUILD SUCCESSFUL`; platform scan empty; scope scan empty. All terminal/wrong-ack/timeout/race/live-gesture/export tests pass.
+
+- [ ] **Step 6: Prove actual/device behavior on both required targets**
+
+Run on API 23, then Samsung SM-S928B/API 36:
+
+~~~bash
+env ANDROID_HOME=/Users/sandeepdhami/Library/Android/sdk ANDROID_SERIAL=emulator-5554 \
+  ./gradlew :video-clip-editor-compose:connectedAndroidDeviceTest \
+  -Pandroid.testInstrumentationRunnerArguments.class=com.oneononearena.videoclip.compose.AndroidMedia3PreviewPortDeviceTest,com.oneononearena.videoclip.compose.ClipEditorLifecycleDeviceTest --rerun-tasks
+
+env ANDROID_HOME=/Users/sandeepdhami/Library/Android/sdk ANDROID_SERIAL=RZCX519T5FL \
+  ./gradlew :video-clip-editor-compose:connectedAndroidDeviceTest \
+  -Pandroid.testInstrumentationRunnerArguments.class=com.oneononearena.videoclip.compose.AndroidMedia3PreviewPortDeviceTest,com.oneononearena.videoclip.compose.ClipEditorLifecycleDeviceTest --rerun-tasks
+~~~
+
+Expected: both focused classes green. Evidence identifies model/API and fixture hash; actual Release is terminal, old actual is disposed before distinct actual creation/Ready, and device UI proves live playhead/gesture plus export lockout.
+
+- [ ] **Step 7: Author-distinct V3 review and replacement commit**
+
+Reviewer receives blueprint §6A, this replacement task, rejected V3 report, exact diff, common/iOS logs, and both device logs. Reject transient audit, wrong-ack advancement, port reuse, surface disposal, detached cleanup, close-loses race, provisional export, mutable controls during export, or API/scope drift.
+
+~~~bash
+git add video-clip-editor-compose/src/commonMain/kotlin/com/oneononearena/videoclip/compose \
   video-clip-editor-compose/src/commonTest/kotlin/com/oneononearena/videoclip/compose \
+  video-clip-editor-compose/src/androidMain/kotlin/com/oneononearena/videoclip/compose/AndroidPlatformPreview.kt \
   video-clip-editor-compose/src/androidDeviceTest/kotlin/com/oneononearena/videoclip/compose
-git commit -m "feat(compose): wire clip preview and range controls"
+git commit -m "fix(compose): serialize preview lifecycle ownership"
 ~~~
+
+#### Rollback Strategy
+
+Revert only the replacement V3 commit; leave V1/V2 frozen and V3 blocked. Never roll back to released-port reuse, transient audit, surface-owned disposal, detached cleanup, or session-close-first ordering.
+
+#### Integration Strategy
+
+An author-distinct PASS completes only replacement V3. Then continue the existing order unchanged: Task 4 IG1 → Task 5 V4 → Task 6 V5. IG1 remains the real Media3 + production exporter flow and cannot be weakened by V3 fake/device proofs.
 
 ---
 
@@ -756,7 +854,7 @@ Expected: independent PASS >=95/100 and no untracked/modified work except expres
 
 ## Plan self-review
 
-- Coverage: V1 selector/geometry, V2 Media3 source clipping/iOS seam, V3 screen ownership/release, IG1 real flow, V4 demo/device evidence, V5 independent traceability.
+- Coverage: V1 selector/geometry, V2 Media3 source clipping/iOS seam, replacement V3 serialized terminal lifecycle/durable audit/export gate, IG1 real flow, V4 demo/device evidence, V5 independent traceability.
 - Placeholder scan: no deferred markers. Each task contains scope, responsibility, interfaces, dependencies, acceptance, test strategy, rollback, integration, RED/GREEN, review, and commit.
 - Type consistency: PreviewBinding/Command/Event/Port exactly match approved blueprint. No task alters public factory, ClipEditorScreen signature, ClipResult, or failure enums.
-- Ordering: V1 → V2 → V3 → IG1 → V4 → V5. V4 requires API-23 IG1 green; V5 requires both device targets and independent PASS.
+- Ordering: V1 → V2 → replacement V3 → IG1 → V4 → V5. V4 requires API-23 IG1 green; V5 requires both device targets and independent PASS.

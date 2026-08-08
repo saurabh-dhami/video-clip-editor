@@ -8,7 +8,11 @@
 
 **Tech Stack:** Kotlin Multiplatform; Compose Multiplatform 1.11.0; Android API 23+; Media3 1.10.1; coroutines/Flow; Android instrumentation; API-23 emulator; Samsung SM-S928B/API-36.
 
-**IG1 reconciliation:** `docs/superpowers/specs/2026-08-07-visual-clip-editor-ig1-test-observability-reconciliation.md` is normative for Task 4. It records unresolved VUI-R10, materially new subtrigger VUI-R10A, rejected decision `dec_20260807_181452_13335a`, repair decision `dec_20260807_183016_c836b9`, bounded render-proxy transparency, compile/runtime preflights, and post-V3 revalidation.
+**IG1 reconciliation:** `docs/superpowers/specs/2026-08-07-visual-clip-editor-ig1-test-observability-reconciliation.md` remains normative history for Task 4. It records VUI-R10, materially new subtrigger VUI-R10A, rejected decision `dec_20260807_181452_13335a`, repair decision `dec_20260807_183016_c836b9`, bounded render-proxy transparency, compile/runtime preflights, and post-V3 revalidation accepted at `eb06901`.
+
+**VUI-R11 reconciliation:** `docs/superpowers/specs/2026-08-07-visual-clip-editor-vui-r11-repeat-intent-reconciliation.md` is normative for the V2 repair discovered by strict IG1. It records confirmed decision `dec_20260807_192317_532e5c`, rejected first docs decision `dec_20260807_193521_620060`, review feedback `fb_20260807_194642_fcc9d0`, second docs decision `dec_20260807_231947_2f75f6`, authoritative accepted playback intent, temporary diagnostic disposition, and one canonical strict-last sequence. Reconciliation count remains `1`.
+
+**VUI-R11 Full state:** `PLAN_FROZEN`. Machine-readable evidence: `docs/superpowers/evidence/2026-08-08-vui-r11-repeat-intent.manifest.json`; immutable pre-code baseline `eb0690162405c25f8962eb17364116ce9afbab1c`; digest `815ddf933f48b1f59a8097aab19296176fa553bb2ecfb37153872e7f96b8c73b`. Author-distinct Full review passed at 100/100 with no Critical/Important findings (`fb_20260808_154041_279458`); only the frozen VUI-R11 scope may now start. Accepted V1–V3/O1 history remains historical and is not rewritten by the updated policy.
 
 ## Global constraints
 
@@ -90,8 +94,9 @@ IG1 adds one narrower internal-only selection seam after V3. `ClipEditorScreen` 
 | V1 | Common geometry, selector, port contract, fake-port tests | Approved blueprint | V2/V3 consume exact seam |
 | V2 | Android Media3 actual, iOS unavailable actual, device tests | V1 green | V3 gets source-clipped preview |
 | Replacement V3 | Serialized lifecycle owner, terminal port factory/order, durable closed audit, export mutation gate; **Sol/high floor** | V1/V2 green; VUI-R7–R9 reconcile three rejected V3 rounds | IG1 gets accepted assembled screen |
-| IG1-O1 | Per-composition factory seam + one-hop render-delegate bridge + compile/API23 runtime transparency preflights + affected V3 revalidation | V3 accepted at `661d16c`; unresolved VUI-R10/VUI-R10A | IG1 functional RED starts only after both preflights and author-distinct >=95 PASS |
-| IG1 | Real Android integration flow test; test-only wrappers around real factory/session/lease | IG1-O1 accepted | V4 blocked until API-23 green |
+| IG1-O1 | Per-composition factory seam + one-hop render-delegate bridge + compile/API23 runtime transparency preflights + affected V3 revalidation | V3 accepted at `661d16c`; VUI-R10/R10A | Accepted at `eb06901`; author-distinct 98/100 PASS |
+| V2-R11 | Android adapter authoritative accepted play intent + real repeat-transition tests + bounded diagnostic disposition | IG1-O1 accepted; strict IG1 exposed confirmed VUI-R11 RED | Direct adapter both devices → regressions/guards → code review → exact strict method both devices last |
+| IG1 | Real Android integration flow test; test-only wrappers around real factory/session/lease | IG1-O1 accepted; V2-R11 accepted | V4 blocked until API-23 green |
 | V4 | Standalone demo and API-23/Samsung evidence | IG1 green | V5 audit input |
 | V5 | Independent traceability/API/security/license audit | V1-V4/IG1 green | only PASS completes goal |
 
@@ -627,7 +632,7 @@ An author-distinct PASS completes only replacement V3. Then continue the existin
 
 ### Task 4: IG1 — observability prerequisite and real editor-flow gate
 
-**Current status:** BLOCKED. Original RED: `ClipEditorScreenIntegrationTest.kt:55:37 No parameter with name 'previewPortFactory' found.` First docs repair was author-distinct REJECT: wrapper lifecycle port fails `AndroidPlatformPreview.kt` direct `AndroidMedia3PreviewPort` cast, so compile could pass while `ContentFrame` never renders. VUI-R10 remains unresolved; VUI-R10A records this materially new evidence. Do not add public parameter or begin functional RED/GREEN.
+**Current status:** IG1-O1 accepted at `eb0690162405c25f8962eb17364116ce9afbab1c` with author-distinct 98/100 PASS and its required API23/Samsung/common/iOS/declaration gates. Strict IG1 then exposed confirmed VUI-R11 RED in the accepted V2 Android adapter: after a real repeat transition, playback remains paused because the accepted `SetPlayWhenReady(true)` updates only the Player and leaves `appliedBinding.playWhenReady=false`. Functional IG1 remains blocked until every V2-R11 canonical gate passes. Preserve the strict functional method semantically unchanged; only the explicitly authorized temporary diagnostic deletion may touch its file. Do not add a public parameter or broaden production scope.
 
 #### IG1-O1 — narrow internal test-observability prerequisite
 
@@ -765,6 +770,93 @@ env ANDROID_HOME=/Users/sandeepdhami/Library/Android/sdk ANDROID_SERIAL=RZCX519T
 
 Expected: public declaration baseline unchanged; common/iOS suites green; targeted lifecycle class green on `ClipEditor_API23`/API 23 and `SM-S928B`/API 36. Author-distinct reviewer PASS required before IG1 functional RED resumes.
 
+#### V2-R11 — authoritative accepted playback intent repair
+
+**Scope:** Canonical repair scope remains two files: production `video-clip-editor-compose/src/androidMain/kotlin/com/oneononearena/videoclip/compose/AndroidMedia3PreviewPort.kt` and focused `video-clip-editor-compose/src/androidDeviceTest/kotlin/com/oneononearena/videoclip/compose/AndroidMedia3PreviewPortDeviceTest.kt`. One additional test-only disposition edit is authorized after evidence retention: delete only temporary `diagnostic_sourceEndAndInteriorClipsExposeFirstRepeatPlayerState` from existing untracked `video-clip-editor-compose/src/androidDeviceTest/kotlin/com/oneononearena/videoclip/compose/ClipEditorScreenIntegrationTest.kt`. Its null-resume assertions encode the pre-fix defect and cannot be enduring acceptance. Preserve the strict method `editorFlow_clipsPreviewLoopsExportsThenReleasesBeforeClose` semantically unchanged. No helper/recorder/strict assertion/predicate/timeout/gesture or other IG1 byte may change. No common/public/core contract, iOS, dependency, Media3 version, V3 lifecycle ownership, host, demo, or OneOnOneArena change.
+
+**Full route/baseline:** Device + lifecycle/concurrency + four-owner causal path + integration + missing deterministic full oracle require Full. The manifest freezes public screen/core/Android/iOS hashes at `eb069016`; planned mutable adapter/focused-test/one-method diagnostic scope is separate. The strict method extractor SHA-256 is `a7d9fc1fac78e9795211d40cb6602ebe9e36e7607def5b96f460572b201b1c4a`. Baseline drift makes affected evidence `STALE` and requires re-approval.
+
+**Confirmed cause:** Exact API23 evidence proves correct clip range, source, `REPEAT_MODE_ONE`, high playing position, then low/start `BUFFERING`, but no later playing position and no failure. Direct source-end and interior clips both wrap `2000 -> 0`, emit `BUFFERING true/false`, then `READY false/false`. `onPlaybackStateChanged(READY)` restores `player.playWhenReady` from `appliedBinding`; accepted `SetPlayWhenReady` currently mutates only Player state, so stored intent remains false. A single-variable stored-binding discriminator false-to-true produced `READY true/true` 41 ms later and `Position(7.061s,true)`.
+
+**State invariant:** An accepted `SetPlayWhenReady(generation, revision, value)` for the matching ready binding atomically makes `appliedBinding.playWhenReady == value` before mutating the Player or emitting Position. It changes no generation, revision, source, metadata, range, or source position. Stale, wrong-generation, preparing, released, and terminal commands mutate neither stored intent nor Player. `Bind`, `ReplaceRange`, and `Retry` remain complete authoritative snapshots; their explicit `playWhenReady` wins. `pendingBinding` is never mutated by this command.
+
+**Minimal implementation shape:** Resolve the matching ready binding; copy only `playWhenReady`; assign that copy to `appliedBinding`; set `player.playWhenReady`; emit Position using the updated binding; update the ticker. No new abstraction, dependency, public surface, polling loop, or lifecycle owner.
+
+**Diagnostic evidence disposition:** Before deleting the temporary diagnostic method, archive the original strict RED log, both source-end/interior traces, the stored-intent discriminator trace, the exact diagnostic source/diff, and report paths/hashes. This preserves causal evidence. Deletion cannot hide or relax strict RED: final acceptance selects only the semantically unchanged strict functional method. The full V2 adapter class and the exact strict IG1 method are separate commands; the whole IG1 class is never the VUI-R11 acceptance command.
+
+**Direct RED tests:**
+
+1. `acceptedPlayIntentSurvivesFirstRealRepeat`: bind exact `2s..<4s`, await paused Ready, send matching `SetPlayWhenReady(true)`, observe high in-range playing position `>=3.6s`, observe return near start `<=2.4s`, then observe later near-start `isPlaying=true`; assert no failure and unchanged clip config/repeat mode.
+2. Stale/wrong/preparing play-intent commands cause zero stored/Player mutation and cannot become authoritative at later Ready.
+3. `ReplaceRange` and `Retry` explicit binding intent overrides previously accepted intent.
+4. Accepted pause intent survives a later same-binding Ready transition.
+
+Config-only, paused-only, source-end-only, player-field-only, fake-player, command-only, single-device, arbitrary-sleep, and relaxed-loop evidence cannot pass.
+
+**Ordered gates:**
+
+- [ ] Obtain a new author-distinct principal review of the Full manifest and normative plan; advance `ARCHITECTURE_APPROVED` to `PLAN_FROZEN` before Kotlin/test edits.
+- [ ] **Pre-code/edit 1 — archive:** preserve original strict RED, both direct traces, stored-intent discriminator, exact diagnostic source/diff, and pre-code source hashes in the evidence index.
+- [ ] **Pre-code/edit 2 — tests then RED:** add the four named focused proofs, then run their exact selected methods on the API23 real port and retain defect-specific RED. No test command precedes test creation.
+- [ ] **Pre-code/edit 3 — diagnostic disposition:** after archival, delete only `diagnostic_sourceEndAndInteriorClipsExposeFirstRepeatPlayerState`; require strict extractor SHA-256 `a7d9fc1fac78e9795211d40cb6602ebe9e36e7607def5b96f460572b201b1c4a` and no other IG1 byte change.
+- [ ] **Pre-code/edit 4 — minimal fix + early vertical GREEN:** apply only the stored-intent mutation, then run `AndroidMedia3PreviewPortDeviceTest#acceptedPlayIntentSurvivesFirstRealRepeat` on API23 against the direct real port. Finish every authorized production/test edit here.
+- [ ] **Canonical 1 — direct adapter:** run full `AndroidMedia3PreviewPortDeviceTest` on `ClipEditor_API23`/API 23, then `SM-S928B`/API 36.
+- [ ] **Canonical 2 — regressions/guards:** run core host/device regressions, targeted V3 lifecycle smoke on both devices, common/iOS suites, declaration/frozen-contract guard, and scope scan.
+- [ ] **Canonical 3 — code review:** obtain author-distinct review >=95 with no Critical/Important against exact post-regression diff/evidence. Any code/test correction returns to Canonical 1.
+- [ ] **Canonical 4 — strict functional IG1 LAST:** select only `ClipEditorScreenIntegrationTest#editorFlow_clipsPreviewLoopsExportsThenReleasesBeforeClose`, once on API23 then once on Samsung. Never substitute the full IG1 class.
+
+After both strict passes, only evidence/report/docs changes are allowed. Any production/test source change invalidates them and requires Canonical 1–4 again. This does not create/reset a reconciliation count. Samsung unavailable is a completion blocker; no one-device waiver.
+
+**Exact direct adapter commands:**
+
+~~~bash
+env ANDROID_HOME=/Users/sandeepdhami/Library/Android/sdk ANDROID_SERIAL=emulator-5554 \
+  ./gradlew :video-clip-editor-compose:connectedAndroidDeviceTest \
+  -Pandroid.testInstrumentationRunnerArguments.class=com.oneononearena.videoclip.compose.AndroidMedia3PreviewPortDeviceTest --rerun-tasks
+
+env ANDROID_HOME=/Users/sandeepdhami/Library/Android/sdk ANDROID_SERIAL=RZCX519T5FL \
+  ./gradlew :video-clip-editor-compose:connectedAndroidDeviceTest \
+  -Pandroid.testInstrumentationRunnerArguments.class=com.oneononearena.videoclip.compose.AndroidMedia3PreviewPortDeviceTest --rerun-tasks
+~~~
+
+**Exact regression/guard commands:**
+
+~~~bash
+./gradlew :video-clip-editor-core:allTests \
+  :video-clip-editor-compose:allTests \
+  :video-clip-editor-compose:iosSimulatorArm64Test
+
+env ANDROID_HOME=/Users/sandeepdhami/Library/Android/sdk ANDROID_SERIAL=emulator-5554 \
+  ./gradlew :video-clip-editor-core:connectedAndroidDeviceTest --rerun-tasks
+env ANDROID_HOME=/Users/sandeepdhami/Library/Android/sdk ANDROID_SERIAL=RZCX519T5FL \
+  ./gradlew :video-clip-editor-core:connectedAndroidDeviceTest --rerun-tasks
+
+env ANDROID_HOME=/Users/sandeepdhami/Library/Android/sdk ANDROID_SERIAL=emulator-5554 \
+  ./gradlew :video-clip-editor-compose:connectedAndroidDeviceTest \
+  -Pandroid.testInstrumentationRunnerArguments.class=com.oneononearena.videoclip.compose.ClipEditorLifecycleDeviceTest --rerun-tasks
+env ANDROID_HOME=/Users/sandeepdhami/Library/Android/sdk ANDROID_SERIAL=RZCX519T5FL \
+  ./gradlew :video-clip-editor-compose:connectedAndroidDeviceTest \
+  -Pandroid.testInstrumentationRunnerArguments.class=com.oneononearena.videoclip.compose.ClipEditorLifecycleDeviceTest --rerun-tasks
+~~~
+
+Run Task 3 Step 5's non-empty byte-for-byte declaration comparison and frozen common/iOS diff unchanged during Canonical 2.
+
+**Exact final strict commands:**
+
+~~~bash
+env ANDROID_HOME=/Users/sandeepdhami/Library/Android/sdk ANDROID_SERIAL=emulator-5554 \
+  ./gradlew :video-clip-editor-compose:connectedAndroidDeviceTest \
+  -Pandroid.testInstrumentationRunnerArguments.class=com.oneononearena.videoclip.compose.ClipEditorScreenIntegrationTest#editorFlow_clipsPreviewLoopsExportsThenReleasesBeforeClose --rerun-tasks
+
+env ANDROID_HOME=/Users/sandeepdhami/Library/Android/sdk ANDROID_SERIAL=RZCX519T5FL \
+  ./gradlew :video-clip-editor-compose:connectedAndroidDeviceTest \
+  -Pandroid.testInstrumentationRunnerArguments.class=com.oneononearena.videoclip.compose.ClipEditorScreenIntegrationTest#editorFlow_clipsPreviewLoopsExportsThenReleasesBeforeClose --rerun-tasks
+~~~
+
+**Rollback:** Revert only the bounded adapter/focused-test repair. Restore the deleted temporary diagnostic only when further pre-fix diagnosis is explicitly required; never count it as enduring acceptance. Keep V1–V3 and IG1-O1 accepted evidence, original strict/no-fake RED proof, remaining untracked IG1 work, and frozen API baseline. VUI-R11, IG1, V4, and V5 remain blocked.
+
+**Integration:** This is one V2 correction, not a V3 lifecycle or IG1 observability redesign. Direct adapter and compatibility/regression/V3 gates plus code review must pass before the exact strict method runs last on both targets. Green strict IG1 unlocks existing V4 order. Any later code/test edit revokes that unlock until the canonical sequence passes again.
+
 #### IG1 functional real-flow gate
 
 **Scope:** Assemble V1–V3 through accepted IG1-O1 in a library-owned Android test host with real local fixture, UI-owned Media3 actual, production editor/exporter, and test-only delegating recorders. Add no reusable production feature beyond the accepted internal observability seam.
@@ -785,7 +877,7 @@ Expected: public declaration baseline unchanged; common/iOS suites green; target
 
 **Interfaces:** unchanged public `ClipEditorScreen`; internal `LocalPreviewPortFactoryOverride`; frozen port contract; `ClipResult.Success.sourceRange`; test-only real-delegating port/session/lease recorders only.
 
-**Dependencies:** V1–V3 accepted; VUI-R10/R10A compile + API23 runtime preflights and author-distinct V3 delta PASS. V4 cannot start without API-23 IG1 success.
+**Dependencies:** V1–V3 accepted; IG1-O1/VUI-R10/R10A accepted at `eb06901`; V2-R11 pre-fix evidence archived and temporary diagnostic disposed; direct API23/Samsung gates, regression/guard gates, and author-distinct code review >=95 PASS. V4 cannot start without the exact strict functional method succeeding last on API23 and Samsung.
 
 **Acceptance:**
 
@@ -802,7 +894,7 @@ Expected: public declaration baseline unchanged; common/iOS suites green; target
 
 **Rollback:** never weaken IG1. Revert/fix owning V1/V2/V3/IG1-O1 task, run its affected gates, then rerun IG1.
 
-**Integration:** green API-23 evidence unlocks V4.
+**Integration:** only final exact-method green evidence on both API23 and Samsung unlocks V4.
 
 - [ ] **Step 4: Write failing real flow test after preflight/re-review PASS**
 
@@ -831,36 +923,35 @@ Run: ./gradlew :video-clip-editor-compose:connectedAndroidDeviceTest -Pandroid.t
 
 Expected: an observable cross-module behavior defect only. Missing visibility, factory capture, or public `previewPortFactory` parameter is a failed Step 0 blueprint preflight, not an acceptable functional RED.
 
+This full-class command is historical pre-fix discovery only. VUI-R11 post-fix acceptance never reruns it; Canonical 4 selects the exact strict functional method.
+
 - [ ] **Step 6: Complete only test observability and real flow**
 
 Use accepted composition-local + surface-delegate seams. Remember every editor/factory wrapper. Wrap real platform factory/actual port, `VideoClipEditor.openSession`, `ClipEditorSession`, and successful lease only with delegates. Record production open/metadata/frame events, UI-driven commands, actual applied clipping/repeat/positions, synchronous Released sequence, export, close entry/completion, dispose, and both cleanup results. Use existing repository fixture helper unchanged; delete copies in `finally`; never touch user files.
 
-- [ ] **Step 7: Verify GREEN on API 23**
+- [ ] **Step 7: Run VUI-R11 regression/guard and author-distinct review gates before strict acceptance**
+
+Run V2-R11 Canonical 2 and Canonical 3 exactly. This includes core host/device regressions, V3 lifecycle smoke on API23/Samsung, common/iOS suites, declaration/frozen-contract guards, scope scan, and author-distinct code review >=95 with no Critical/Important. Any code/test fix restarts V2-R11 Canonical 1.
+
+- [ ] **Step 8: Verify strict GREEN on API 23 and Samsung LAST**
 
 Run:
 
 ~~~
 env ANDROID_HOME=/Users/sandeepdhami/Library/Android/sdk ANDROID_SERIAL=emulator-5554 \
   ./gradlew :video-clip-editor-compose:connectedAndroidDeviceTest \
-  -Pandroid.testInstrumentationRunnerArguments.class=com.oneononearena.videoclip.compose.ClipEditorScreenIntegrationTest --rerun-tasks
+  -Pandroid.testInstrumentationRunnerArguments.class=com.oneononearena.videoclip.compose.ClipEditorScreenIntegrationTest#editorFlow_clipsPreviewLoopsExportsThenReleasesBeforeClose --rerun-tasks
+
+env ANDROID_HOME=/Users/sandeepdhami/Library/Android/sdk ANDROID_SERIAL=RZCX519T5FL \
+  ./gradlew :video-clip-editor-compose:connectedAndroidDeviceTest \
+  -Pandroid.testInstrumentationRunnerArguments.class=com.oneononearena.videoclip.compose.ClipEditorScreenIntegrationTest#editorFlow_clipsPreviewLoopsExportsThenReleasesBeforeClose --rerun-tasks
 ~~~
 
-Expected: BUILD SUCCESSFUL. Test record proves range, loop, export, release-before-close, and idempotent cleanup. Reconnect/start existing API-23 emulator before claiming blocker.
+Expected: both `BUILD SUCCESSFUL`. Exact strict method proves range, continuous loop, export, release-before-close, and idempotent cleanup. Do not run the whole IG1 class. Samsung unavailable blocks completion. After both pass, only evidence/report/docs may change; any production/test edit invalidates both and requires the complete V2-R11 canonical sequence again.
 
-- [ ] **Step 8: Core regression proof**
+- [ ] **Step 9: Evidence-only IG1 handoff and commit**
 
-Run:
-
-~~~
-env ANDROID_HOME=/Users/sandeepdhami/Library/Android/sdk ANDROID_SERIAL=emulator-5554 \
-  ./gradlew :video-clip-editor-core:connectedAndroidDeviceTest --rerun-tasks
-~~~
-
-Expected: all existing core session/frame/export/temporary ownership tests pass unchanged.
-
-- [ ] **Step 9: Independent IG1 review and commit**
-
-Reject fake-only proof, command-intent-only clipping proof, direct port outside UI ownership, arbitrary correctness delay, public/global test hook, or screen flow that skips real Media3/production exporter/lease cleanup.
+Canonical 3 already completed author-distinct code review. After strict passes, inspect/package only evidence and docs, then commit the already-reviewed files. No production/test edit is permitted. Any finding requiring source change invalidates both strict results and returns to V2-R11 Canonical 1. Reject fake-only proof, command-intent-only clipping proof, direct port outside UI ownership, arbitrary correctness delay, public/global test hook, or screen flow that skips real Media3/production exporter/lease cleanup.
 
 ~~~
 git add video-clip-editor-compose/src/commonMain/kotlin/com/oneononearena/videoclip/compose/PreviewPort.kt \
@@ -1074,8 +1165,10 @@ Expected: independent PASS >=95/100 and no untracked/modified work except expres
 
 ## Plan self-review
 
-- Coverage: V1 selector/geometry, V2 Media3 source clipping/iOS seam, completed VUI-R7–R9 replacement V3, unresolved VUI-R10 plus VUI-R10A per-composition factory/render-proxy transparency with compile/API23 runtime preflights and exhaustive wiring, IG1 real flow, V4, V5.
+- Coverage: V1 selector/geometry, V2 Media3 source clipping/iOS seam, completed VUI-R7–R9 replacement V3, accepted VUI-R10/R10A observability at `eb06901`, VUI-R11 authoritative Android repeat intent, IG1 real flow, V4, V5.
 - Placeholder scan: no deferred markers. Each task contains scope, responsibility, interfaces, dependencies, acceptance, test strategy, rollback, integration, RED/GREEN, review, and commit.
 - Type consistency: PreviewBinding/Command/Event/Port exactly match approved blueprint. Release audit accepts only the closed `Acknowledged` or `TimedOut(ReleaseTimeout)` outcome. No task alters public factory, ClipEditorScreen signature, ClipResult, or failure enums.
-- Ordering: V1 → V2 → replacement V3 → IG1-O1 author-distinct review → compile preflight → API23 runtime transparency → affected V3 delta gates → IG1 → V4 → V5.
+- Ordering: V1 → V2 → replacement V3 → accepted IG1-O1/VUI-R10/R10A at `eb06901` → new author-distinct V2-R11 Full review sets `PLAN_FROZEN` → archive pre-fix diagnostic evidence/source hash/diff → write focused tests and run API23 RED → delete only temporary defect diagnostic and verify strict digest → minimal repair plus early API23 direct real-port GREEN → full adapter API23/Samsung → core/V3/common/iOS/declaration guards → author-distinct code review → exact strict functional method API23/Samsung last → evidence/docs only → V4 → V5.
+- Approval/Full evidence: VUI-R11 is `ARCHITECTURE_APPROVED`; only a new author-distinct review may set `PLAN_FROZEN`. Manifest validation, immutable baseline/digest, critical named oracles, early vertical API23 direct real-port proof, diagnostic disposition, and final strict both-device gate are mandatory.
+- Invalidation: any code/test source change after strict evidence returns to the complete V2-R11 canonical sequence. Samsung unavailable blocks completion. Same VUI-R11 trigger retains reconciliation count `1`.
 - Route/API gate: replacement V3 floor is Sol/high; exact working-tree public declarations are extracted and compared with baseline `92f78412796113f2abe27f55be0125e9373c9f1c`. Filename/import scans are supplemental only.

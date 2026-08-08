@@ -1,0 +1,302 @@
+{
+  "schema_version": 1,
+  "task_id": "VUI-R11-repeat-intent-reconciliation",
+  "work_id": "VUI-R11-repeat-intent-reconciliation",
+  "route": "full",
+  "state": "PLAN_FROZEN",
+  "route_facts": {
+    "modules": 3,
+    "state_owner_count": 4,
+    "state_owners": [
+      "ClipEditorPreviewCoordinator command issuer",
+      "AndroidMedia3PreviewPort.appliedBinding authoritative accepted intent",
+      "Media3 Player execution and READY callback",
+      "ClipEditorScreen integration/export/cleanup observer"
+    ],
+    "handoff": true,
+    "hard_triggers": [
+      "Android API23 and Samsung device behavior",
+      "Media3 lifecycle and callback concurrency",
+      "more than one state owner on one causal path",
+      "cross-boundary UI/export/cleanup integration",
+      "no existing deterministic full oracle"
+    ],
+    "protected_risks": [
+      "device",
+      "lifecycle",
+      "concurrency",
+      "multi-owner causal path",
+      "integration"
+    ],
+    "standalone_code_evidence": {
+      "code_review_graph": "0 communities and 0 matching nodes in the standalone worktree",
+      "san": "No SAN brief for the relevant standalone source files; targeted raw-source fallback required and recorded in the blueprint"
+    }
+  },
+  "approval_state_mapping": {
+    "current": "PLAN_FROZEN",
+    "meaning": "Author-distinct principal review passed at 100/100 with no Critical or Important findings; bounded implementation may begin under the frozen proof matrix.",
+    "plan_frozen_evidence": "Author-distinct Full review feedback fb_20260808_154041_279458; all 11 critical rows retain named executable oracles and zero critical ASSUMPTION, BLOCKED, or STALE rows.",
+    "not_current": [
+      "TASK_PROVEN",
+      "INTEGRATION_PROVEN",
+      "DELIVERY_READY"
+    ],
+    "historical_compatibility": "Accepted V1-V3 and O1 evidence remains historical and is not rewritten by the new Blueprint First policy; this Full envelope governs only pending and future VUI-R11 work."
+  },
+  "baseline": {
+    "git_ref": "eb0690162405c25f8962eb17364116ce9afbab1c",
+    "contract_digests": [
+      "api-declaration-baseline-git:92f78412796113f2abe27f55be0125e9373c9f1c",
+      "clip-editor-screen-file-sha256:b5125b597da7f5edd92684905417de8fcacdc747df1b8a74e9bf05198ede9a48",
+      "video-clip-editor-contract-file-sha256:45d13c86f0d52d1483af8b29e63274e2c229ce4c98c6f8098db9d92daf51bb48",
+      "android-factory-file-sha256:5e86b794c96e2b778a5911e265733ce058b2d8e446c8d9559ae5497137da8717",
+      "ios-factory-file-sha256:0ee14fecd56dda00f18fd8ee2973a997a8d85e3901ed747dc41d467cc6b3bc25"
+    ],
+    "owned_paths": [
+      "video-clip-editor-compose/src/commonMain/kotlin/com/oneononearena/videoclip/compose/ClipEditorScreen.kt",
+      "video-clip-editor-core/src/commonMain/kotlin/com/oneononearena/videoclip/VideoClipEditorContract.kt",
+      "video-clip-editor-core/src/commonMain/kotlin/com/oneononearena/videoclip/FeasibilityMarker.kt",
+      "video-clip-editor-core/src/androidMain/kotlin/com/oneononearena/videoclip/AndroidVideoClipEditor.kt",
+      "video-clip-editor-core/src/iosMain/kotlin/com/oneononearena/videoclip/IosClipEditorFactory.kt"
+    ],
+    "files": [
+      {
+        "path": "video-clip-editor-compose/src/commonMain/kotlin/com/oneononearena/videoclip/compose/ClipEditorScreen.kt",
+        "sha256": "b5125b597da7f5edd92684905417de8fcacdc747df1b8a74e9bf05198ede9a48"
+      },
+      {
+        "path": "video-clip-editor-core/src/commonMain/kotlin/com/oneononearena/videoclip/VideoClipEditorContract.kt",
+        "sha256": "45d13c86f0d52d1483af8b29e63274e2c229ce4c98c6f8098db9d92daf51bb48"
+      },
+      {
+        "path": "video-clip-editor-core/src/commonMain/kotlin/com/oneononearena/videoclip/FeasibilityMarker.kt",
+        "sha256": "541475150caeec8594b57bb29dd96309115b332a827c88222f9b4a637a93ec93"
+      },
+      {
+        "path": "video-clip-editor-core/src/androidMain/kotlin/com/oneononearena/videoclip/AndroidVideoClipEditor.kt",
+        "sha256": "5e86b794c96e2b778a5911e265733ce058b2d8e446c8d9559ae5497137da8717"
+      },
+      {
+        "path": "video-clip-editor-core/src/iosMain/kotlin/com/oneononearena/videoclip/IosClipEditorFactory.kt",
+        "sha256": "0ee14fecd56dda00f18fd8ee2973a997a8d85e3901ed747dc41d467cc6b3bc25"
+      }
+    ],
+    "evidence_digest": "815ddf933f48b1f59a8097aab19296176fa553bb2ecfb37153872e7f96b8c73b",
+    "evidence_digest_algorithm": "SHA-256 of compact key-sorted UTF-8 JSON for baseline fields git_ref, contract_digests, owned_paths, and files",
+    "protected_scope": "Public screen, public/core contract, Android public factory, core feasibility marker, and iOS factory remain immutable.",
+    "planned_mutable_work": [
+      {
+        "path": "video-clip-editor-compose/src/androidMain/kotlin/com/oneononearena/videoclip/compose/AndroidMedia3PreviewPort.kt",
+        "pre_code_sha256": "ed0bb8e2c2b245e7f39ba82235118315e44110ef0f169886640ecf360a4f7fc7",
+        "authorized_change": "Update only authoritative appliedBinding.playWhenReady for a matching ready SetPlayWhenReady before mirroring Player."
+      },
+      {
+        "path": "video-clip-editor-compose/src/androidDeviceTest/kotlin/com/oneononearena/videoclip/compose/AndroidMedia3PreviewPortDeviceTest.kt",
+        "pre_code_sha256": "4cc4345ece899a3f4bed5d4c9505b9d491a4b8f30d5260380463b7cec79c9c36",
+        "authorized_change": "Add only the four named focused authoritative-intent/repeat/safety tests."
+      },
+      {
+        "path": "video-clip-editor-compose/src/androidDeviceTest/kotlin/com/oneononearena/videoclip/compose/ClipEditorScreenIntegrationTest.kt",
+        "pre_code_sha256": "b7b588a907d86e1311fbc211e0c9e15e85a7f56f41803c42375178fe8ab97b07",
+        "authorized_change": "After archival, delete only diagnostic_sourceEndAndInteriorClipsExposeFirstRepeatPlayerState; all other bytes remain protected.",
+        "diagnostic_source_sha256": "0e1a2153dfe86898d5db3d725e23974811ca05956a2268c9b4947d25bb6c1d7d",
+        "strict_method_semantic_sha256": "a7d9fc1fac78e9795211d40cb6602ebe9e36e7607def5b96f460572b201b1c4a"
+      }
+    ],
+    "do_not_touch": [
+      "video-clip-editor-compose/src/androidDeviceTest/kotlin/com/oneononearena/videoclip/compose/RecordingClipEditorSession.kt",
+      "public/common/core/iOS declarations",
+      "V3 lifecycle ownership",
+      "O1 observability",
+      "Media3 version and dependencies",
+      "M3 and O1 accepted evidence"
+    ]
+  },
+  "proof_matrix": [
+    {
+      "requirement_id": "VUI-R11-AC-1",
+      "claim_id": "INV-AUTHORITATIVE-APPLIED-INTENT",
+      "criticality": "critical",
+      "owner": "AndroidMedia3PreviewPort.appliedBinding",
+      "status": "PROOF_REQUIRED",
+      "task_id": "V2-R11-focused-red-green",
+      "oracle_id": "AndroidMedia3PreviewPortDeviceTest#acceptedPlayIntentSurvivesFirstRealRepeat",
+      "expected_result": "Matching Set true persists in appliedBinding before Player mutation and first real repeat emits later low/start Position(isPlaying=true).",
+      "evidence_ref": "video-clip-editor-compose/src/androidDeviceTest/kotlin/com/oneononearena/videoclip/compose/AndroidMedia3PreviewPortDeviceTest.kt#acceptedPlayIntentSurvivesFirstRealRepeat",
+      "baseline_ref": "baseline.planned_mutable_work[0..1]",
+      "integration_counterpart": "EVP-API23-DIRECT-REAL-PORT-WRAP"
+    },
+    {
+      "requirement_id": "VUI-R11-AC-2",
+      "claim_id": "INV-STALE-PREPARING-ZERO-MUTATION",
+      "criticality": "critical",
+      "owner": "AndroidMedia3PreviewPort matchingReadyBinding gate",
+      "status": "PROOF_REQUIRED",
+      "task_id": "V2-R11-focused-red-green",
+      "oracle_id": "AndroidMedia3PreviewPortDeviceTest#staleAndPreparingPlayCommandsCannotMutateAppliedIntent",
+      "expected_result": "Preparing, stale generation, and stale revision commands mutate neither stored intent nor Player and cannot affect later READY.",
+      "evidence_ref": "video-clip-editor-compose/src/androidDeviceTest/kotlin/com/oneononearena/videoclip/compose/AndroidMedia3PreviewPortDeviceTest.kt#staleAndPreparingPlayCommandsCannotMutateAppliedIntent",
+      "baseline_ref": "baseline.planned_mutable_work[0..1]",
+      "integration_counterpart": "CANONICAL-1-DIRECT-ADAPTER-BOTH-DEVICES"
+    },
+    {
+      "requirement_id": "VUI-R11-AC-3",
+      "claim_id": "INV-REPLACEMENT-RETRY-SNAPSHOT-WINS",
+      "criticality": "critical",
+      "owner": "AndroidMedia3PreviewPort binding state machine",
+      "status": "PROOF_REQUIRED",
+      "task_id": "V2-R11-focused-red-green",
+      "oracle_id": "AndroidMedia3PreviewPortDeviceTest#replacementAndRetryUseExplicitBindingPlaybackIntent",
+      "expected_result": "ReplaceRange and Retry explicit playback intent wins; prior accepted live intent never leaks across revision.",
+      "evidence_ref": "video-clip-editor-compose/src/androidDeviceTest/kotlin/com/oneononearena/videoclip/compose/AndroidMedia3PreviewPortDeviceTest.kt#replacementAndRetryUseExplicitBindingPlaybackIntent",
+      "baseline_ref": "baseline.planned_mutable_work[0..1]",
+      "integration_counterpart": "CANONICAL-1-DIRECT-ADAPTER-BOTH-DEVICES"
+    },
+    {
+      "requirement_id": "VUI-R11-AC-4",
+      "claim_id": "INV-PAUSE-AND-TERMINAL-SAFETY",
+      "criticality": "critical",
+      "owner": "AndroidMedia3PreviewPort applied binding and terminal release fence",
+      "status": "PROOF_REQUIRED",
+      "task_id": "V2-R11-direct-adapter-matrix",
+      "oracle_id": "acceptedPauseCannotBeOverwrittenByLaterReady+releaseIsTerminalAndReplacementRequiresAFreshActualPort",
+      "expected_result": "Accepted false survives later READY; released port accepts no later intent and replacement requires a fresh actual port.",
+      "evidence_ref": "video-clip-editor-compose/src/androidDeviceTest/kotlin/com/oneononearena/videoclip/compose/AndroidMedia3PreviewPortDeviceTest.kt#acceptedPauseCannotBeOverwrittenByLaterReady",
+      "baseline_ref": "baseline.planned_mutable_work[0..1]",
+      "integration_counterpart": "CANONICAL-1-DIRECT-ADAPTER-BOTH-DEVICES"
+    },
+    {
+      "requirement_id": "VUI-R11-AC-5",
+      "claim_id": "DEVICE-API23-DIRECT-FULL-CLASS",
+      "criticality": "critical",
+      "owner": "Android adapter test owner",
+      "status": "PROOF_REQUIRED",
+      "task_id": "canonical-1-api23",
+      "oracle_id": "connectedAndroidDeviceTest:AndroidMedia3PreviewPortDeviceTest@ClipEditor_API23",
+      "expected_result": "Full real adapter class passes on API23 with real wrap, safety, failure, release, surface, and factory coverage.",
+      "evidence_ref": ".superpowers/sdd/2026-08-06-visual-clip-editor-preview-timeline/vui-r11-canonical-1-api23.log",
+      "baseline_ref": "baseline",
+      "integration_counterpart": "CANONICAL-1-DIRECT-ADAPTER-BOTH-DEVICES"
+    },
+    {
+      "requirement_id": "VUI-R11-AC-6",
+      "claim_id": "DEVICE-SAMSUNG-DIRECT-FULL-CLASS",
+      "criticality": "critical",
+      "owner": "Android adapter test owner",
+      "status": "PROOF_REQUIRED",
+      "task_id": "canonical-1-samsung",
+      "oracle_id": "connectedAndroidDeviceTest:AndroidMedia3PreviewPortDeviceTest@SM-S928B",
+      "expected_result": "Full real adapter class passes on Samsung SM-S928B/API36; no single-device substitution.",
+      "evidence_ref": ".superpowers/sdd/2026-08-06-visual-clip-editor-preview-timeline/vui-r11-canonical-1-samsung.log",
+      "baseline_ref": "baseline",
+      "integration_counterpart": "CANONICAL-1-DIRECT-ADAPTER-BOTH-DEVICES"
+    },
+    {
+      "requirement_id": "VUI-R11-AC-7",
+      "claim_id": "REGRESSION-DECLARATION-IOS-DEVICE-GUARD",
+      "criticality": "critical",
+      "owner": "VUI-R11 regression and compatibility owner",
+      "status": "PROOF_REQUIRED",
+      "task_id": "canonical-2-regression-compatibility",
+      "oracle_id": "core-allTests+core-connected-both+compose-allTests+iosSimulatorArm64Test+declaration-hash-guard+ClipEditorLifecycleDeviceTest-both",
+      "expected_result": "Core/common/iOS and both-device lifecycle regressions pass; protected file hashes and non-empty public declarations remain identical.",
+      "evidence_ref": ".superpowers/sdd/2026-08-06-visual-clip-editor-preview-timeline/vui-r11-canonical-2-evidence-index.json",
+      "baseline_ref": "baseline",
+      "integration_counterpart": "CANONICAL-2-REGRESSION-COMPATIBILITY"
+    },
+    {
+      "requirement_id": "VUI-R11-AC-8",
+      "claim_id": "DIAGNOSTIC-ARCHIVE-STRICT-BYTES-FROZEN",
+      "criticality": "critical",
+      "owner": "VUI-R11 evidence owner",
+      "status": "PROOF_REQUIRED",
+      "task_id": "pre-code-evidence-and-diagnostic-disposition",
+      "oracle_id": "archive-hash-diff-and-strict-method-sha256-guard",
+      "expected_result": "Pre-fix logs/source/diff are archived before deleting only the diagnostic; extracted strict method digest remains a7d9fc1fac78e9795211d40cb6602ebe9e36e7607def5b96f460572b201b1c4a.",
+      "evidence_ref": ".superpowers/sdd/2026-08-06-visual-clip-editor-preview-timeline/vui-r11-pre-fix-evidence-index.json",
+      "baseline_ref": "baseline.planned_mutable_work[2]",
+      "integration_counterpart": "FINAL-STRICT-UI-FLOW-BOTH-DEVICES"
+    },
+    {
+      "requirement_id": "VUI-R11-AC-9",
+      "claim_id": "STRICT-UI-LOOP-API23-LAST",
+      "criticality": "critical",
+      "owner": "VUI-R11 integration owner",
+      "status": "PROOF_REQUIRED",
+      "task_id": "canonical-4-strict-api23-last",
+      "oracle_id": "ClipEditorScreenIntegrationTest#editorFlow_clipsPreviewLoopsExportsThenReleasesBeforeClose@ClipEditor_API23",
+      "expected_result": "Exact frozen strict method passes on API23 after Canonical 1-3 with no later source/test edit.",
+      "evidence_ref": ".superpowers/sdd/2026-08-06-visual-clip-editor-preview-timeline/vui-r11-canonical-4-api23.log",
+      "baseline_ref": "baseline.planned_mutable_work[2].strict_method_semantic_sha256",
+      "integration_counterpart": "FINAL-STRICT-UI-FLOW-BOTH-DEVICES"
+    },
+    {
+      "requirement_id": "VUI-R11-AC-10",
+      "claim_id": "STRICT-UI-LOOP-SAMSUNG-LAST",
+      "criticality": "critical",
+      "owner": "VUI-R11 integration owner",
+      "status": "PROOF_REQUIRED",
+      "task_id": "canonical-4-strict-samsung-last",
+      "oracle_id": "ClipEditorScreenIntegrationTest#editorFlow_clipsPreviewLoopsExportsThenReleasesBeforeClose@SM-S928B",
+      "expected_result": "Exact frozen strict method passes on Samsung after API23 and after Canonical 1-3; Samsung unavailable leaves final proof incomplete.",
+      "evidence_ref": ".superpowers/sdd/2026-08-06-visual-clip-editor-preview-timeline/vui-r11-canonical-4-samsung.log",
+      "baseline_ref": "baseline.planned_mutable_work[2].strict_method_semantic_sha256",
+      "integration_counterpart": "FINAL-STRICT-UI-FLOW-BOTH-DEVICES"
+    },
+    {
+      "requirement_id": "VUI-R11-AC-11",
+      "claim_id": "OUTPUT-EXPORT-RELEASE-CLEANUP-INTEGRATION",
+      "criticality": "critical",
+      "owner": "ClipEditorScreen integration/export/cleanup owner",
+      "status": "PROOF_REQUIRED",
+      "task_id": "canonical-4-strict-both-devices",
+      "oracle_id": "editorFlow_clipsPreviewLoopsExportsThenReleasesBeforeClose-output-export-release-cleanup-assertions",
+      "expected_result": "Continuous loop precedes production export; Released is observed before close; output lease clears Cleared then AlreadyCleared on both devices.",
+      "evidence_ref": "video-clip-editor-compose/src/androidDeviceTest/kotlin/com/oneononearena/videoclip/compose/ClipEditorScreenIntegrationTest.kt#editorFlow_clipsPreviewLoopsExportsThenReleasesBeforeClose",
+      "baseline_ref": "baseline.planned_mutable_work[2].strict_method_semantic_sha256",
+      "integration_counterpart": "FINAL-STRICT-UI-FLOW-BOTH-DEVICES"
+    }
+  ],
+  "traceability": [
+    {"requirement_id":"VUI-R11-AC-1","claim_id":"INV-AUTHORITATIVE-APPLIED-INTENT","task_id":"V2-R11-focused-red-green","oracle_id":"AndroidMedia3PreviewPortDeviceTest#acceptedPlayIntentSurvivesFirstRealRepeat","evidence_ref":"video-clip-editor-compose/src/androidDeviceTest/kotlin/com/oneononearena/videoclip/compose/AndroidMedia3PreviewPortDeviceTest.kt#acceptedPlayIntentSurvivesFirstRealRepeat","integration_result":"PROOF_REQUIRED: EVP-API23-DIRECT-REAL-PORT-WRAP"},
+    {"requirement_id":"VUI-R11-AC-2","claim_id":"INV-STALE-PREPARING-ZERO-MUTATION","task_id":"V2-R11-focused-red-green","oracle_id":"AndroidMedia3PreviewPortDeviceTest#staleAndPreparingPlayCommandsCannotMutateAppliedIntent","evidence_ref":"video-clip-editor-compose/src/androidDeviceTest/kotlin/com/oneononearena/videoclip/compose/AndroidMedia3PreviewPortDeviceTest.kt#staleAndPreparingPlayCommandsCannotMutateAppliedIntent","integration_result":"PROOF_REQUIRED: CANONICAL-1-DIRECT-ADAPTER-BOTH-DEVICES"},
+    {"requirement_id":"VUI-R11-AC-3","claim_id":"INV-REPLACEMENT-RETRY-SNAPSHOT-WINS","task_id":"V2-R11-focused-red-green","oracle_id":"AndroidMedia3PreviewPortDeviceTest#replacementAndRetryUseExplicitBindingPlaybackIntent","evidence_ref":"video-clip-editor-compose/src/androidDeviceTest/kotlin/com/oneononearena/videoclip/compose/AndroidMedia3PreviewPortDeviceTest.kt#replacementAndRetryUseExplicitBindingPlaybackIntent","integration_result":"PROOF_REQUIRED: CANONICAL-1-DIRECT-ADAPTER-BOTH-DEVICES"},
+    {"requirement_id":"VUI-R11-AC-4","claim_id":"INV-PAUSE-AND-TERMINAL-SAFETY","task_id":"V2-R11-direct-adapter-matrix","oracle_id":"acceptedPauseCannotBeOverwrittenByLaterReady+releaseIsTerminalAndReplacementRequiresAFreshActualPort","evidence_ref":"video-clip-editor-compose/src/androidDeviceTest/kotlin/com/oneononearena/videoclip/compose/AndroidMedia3PreviewPortDeviceTest.kt#acceptedPauseCannotBeOverwrittenByLaterReady","integration_result":"PROOF_REQUIRED: CANONICAL-1-DIRECT-ADAPTER-BOTH-DEVICES"},
+    {"requirement_id":"VUI-R11-AC-5","claim_id":"DEVICE-API23-DIRECT-FULL-CLASS","task_id":"canonical-1-api23","oracle_id":"connectedAndroidDeviceTest:AndroidMedia3PreviewPortDeviceTest@ClipEditor_API23","evidence_ref":".superpowers/sdd/2026-08-06-visual-clip-editor-preview-timeline/vui-r11-canonical-1-api23.log","integration_result":"PROOF_REQUIRED: CANONICAL-1-DIRECT-ADAPTER-BOTH-DEVICES"},
+    {"requirement_id":"VUI-R11-AC-6","claim_id":"DEVICE-SAMSUNG-DIRECT-FULL-CLASS","task_id":"canonical-1-samsung","oracle_id":"connectedAndroidDeviceTest:AndroidMedia3PreviewPortDeviceTest@SM-S928B","evidence_ref":".superpowers/sdd/2026-08-06-visual-clip-editor-preview-timeline/vui-r11-canonical-1-samsung.log","integration_result":"PROOF_REQUIRED: CANONICAL-1-DIRECT-ADAPTER-BOTH-DEVICES"},
+    {"requirement_id":"VUI-R11-AC-7","claim_id":"REGRESSION-DECLARATION-IOS-DEVICE-GUARD","task_id":"canonical-2-regression-compatibility","oracle_id":"core-allTests+core-connected-both+compose-allTests+iosSimulatorArm64Test+declaration-hash-guard+ClipEditorLifecycleDeviceTest-both","evidence_ref":".superpowers/sdd/2026-08-06-visual-clip-editor-preview-timeline/vui-r11-canonical-2-evidence-index.json","integration_result":"PROOF_REQUIRED: CANONICAL-2-REGRESSION-COMPATIBILITY"},
+    {"requirement_id":"VUI-R11-AC-8","claim_id":"DIAGNOSTIC-ARCHIVE-STRICT-BYTES-FROZEN","task_id":"pre-code-evidence-and-diagnostic-disposition","oracle_id":"archive-hash-diff-and-strict-method-sha256-guard","evidence_ref":".superpowers/sdd/2026-08-06-visual-clip-editor-preview-timeline/vui-r11-pre-fix-evidence-index.json","integration_result":"PROOF_REQUIRED: FINAL-STRICT-UI-FLOW-BOTH-DEVICES"},
+    {"requirement_id":"VUI-R11-AC-9","claim_id":"STRICT-UI-LOOP-API23-LAST","task_id":"canonical-4-strict-api23-last","oracle_id":"ClipEditorScreenIntegrationTest#editorFlow_clipsPreviewLoopsExportsThenReleasesBeforeClose@ClipEditor_API23","evidence_ref":".superpowers/sdd/2026-08-06-visual-clip-editor-preview-timeline/vui-r11-canonical-4-api23.log","integration_result":"PROOF_REQUIRED: FINAL-STRICT-UI-FLOW-BOTH-DEVICES"},
+    {"requirement_id":"VUI-R11-AC-10","claim_id":"STRICT-UI-LOOP-SAMSUNG-LAST","task_id":"canonical-4-strict-samsung-last","oracle_id":"ClipEditorScreenIntegrationTest#editorFlow_clipsPreviewLoopsExportsThenReleasesBeforeClose@SM-S928B","evidence_ref":".superpowers/sdd/2026-08-06-visual-clip-editor-preview-timeline/vui-r11-canonical-4-samsung.log","integration_result":"PROOF_REQUIRED: FINAL-STRICT-UI-FLOW-BOTH-DEVICES"},
+    {"requirement_id":"VUI-R11-AC-11","claim_id":"OUTPUT-EXPORT-RELEASE-CLEANUP-INTEGRATION","task_id":"canonical-4-strict-both-devices","oracle_id":"editorFlow_clipsPreviewLoopsExportsThenReleasesBeforeClose-output-export-release-cleanup-assertions","evidence_ref":"video-clip-editor-compose/src/androidDeviceTest/kotlin/com/oneononearena/videoclip/compose/ClipEditorScreenIntegrationTest.kt#editorFlow_clipsPreviewLoopsExportsThenReleasesBeforeClose","integration_result":"PROOF_REQUIRED: FINAL-STRICT-UI-FLOW-BOTH-DEVICES"}
+  ],
+  "agent_brain": {
+    "required": true,
+    "source_refs": [
+      "dec_20260807_192317_532e5c",
+      "dec_20260807_193521_620060",
+      "dec_20260807_231947_2f75f6",
+      "dec_20260808_151643_2cd35b",
+      ".superpowers/sdd/2026-08-06-visual-clip-editor-preview-timeline/task-4-report.md#Phase-1-3",
+      "docs/superpowers/specs/2026-08-07-visual-clip-editor-vui-r11-repeat-intent-reconciliation.md#2-confirmed-evidence-and-cause"
+    ],
+    "proof_limitation": "Agent Brain records continuity and confirmed diagnosis; they do not substitute for executable proof."
+  },
+  "integration": {
+    "required": true,
+    "owner": "VUI-R11 integration owner",
+    "integration_order": [
+      "EVP-API23-DIRECT-REAL-PORT-WRAP",
+      "CANONICAL-1-DIRECT-ADAPTER-BOTH-DEVICES",
+      "CANONICAL-2-REGRESSION-COMPATIBILITY",
+      "CANONICAL-3-AUTHOR-DISTINCT-CODE-REVIEW",
+      "FINAL-STRICT-UI-FLOW-BOTH-DEVICES"
+    ],
+    "early_vertical_proof": "EVP-API23-DIRECT-REAL-PORT-WRAP: after the minimal adapter fix, run AndroidMedia3PreviewPortDeviceTest#acceptedPlayIntentSurvivesFirstRealRepeat on API23 against the real port; expected high playing then low transient false then low playing true.",
+    "early_vertical_status": "PROOF_REQUIRED",
+    "final_gate": "PROOF_REQUIRED: exact strict UI method API23 then Samsung LAST after Canonical 1-3; any later production/test edit invalidates both results.",
+    "samsung_unavailable": "Final proof remains incomplete; no waiver or substitution.",
+    "post_final_edit_policy": "Evidence/report/docs changes only; any source/test edit restarts Canonical 1 through final strict gate."
+  }
+}

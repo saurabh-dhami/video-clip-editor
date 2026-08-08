@@ -7,11 +7,32 @@ import com.oneononearena.videoclip.OpenSessionResult
 import com.oneononearena.videoclip.VideoClipEditor
 import com.oneononearena.videoclip.VideoSourcePath
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 
+internal sealed interface DemoOwnedInput {
+    val file: File
+
+    fun delete(): Boolean
+}
+
+private class ImportedDemoOwnedInput(
+    override val file: File,
+    private val canonicalInputRoot: File,
+) : DemoOwnedInput {
+    override fun delete(): Boolean = try {
+        val canonicalFile = file.canonicalFile
+        canonicalFile.isFile &&
+            canonicalFile.parentFile == canonicalInputRoot &&
+            canonicalFile.delete()
+    } catch (_: Exception) {
+        false
+    }
+}
+
 internal sealed interface DocumentImportResult {
-    data class Imported(val file: File) : DocumentImportResult
+    data class Imported(val input: DemoOwnedInput) : DocumentImportResult
     data object TooLarge : DocumentImportResult
     data class Failed(val message: String?) : DocumentImportResult
 }
@@ -61,7 +82,15 @@ internal class BoundedDocumentImporter(
             if (tooLarge) DocumentImportResult.TooLarge
             else if (!partial.renameTo(target)) DocumentImportResult.Failed("Atomic import rename failed")
             else if (!target.isAbsolute || !target.isFile) DocumentImportResult.Failed("Imported file is invalid")
-            else DocumentImportResult.Imported(target)
+            else {
+                val canonicalRoot = inputRoot.canonicalFile
+                val canonicalTarget = target.canonicalFile
+                if (canonicalTarget.parentFile != canonicalRoot) {
+                    DocumentImportResult.Failed("Imported file escaped demo input directory")
+                } else {
+                    DocumentImportResult.Imported(ImportedDemoOwnedInput(target, canonicalRoot))
+                }
+            }
         } catch (error: Exception) {
             DocumentImportResult.Failed(error.message)
         }
@@ -80,20 +109,55 @@ internal class BoundedDocumentImporter(
     }
 }
 
-/** Demo-only bridge: exposes the actual session close required before deleting the imported source. */
+/** Demo-only bridge: observes the screen-owned session close without exposing raw close authority. */
 internal class SessionTrackingEditor(private val delegate: VideoClipEditor) : VideoClipEditor {
     private val sessionMutex = Mutex()
-    private var activeSession: ClipEditorSession? = null
+    private var activeSessionClosed: CompletableDeferred<Unit>? = null
 
     override suspend fun openSession(source: VideoSourcePath): OpenSessionResult = sessionMutex.withLock {
-        delegate.openSession(source).also { opened ->
-            activeSession = (opened as? OpenSessionResult.Open)?.session
+        activeSessionClosed = null
+        when (val opened = delegate.openSession(source)) {
+            is OpenSessionResult.Open -> {
+                val closeSignal = CompletableDeferred<Unit>()
+                activeSessionClosed = closeSignal
+                OpenSessionResult.Open(ForwardingClipEditorSession(opened.session, closeSignal))
+            }
+            else -> opened
         }
     }
 
-    suspend fun closeActiveSession() = sessionMutex.withLock {
-        activeSession?.close()
-        activeSession = null
+    suspend fun awaitActiveSessionClosed() {
+        sessionMutex.withLock { activeSessionClosed }?.await()
+    }
+}
+
+private class ForwardingClipEditorSession(
+    private val delegate: ClipEditorSession,
+    private val closeSignal: CompletableDeferred<Unit>,
+) : ClipEditorSession by delegate {
+    private val closeMutex = Mutex()
+    private var closeStarted = false
+
+    override suspend fun close() {
+        val ownsClose = closeMutex.withLock {
+            if (closeStarted) {
+                false
+            } else {
+                closeStarted = true
+                true
+            }
+        }
+        if (!ownsClose) {
+            closeSignal.await()
+            return
+        }
+        try {
+            delegate.close()
+            closeSignal.complete(Unit)
+        } catch (error: Throwable) {
+            closeSignal.completeExceptionally(error)
+            throw error
+        }
     }
 }
 
@@ -101,9 +165,8 @@ internal enum class DemoClearResult { Cleared, Failed }
 
 /** Lifecycle owner. A failed lease deletion leaves UI/source intact and disables reselect until retry. */
 internal class DemoCleanupCoordinator(
-    private val releasePlayer: suspend () -> Unit,
+    private val hideAndAwaitSessionClose: suspend () -> Unit,
     private val clearOutput: suspend () -> DemoClearResult,
-    private val closeSession: suspend () -> Unit,
     private val deleteSource: suspend () -> Boolean,
     private val clearUi: suspend () -> Unit,
 ) {
@@ -113,9 +176,8 @@ internal class DemoCleanupCoordinator(
     suspend fun clear(): DemoClearResult {
         canReselect = false
         return try {
-            releasePlayer()
+            hideAndAwaitSessionClose()
             if (clearOutput() == DemoClearResult.Failed) return DemoClearResult.Failed
-            closeSession()
             if (!deleteSource()) return DemoClearResult.Failed
             clearUi()
             canReselect = true

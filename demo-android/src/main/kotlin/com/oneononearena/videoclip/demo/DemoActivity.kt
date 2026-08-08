@@ -42,7 +42,7 @@ class DemoActivity : ComponentActivity() {
 private fun DemoApp(activity: DemoActivity) {
     val scope = rememberCoroutineScope()
     val editor = remember(activity) { SessionTrackingEditor(createAndroidVideoClipEditor(activity)) }
-    var source by remember { mutableStateOf<File?>(null) }
+    var source by remember { mutableStateOf<DemoOwnedInput?>(null) }
     var output by remember { mutableStateOf<TemporaryClipLease?>(null) }
     var message by remember { mutableStateOf<String?>(null) }
     var editorVisible by remember { mutableStateOf(true) }
@@ -66,9 +66,9 @@ private fun DemoApp(activity: DemoActivity) {
             }
             when (result) {
                 is DocumentImportResult.Imported -> {
-                    source = result.file
+                    source = result.input
                     output = null
-                    message = "Input: ${result.file.absolutePath}"
+                    message = "Input: ${result.input.file.absolutePath}"
                     editorVisible = true
                 }
                 DocumentImportResult.TooLarge -> message = "Input rejected: exceeds 512 MiB"
@@ -88,9 +88,11 @@ private fun DemoApp(activity: DemoActivity) {
         scope.launch {
             operationInProgress = true
             cleanupBlocked = true
-            // No demo playback dependency: releasePlayer is intentionally a no-op.
             val coordinator = DemoCleanupCoordinator(
-                releasePlayer = {},
+                hideAndAwaitSessionClose = {
+                    editorVisible = false
+                    editor.awaitActiveSessionClosed()
+                },
                 clearOutput = {
                     val lease = output ?: return@DemoCleanupCoordinator DemoClearResult.Cleared
                     try {
@@ -104,17 +106,13 @@ private fun DemoApp(activity: DemoActivity) {
                         DemoClearResult.Failed
                     }
                 },
-                closeSession = {
-                    editor.closeActiveSession()
-                    editorVisible = false
-                },
                 deleteSource = { source?.delete() ?: true },
                 clearUi = { source = null; output = null; message = null },
             )
             try {
                 when (coordinator.clear()) {
                     DemoClearResult.Cleared -> cleanupBlocked = false
-                    DemoClearResult.Failed -> message = "Temporary output clear failed. Retry Clear temp before reselecting."
+                    DemoClearResult.Failed -> message = "Temporary cleanup failed. Retry Clear temp before reselecting."
                 }
             } finally {
                 operationInProgress = false
@@ -128,7 +126,7 @@ private fun DemoApp(activity: DemoActivity) {
         message?.let { Text(it) }
         source?.let { imported ->
             if (editorVisible) ClipEditorScreen(
-                source = VideoSourcePath(imported.absolutePath),
+                source = VideoSourcePath(imported.file.absolutePath),
                 editor = editor,
                 onResult = { result ->
                     when (result) {

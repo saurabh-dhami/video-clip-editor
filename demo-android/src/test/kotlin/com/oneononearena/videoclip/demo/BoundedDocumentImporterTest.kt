@@ -12,6 +12,7 @@ import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.async
 import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.runBlocking
@@ -19,6 +20,38 @@ import kotlinx.coroutines.yield
 import org.junit.Test
 
 class BoundedDocumentImporterTest {
+    @Test
+    fun backTerminalCompletionCleansAndAllowsReselect() = runBlocking {
+        val calls = mutableListOf<String>()
+        val coordinator = DemoCleanupCoordinator()
+        val generation = assertNotNull(coordinator.activateGeneration())
+        lateinit var clearing: kotlinx.coroutines.Deferred<DemoClearResult>
+
+        assertTrue(coordinator.onScreenCancel(generation) {
+            assertFalse(coordinator.canReselect)
+            clearing = async(start = CoroutineStart.UNDISPATCHED) {
+                coordinator.clear(
+                    generation = generation,
+                    hideScreen = { calls += "hide-screen" },
+                    clearOutput = { calls += "lease-clear"; DemoClearResult.Cleared },
+                    deleteSource = { calls += "source-delete"; true },
+                    clearUi = { calls += "ui-clear" },
+                )
+            }
+        })
+        assertEquals(listOf("hide-screen"), calls)
+        assertFalse(clearing.isCompleted)
+
+        coordinator.onTerminalLifecycleComplete(generation)
+
+        assertEquals(DemoClearResult.Cleared, clearing.await())
+        assertEquals(
+            listOf("hide-screen", "lease-clear", "source-delete", "ui-clear"),
+            calls,
+        )
+        assertTrue(coordinator.canReselect)
+    }
+
     @Test
     fun sameGenerationTerminalCompletionClearsLeaseOwnedInputThenUiAndAllowsReselect() = runBlocking {
         val calls = mutableListOf<String>()
@@ -102,6 +135,11 @@ class BoundedDocumentImporterTest {
         coordinator.onTerminalLifecycleComplete(staleGeneration)
         assertEquals(DemoClearResult.Cleared, firstClear.await())
         val currentGeneration = assertNotNull(coordinator.activateGeneration())
+        var staleBackStarted = false
+
+        assertFalse(coordinator.onScreenCancel(staleGeneration) { staleBackStarted = true })
+        assertFalse(staleBackStarted)
+        assertTrue(coordinator.acceptsUpdates(currentGeneration))
 
         val currentClear = async {
             coordinator.clear(

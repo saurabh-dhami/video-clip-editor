@@ -99,12 +99,13 @@ private fun DemoApp(activity: DemoActivity) {
         if (!cleanupCoordinator.sealGeneration(generation)) return
         operationInProgress = true
         cleanupBlocked = true
+        editorVisible = false
         val issuedLease = output
         scope.launch {
             try {
                 val result = cleanupCoordinator.clear(
                     generation = generation,
-                    hideScreen = { editorVisible = false },
+                    hideScreen = {},
                     clearOutput = {
                         val lease = issuedLease ?: return@clear DemoClearResult.Cleared
                         try {
@@ -158,9 +159,7 @@ private fun DemoApp(activity: DemoActivity) {
                     }
                 },
                 onCancel = {
-                    if (cleanupCoordinator.acceptsUpdates(generation)) {
-                        message = "Editor cancelled"
-                    }
+                    cleanupCoordinator.onScreenCancel(generation, ::clear)
                 },
                 onTerminalLifecycleComplete = {
                     cleanupCoordinator.onTerminalLifecycleComplete(generation)

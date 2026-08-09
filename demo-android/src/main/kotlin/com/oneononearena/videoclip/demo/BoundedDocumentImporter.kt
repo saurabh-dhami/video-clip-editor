@@ -139,6 +139,12 @@ internal class DemoCleanupCoordinator {
         return true
     }
 
+    fun onScreenCancel(generation: Long, beginCleanup: () -> Unit): Boolean {
+        if (!acceptsUpdates(generation) || !sealGeneration(generation)) return false
+        beginCleanup()
+        return true
+    }
+
     fun onTerminalLifecycleComplete(generation: Long) {
         val active = activeGeneration
         if (active?.id == generation && active.sealed) {

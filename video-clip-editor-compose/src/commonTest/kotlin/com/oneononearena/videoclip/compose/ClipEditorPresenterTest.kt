@@ -18,8 +18,11 @@ import com.oneononearena.videoclip.VideoEditFailure
 import com.oneononearena.videoclip.VideoMetadata
 import com.oneononearena.videoclip.VideoSourcePath
 import kotlin.coroutines.coroutineContext
+import kotlin.coroutines.Continuation
+import kotlin.coroutines.resume
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertIs
 import kotlin.test.assertTrue
 import kotlin.time.Duration
@@ -28,13 +31,50 @@ import kotlin.time.Duration.Companion.seconds
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.test.runCurrent
+import kotlinx.coroutines.test.advanceUntilIdle
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class ClipEditorPresenterTest {
+    @Test
+    fun terminalCloseDuringOpenClosesLateSessionBeforeCompletion() = runTest {
+        val calls = mutableListOf<String>()
+        lateinit var continuation: Continuation<OpenSessionResult>
+        val session = object : ClipEditorSession {
+            override val metadata = VideoMetadata(10.seconds, 100, 100, false)
+            override fun frames(request: FrameStripRequest): Flow<FrameStripEvent> = emptyFlow()
+            override suspend fun createClip(range: ClipRange): ClipResult =
+                ClipResult.Failed(VideoEditFailure(FailureCode.EXPORT_FAILED, false, null))
+            override suspend fun close() {
+                calls += "session-close"
+            }
+        }
+        val presenter = ClipEditorPresenter(this)
+        presenter.start(VideoSourcePath("/opening.mp4"), object : VideoClipEditor {
+            override suspend fun openSession(source: VideoSourcePath): OpenSessionResult =
+                kotlin.coroutines.suspendCoroutine { continuation = it }
+        })
+        runCurrent()
+        val closeJob = launch {
+            presenter.close()
+            calls += "presenter-close-complete"
+        }
+        runCurrent()
+        assertFalse(closeJob.isCompleted)
+
+        continuation.resume(OpenSessionResult.Open(session))
+        advanceUntilIdle()
+
+        assertEquals(listOf("session-close", "presenter-close-complete"), calls)
+    }
+
     @OptIn(ExperimentalTestApi::class)
     @Test
     fun disposingClipEditorScreenClosesOpenedSession() = runComposeUiTest {

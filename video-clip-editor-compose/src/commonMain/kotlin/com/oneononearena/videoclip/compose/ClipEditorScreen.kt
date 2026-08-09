@@ -52,6 +52,8 @@ import com.oneononearena.videoclip.VideoSourcePath
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.milliseconds
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.currentCoroutineContext
@@ -74,12 +76,44 @@ fun ClipEditorScreen(
     onCancel: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    ClipEditorScreenImpl(source, editor, onResult, onCancel, modifier, {})
+}
+
+@Composable
+fun ClipEditorScreen(
+    source: VideoSourcePath,
+    editor: VideoClipEditor,
+    onResult: (ClipResult) -> Unit,
+    onCancel: () -> Unit,
+    modifier: Modifier = Modifier,
+    onTerminalLifecycleComplete: () -> Unit,
+) {
+    ClipEditorScreenImpl(
+        source,
+        editor,
+        onResult,
+        onCancel,
+        modifier,
+        onTerminalLifecycleComplete,
+    )
+}
+
+@Composable
+private fun ClipEditorScreenImpl(
+    source: VideoSourcePath,
+    editor: VideoClipEditor,
+    onResult: (ClipResult) -> Unit,
+    onCancel: () -> Unit,
+    modifier: Modifier,
+    onTerminalLifecycleComplete: () -> Unit,
+) {
     val platformPreviewPortFactory = rememberPlatformPreviewPortFactory()
     val previewPortFactory = LocalPreviewPortFactoryOverride.current ?: platformPreviewPortFactory
     val lifecycle = remember(previewPortFactory) { ClipEditorLifecycleOwner(previewPortFactory) }
     val result by rememberUpdatedState(onResult)
     val cancel by rememberUpdatedState(onCancel)
-    SideEffect { lifecycle.updateCallbacks(result, cancel) }
+    val terminalCompletion by rememberUpdatedState(onTerminalLifecycleComplete)
+    SideEffect { lifecycle.updateCallbacks(result, cancel, terminalCompletion) }
     val state by lifecycle.presenter.state.collectAsState()
     LaunchedEffect(source, editor, lifecycle) {
         lifecycle.requestReplace(source, editor)
@@ -205,6 +239,7 @@ internal class ClipEditorPresenter(
     onCancel: () -> Unit = {},
     private val previewPort: PreviewPort? = null,
     private val onExportTransition: () -> Unit = {},
+    private val onUnexpectedOperationFailure: (Throwable) -> Unit = {},
 ) {
     private val backingState = MutableStateFlow<ClipEditorUiState>(ClipEditorUiState.LoadingMetadata)
     val state: StateFlow<ClipEditorUiState> = backingState.asStateFlow()
@@ -227,7 +262,7 @@ internal class ClipEditorPresenter(
     }
 
     fun start(source: VideoSourcePath, editor: VideoClipEditor) {
-        operation?.cancel()
+        operation?.cancel(ExpectedPresenterOperationCancellation())
         this.source = source
         this.editor = editor
         resultSent = false
@@ -235,7 +270,7 @@ internal class ClipEditorPresenter(
         previewGeneration = PreviewGeneration(previewGeneration.value + 1)
         previewRevision = PreviewRevision(0)
         backingState.value = ClipEditorUiState.LoadingMetadata
-        operation = scope.launch {
+        operation = launchTrackedOperation {
             val openedSession = sessionMutex.withLock {
                 session?.close()
                 session = null
@@ -375,7 +410,7 @@ internal class ClipEditorPresenter(
         val opened = session ?: return
         onExportTransition()
         backingState.value = ClipEditorUiState.Exporting
-        operation = scope.launch {
+        operation = launchTrackedOperation {
             when (val result = opened.createClip(ready.range)) {
                 is ClipResult.Failed -> finishFailure(result.failure)
                 else -> finish(result)
@@ -405,12 +440,31 @@ internal class ClipEditorPresenter(
         val runningOperation = operation
         operation = null
         if (runningOperation != currentCoroutineContext()[Job]) {
-            runningOperation?.cancelAndJoin()
+            runningOperation?.cancel(ExpectedPresenterOperationCancellation())
+            runningOperation?.join()
         }
         sessionMutex.withLock {
-            session?.close()
+            val opened = session
             session = null
+            opened?.close()
         }
+    }
+    private fun launchTrackedOperation(block: suspend CoroutineScope.() -> Unit): Job {
+        val launched = scope.launch(start = CoroutineStart.LAZY) {
+            try {
+                block()
+            } catch (cause: Throwable) {
+                if (cause is ExpectedPresenterOperationCancellation) throw cause
+                onUnexpectedOperationFailure(cause)
+            }
+        }
+        launched.invokeOnCompletion { cause ->
+            if (cause != null && cause !is ExpectedPresenterOperationCancellation) {
+                onUnexpectedOperationFailure(cause)
+            }
+        }
+        launched.start()
+        return launched
     }
     private fun finishFailure(failure: VideoEditFailure) {
         if (failure.retryable) backingState.value = ClipEditorUiState.Retry(failure.diagnostic ?: failure.code.name)
@@ -423,3 +477,6 @@ internal class ClipEditorPresenter(
         onResult(result)
     }
 }
+
+private class ExpectedPresenterOperationCancellation :
+    CancellationException("Clip editor presenter operation cancelled by lifecycle owner")

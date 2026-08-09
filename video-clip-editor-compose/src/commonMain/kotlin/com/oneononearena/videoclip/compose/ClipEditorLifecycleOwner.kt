@@ -4,6 +4,7 @@ import com.oneononearena.videoclip.VideoClipEditor
 import com.oneononearena.videoclip.VideoSourcePath
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.milliseconds
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
@@ -24,11 +25,21 @@ internal class ClipEditorLifecycleOwner(
     private val portFactory: PreviewPortFactory,
     dispatcher: CoroutineDispatcher = Dispatchers.Main.immediate,
     private val releaseTimeout: Duration = 100.milliseconds,
+    onTerminalLifecycleComplete: () -> Unit = {},
+    private val activeClearPostcondition: (Boolean) -> Boolean = { it },
+    private val clearCoordinatorAfterDisposal: (ClipEditorPreviewCoordinator) -> Unit = {
+        it.clearAfterDisposal()
+    },
 ) {
     private val ownerJob = SupervisorJob()
     private val scope = CoroutineScope(ownerJob + dispatcher)
+    private val terminalFailure = MutableStateFlow<Throwable?>(null)
     val coordinator = ClipEditorPreviewCoordinator()
-    val presenter = ClipEditorPresenter(scope, onExportTransition = coordinator::lockInteractions)
+    val presenter = ClipEditorPresenter(
+        scope = scope,
+        onExportTransition = coordinator::lockInteractions,
+        onUnexpectedOperationFailure = ::recordTerminalFailure,
+    )
 
     private val intents = Channel<LifecycleIntent>(Channel.UNLIMITED)
     private val terminalLatched = MutableStateFlow(false)
@@ -43,6 +54,8 @@ internal class ClipEditorLifecycleOwner(
     private var active: ActiveLifecycle? = null
     private var eventJob: Job? = null
     private var releaseWaiter: Pair<PreviewGeneration, CompletableDeferred<Unit>>? = null
+    private var terminalCompletion = onTerminalLifecycleComplete
+    private var terminalCompletionAttempted = false
 
     init {
         scope.launch {
@@ -65,7 +78,11 @@ internal class ClipEditorLifecycleOwner(
     fun updateCallbacks(
         onResult: (com.oneononearena.videoclip.ClipResult) -> Unit,
         onCancel: () -> Unit,
-    ) = presenter.updateCallbacks(onResult, onCancel)
+        onTerminalLifecycleComplete: () -> Unit,
+    ) {
+        presenter.updateCallbacks(onResult, onCancel)
+        terminalCompletion = onTerminalLifecycleComplete
+    }
 
     fun requestReplace(source: VideoSourcePath, editor: VideoClipEditor) {
         if (terminalLatched.value) return
@@ -146,54 +163,116 @@ internal class ClipEditorLifecycleOwner(
     }
 
     private suspend fun close(cancel: Boolean) {
-        active?.let { teardown(it, PreviewReleaseReason.TerminalClose) }
-        if (cancel) presenter.cancelAfterClose()
+        teardown(active, PreviewReleaseReason.TerminalClose)
+        if (cancel) runTerminalStage { presenter.cancelAfterClose() }
         backingClosed.value = true
         intents.close()
+        attemptTerminalCompletion()
         scope.cancel()
     }
 
     private suspend fun teardown(
+        lifecycle: ActiveLifecycle?,
+        reason: PreviewReleaseReason,
+    ) {
+        if (lifecycle != null && active !== lifecycle) return
+        coordinator.lockInteractions()
+        if (lifecycle != null) {
+            release(lifecycle, reason)
+        }
+        runTerminalStage { presenter.close() }
+        cancelAndJoinEventJob(reason)
+        backingActivePort.value = null
+        if (lifecycle != null) {
+            runTerminalStage { portFactory.dispose(lifecycle.port) }
+        }
+        if (lifecycle == null || active === lifecycle) active = null
+        if (!activeClearPostcondition(active == null)) {
+            recordTerminalFailure(IllegalStateException("Active lifecycle postcondition failed"))
+        }
+        runTerminalStage { clearCoordinatorAfterDisposal(coordinator) }
+    }
+
+    private suspend fun release(
         lifecycle: ActiveLifecycle,
         reason: PreviewReleaseReason,
     ) {
-        if (active !== lifecycle) return
         val binding = coordinator.state.value.binding
         val revision = binding?.takeIf { it.generation == lifecycle.generation }?.revision ?: PreviewRevision(1)
-        coordinator.lockInteractions()
         val acknowledgement = CompletableDeferred<Unit>()
         releaseWaiter = lifecycle.generation to acknowledgement
-        lifecycle.port.dispatch(PreviewCommand.Release(lifecycle.generation))
-        val acknowledged = withTimeoutOrNull(releaseTimeout.inWholeMilliseconds) {
-            acknowledgement.await()
-            true
-        } == true
-        val outcome = if (acknowledged) {
-            PreviewReleaseOutcome.Acknowledged
-        } else {
-            PreviewReleaseOutcome.TimedOut(PreviewReleaseDiagnostic.ReleaseTimeout)
+        var acknowledged = false
+        try {
+            lifecycle.port.dispatch(PreviewCommand.Release(lifecycle.generation))
+            acknowledged = withTimeoutOrNull(releaseTimeout.inWholeMilliseconds) {
+                acknowledgement.await()
+                true
+            } == true
+        } catch (cause: Throwable) {
+            recordTerminalFailure(cause)
+        } finally {
+            val outcome = if (acknowledged) {
+                PreviewReleaseOutcome.Acknowledged
+            } else {
+                PreviewReleaseOutcome.TimedOut(PreviewReleaseDiagnostic.ReleaseTimeout)
+            }
+            backingReleaseAudit.value = PreviewReleaseAudit(lifecycle.generation, revision, outcome, reason)
+            releaseWaiter = null
         }
-        backingReleaseAudit.value = PreviewReleaseAudit(lifecycle.generation, revision, outcome, reason)
-        releaseWaiter = null
-        presenter.close()
-        eventJob?.cancel()
+    }
+
+    private suspend fun cancelAndJoinEventJob(reason: PreviewReleaseReason) {
+        val runningEventJob = eventJob
         eventJob = null
-        backingActivePort.value = null
-        portFactory.dispose(lifecycle.port)
-        if (active === lifecycle) active = null
-        coordinator.clearAfterDisposal()
+        if (runningEventJob != null) {
+            runningEventJob.cancel(ExpectedLifecycleEventCancellation(reason))
+            runningEventJob.join()
+        }
+    }
+
+    private suspend fun runTerminalStage(stage: suspend () -> Unit) {
+        try {
+            stage()
+        } catch (cause: Throwable) {
+            recordTerminalFailure(cause)
+        }
+    }
+
+    private fun recordTerminalFailure(cause: Throwable) {
+        terminalFailure.compareAndSet(expect = null, update = cause)
+    }
+
+    private fun attemptTerminalCompletion() {
+        if (terminalCompletionAttempted || !terminalLatched.value || terminalFailure.value != null) return
+        if (active != null || backingActivePort.value != null || !backingClosed.value) return
+        terminalCompletionAttempted = true
+        try {
+            terminalCompletion()
+        } catch (_: Throwable) {
+            // The host callback is an isolated one-shot notification, never a retry trigger.
+        }
     }
 
     private fun observe(lifecycle: ActiveLifecycle) {
-        eventJob?.cancel()
-        eventJob = scope.launch {
-            lifecycle.port.events.collect { event ->
-                if (event is PreviewEvent.Released) {
-                    val waiter = releaseWaiter
-                    if (waiter?.first == event.generation) waiter.second.complete(Unit)
-                } else {
-                    intents.send(LifecycleIntent.PortEvent(lifecycle.generation, event))
+        val job = scope.launch {
+            try {
+                lifecycle.port.events.collect { event ->
+                    if (event is PreviewEvent.Released) {
+                        val waiter = releaseWaiter
+                        if (waiter?.first == event.generation) waiter.second.complete(Unit)
+                    } else {
+                        intents.send(LifecycleIntent.PortEvent(lifecycle.generation, event))
+                    }
                 }
+            } catch (cause: Throwable) {
+                if (cause is ExpectedLifecycleEventCancellation) throw cause
+                recordTerminalFailure(cause)
+            }
+        }
+        eventJob = job
+        job.invokeOnCompletion { cause ->
+            if (cause != null && cause !is ExpectedLifecycleEventCancellation) {
+                recordTerminalFailure(cause)
             }
         }
     }
@@ -214,3 +293,7 @@ internal class ClipEditorLifecycleOwner(
         data class Close(val cancel: Boolean) : LifecycleIntent
     }
 }
+
+private class ExpectedLifecycleEventCancellation(
+    reason: PreviewReleaseReason,
+) : CancellationException("Clip editor lifecycle event collector cancelled for $reason")

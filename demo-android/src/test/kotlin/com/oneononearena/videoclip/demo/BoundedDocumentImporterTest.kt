@@ -3,46 +3,153 @@ package com.oneononearena.videoclip.demo
 import java.io.ByteArrayInputStream
 import java.io.File
 import java.nio.file.Files
-import com.oneononearena.videoclip.ClipEditorSession
-import com.oneononearena.videoclip.ClipRange
-import com.oneononearena.videoclip.ClipResult
-import com.oneononearena.videoclip.FrameStripEvent
-import com.oneononearena.videoclip.FrameStripRequest
-import com.oneononearena.videoclip.OpenSessionResult
-import com.oneononearena.videoclip.VideoClipEditor
-import com.oneononearena.videoclip.VideoMetadata
-import com.oneononearena.videoclip.VideoSourcePath
 import kotlin.io.path.createTempDirectory
-import org.junit.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
 import kotlin.test.assertIs
-import kotlin.test.assertFailsWith
+import kotlin.test.assertNotNull
+import kotlin.test.assertNull
 import kotlin.test.assertTrue
 import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.runBlocking
-import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.async
-import kotlinx.coroutines.flow.emptyFlow
+import kotlinx.coroutines.cancelAndJoin
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.yield
-import kotlin.time.Duration.Companion.seconds
+import org.junit.Test
 
 class BoundedDocumentImporterTest {
     @Test
-    fun demoClear_waitsForScreenOwnedSessionCloseBeforeDeletingImportedSource() = runBlocking {
+    fun sameGenerationTerminalCompletionClearsLeaseOwnedInputThenUiAndAllowsReselect() = runBlocking {
         val calls = mutableListOf<String>()
-        val coordinator = DemoCleanupCoordinator(
-            hideAndAwaitSessionClose = { calls += "hide-await-close" },
-            clearOutput = { calls += "lease-clear"; DemoClearResult.Cleared },
-            deleteSource = { calls += "source-delete"; true },
-            clearUi = { calls += "ui-clear" },
-        )
+        val coordinator = DemoCleanupCoordinator()
+        val generation = assertNotNull(coordinator.activateGeneration())
 
-        assertEquals(DemoClearResult.Cleared, coordinator.clear())
+        val clearing = async {
+            coordinator.clear(
+                generation = generation,
+                hideScreen = {
+                    assertFalse(coordinator.canReselect)
+                    calls += "hide-screen"
+                },
+                clearOutput = { calls += "lease-clear"; DemoClearResult.Cleared },
+                deleteSource = { calls += "source-delete"; true },
+                clearUi = { calls += "ui-clear" },
+            )
+        }
+        yield()
+        assertEquals(listOf("hide-screen"), calls)
+        assertFalse(clearing.isCompleted)
+
+        coordinator.onTerminalLifecycleComplete(generation)
+
+        assertEquals(DemoClearResult.Cleared, clearing.await())
         assertEquals(
-            listOf("hide-await-close", "lease-clear", "source-delete", "ui-clear"),
+            listOf("hide-screen", "lease-clear", "source-delete", "ui-clear"),
             calls,
         )
+        assertTrue(coordinator.canReselect)
+        assertNotNull(coordinator.activateGeneration())
+        Unit
+    }
+
+    @Test
+    fun withheldTerminalCompletionRetainsLeaseOwnedInputUiAndBlocksReselect() = runBlocking {
+        var leaseRetained = true
+        var inputRetained = true
+        var uiRetained = true
+        val calls = mutableListOf<String>()
+        val coordinator = DemoCleanupCoordinator()
+        val generation = assertNotNull(coordinator.activateGeneration())
+
+        val clearing = async {
+            coordinator.clear(
+                generation = generation,
+                hideScreen = { calls += "hide-screen" },
+                clearOutput = { calls += "lease-clear"; leaseRetained = false; DemoClearResult.Cleared },
+                deleteSource = { calls += "source-delete"; inputRetained = false; true },
+                clearUi = { calls += "ui-clear"; uiRetained = false },
+            )
+        }
+        yield()
+
+        assertFalse(clearing.isCompleted)
+        assertEquals(listOf("hide-screen"), calls)
+        assertTrue(leaseRetained)
+        assertTrue(inputRetained)
+        assertTrue(uiRetained)
+        assertFalse(coordinator.canReselect)
+        assertNull(coordinator.activateGeneration())
+
+        clearing.cancelAndJoin()
+    }
+
+    @Test
+    fun staleGenerationTerminalCompletionNeverChangesCurrentState() = runBlocking {
+        val calls = mutableListOf<String>()
+        val coordinator = DemoCleanupCoordinator()
+        val staleGeneration = assertNotNull(coordinator.activateGeneration())
+        val firstClear = async {
+            coordinator.clear(
+                generation = staleGeneration,
+                hideScreen = {},
+                clearOutput = { DemoClearResult.Cleared },
+                deleteSource = { true },
+                clearUi = {},
+            )
+        }
+        yield()
+        coordinator.onTerminalLifecycleComplete(staleGeneration)
+        assertEquals(DemoClearResult.Cleared, firstClear.await())
+        val currentGeneration = assertNotNull(coordinator.activateGeneration())
+
+        val currentClear = async {
+            coordinator.clear(
+                generation = currentGeneration,
+                hideScreen = { calls += "hide-current" },
+                clearOutput = { calls += "lease-current"; DemoClearResult.Cleared },
+                deleteSource = { calls += "source-current"; true },
+                clearUi = { calls += "ui-current" },
+            )
+        }
+        yield()
+        coordinator.onTerminalLifecycleComplete(staleGeneration)
+        yield()
+
+        assertFalse(currentClear.isCompleted)
+        assertEquals(listOf("hide-current"), calls)
+        assertFalse(coordinator.canReselect)
+
+        coordinator.onTerminalLifecycleComplete(currentGeneration)
+        assertEquals(DemoClearResult.Cleared, currentClear.await())
+        assertEquals(
+            listOf("hide-current", "lease-current", "source-current", "ui-current"),
+            calls,
+        )
+    }
+
+    @Test
+    fun terminalCompletionBeforeSealDoesNotAuthorizeDeletion() = runBlocking {
+        val calls = mutableListOf<String>()
+        val coordinator = DemoCleanupCoordinator()
+        val generation = assertNotNull(coordinator.activateGeneration())
+        coordinator.onTerminalLifecycleComplete(generation)
+        val clearing = async {
+            coordinator.clear(
+                generation = generation,
+                hideScreen = { calls += "hide" },
+                clearOutput = { calls += "lease"; DemoClearResult.Cleared },
+                deleteSource = { calls += "source"; true },
+                clearUi = { calls += "ui" },
+            )
+        }
+        yield()
+
+        assertFalse(clearing.isCompleted)
+        assertEquals(listOf("hide"), calls)
+        assertFalse(coordinator.canReselect)
+
+        clearing.cancelAndJoin()
     }
 
     @Test
@@ -130,164 +237,172 @@ class BoundedDocumentImporterTest {
     }
 
     @Test
-    fun `clear failure blocks reselect until retry succeeds`() = runBlocking {
+    fun clearFailureBlocksReselectUntilRetrySucceeds() = runBlocking {
         var attempts = 0
-        val coordinator = DemoCleanupCoordinator(
-            hideAndAwaitSessionClose = {},
-            clearOutput = { attempts++; if (attempts == 1) DemoClearResult.Failed else DemoClearResult.Cleared },
-            deleteSource = { true }, clearUi = {},
-        )
-        assertEquals(DemoClearResult.Failed, coordinator.clear())
+        val coordinator = DemoCleanupCoordinator()
+        val generation = assertNotNull(coordinator.activateGeneration())
+        val firstClear = async {
+            coordinator.clear(
+                generation = generation,
+                hideScreen = {},
+                clearOutput = { attempts++; DemoClearResult.Failed },
+                deleteSource = { true },
+                clearUi = {},
+            )
+        }
+        yield()
+        coordinator.onTerminalLifecycleComplete(generation)
+        assertEquals(DemoClearResult.Failed, firstClear.await())
         assertFalse(coordinator.canReselect)
-        assertEquals(DemoClearResult.Cleared, coordinator.clear())
+        assertNull(coordinator.activateGeneration())
+
+        assertEquals(
+            DemoClearResult.Cleared,
+            coordinator.clear(
+                generation = generation,
+                hideScreen = {},
+                clearOutput = { attempts++; DemoClearResult.Cleared },
+                deleteSource = { true },
+                clearUi = {},
+            ),
+        )
+        assertEquals(2, attempts)
         assertTrue(coordinator.canReselect)
     }
 
     @Test
-    fun `clear output exception is failed and never reported cleared`() = runBlocking {
-        val coordinator = DemoCleanupCoordinator(
-            hideAndAwaitSessionClose = {}, clearOutput = { throw IllegalStateException("delete failed") },
-            deleteSource = { true }, clearUi = {},
+    fun hideLeaseInputFailuresStopBeforeNextStepAndBlockReselect() = runBlocking {
+        val hideCalls = mutableListOf<String>()
+        val hideCoordinator = DemoCleanupCoordinator()
+        val hideGeneration = assertNotNull(hideCoordinator.activateGeneration())
+        assertEquals(
+            DemoClearResult.Failed,
+            hideCoordinator.clear(
+                generation = hideGeneration,
+                hideScreen = { hideCalls += "hide"; error("hide failed") },
+                clearOutput = { hideCalls += "lease"; DemoClearResult.Cleared },
+                deleteSource = { hideCalls += "source"; true },
+                clearUi = { hideCalls += "ui" },
+            ),
         )
+        assertEquals(listOf("hide"), hideCalls)
+        assertFalse(hideCoordinator.canReselect)
 
-        assertEquals(DemoClearResult.Failed, coordinator.clear())
-        assertFalse(coordinator.canReselect)
-    }
-
-    @Test
-    fun closeLeaseInputFailuresStopBeforeNextStepAndBlockReselect() = runBlocking {
-        val closeFailureCalls = mutableListOf<String>()
-        val closeFailure = DemoCleanupCoordinator(
-            hideAndAwaitSessionClose = { closeFailureCalls += "hide-close"; error("close failed") },
-            clearOutput = { closeFailureCalls += "lease"; DemoClearResult.Cleared },
-            deleteSource = { closeFailureCalls += "source"; true },
-            clearUi = { closeFailureCalls += "ui" },
-        )
-        assertEquals(DemoClearResult.Failed, closeFailure.clear())
-        assertEquals(listOf("hide-close"), closeFailureCalls)
-        assertFalse(closeFailure.canReselect)
-
-        val leaseFailureCalls = mutableListOf<String>()
-        val leaseFailure = DemoCleanupCoordinator(
-            hideAndAwaitSessionClose = { leaseFailureCalls += "hide-close" },
-            clearOutput = { leaseFailureCalls += "lease"; DemoClearResult.Failed },
-            deleteSource = { leaseFailureCalls += "source"; true },
-            clearUi = { leaseFailureCalls += "ui" },
-        )
-        assertEquals(DemoClearResult.Failed, leaseFailure.clear())
-        assertEquals(listOf("hide-close", "lease"), leaseFailureCalls)
-        assertFalse(leaseFailure.canReselect)
-
-        val inputFailureCalls = mutableListOf<String>()
-        val inputFailure = DemoCleanupCoordinator(
-            hideAndAwaitSessionClose = { inputFailureCalls += "hide-close" },
-            clearOutput = { inputFailureCalls += "lease"; DemoClearResult.Cleared },
-            deleteSource = { inputFailureCalls += "source"; false },
-            clearUi = { inputFailureCalls += "ui" },
-        )
-        assertEquals(DemoClearResult.Failed, inputFailure.clear())
-        assertEquals(listOf("hide-close", "lease", "source"), inputFailureCalls)
-        assertFalse(inputFailure.canReselect)
-    }
-
-    @Test
-    fun `cleanup cancellation rethrows and performs no later step`() = runBlocking {
-        val calls = mutableListOf<String>()
-        val coordinator = DemoCleanupCoordinator(
-            hideAndAwaitSessionClose = { calls += "hide-close"; throw CancellationException("cancelled") },
-            clearOutput = { calls += "lease"; DemoClearResult.Cleared },
-            deleteSource = { calls += "source"; true },
-            clearUi = { calls += "ui" },
-        )
-
-        assertFailsWith<CancellationException> { coordinator.clear() }
-        assertEquals(listOf("hide-close"), calls)
-        assertFalse(coordinator.canReselect)
-    }
-
-    @Test
-    fun forwardingSessionSignalsOnlyAfterDelegateCloseAndHostNeverClosesRawSession() = runBlocking {
-        val closeStarted = CompletableDeferred<Unit>()
-        val allowClose = CompletableDeferred<Unit>()
-        val session = FakeSession {
-            closeStarted.complete(Unit)
-            allowClose.await()
+        val leaseCalls = mutableListOf<String>()
+        val leaseCoordinator = DemoCleanupCoordinator()
+        val leaseGeneration = assertNotNull(leaseCoordinator.activateGeneration())
+        val leaseClear = async {
+            leaseCoordinator.clear(
+                generation = leaseGeneration,
+                hideScreen = { leaseCalls += "hide" },
+                clearOutput = { leaseCalls += "lease"; DemoClearResult.Failed },
+                deleteSource = { leaseCalls += "source"; true },
+                clearUi = { leaseCalls += "ui" },
+            )
         }
-        val editor = SessionTrackingEditor(object : VideoClipEditor {
-            override suspend fun openSession(source: VideoSourcePath) = OpenSessionResult.Open(session)
-        })
-        val opened = assertIs<OpenSessionResult.Open>(editor.openSession(VideoSourcePath("/tmp/input.mp4")))
-
-        val awaitingClose = async { editor.awaitActiveSessionClosed() }
         yield()
-        assertFalse(awaitingClose.isCompleted)
-        assertEquals(0, session.closeCalls)
+        leaseCoordinator.onTerminalLifecycleComplete(leaseGeneration)
+        assertEquals(DemoClearResult.Failed, leaseClear.await())
+        assertEquals(listOf("hide", "lease"), leaseCalls)
+        assertFalse(leaseCoordinator.canReselect)
 
-        val screenClose = async { opened.session.close() }
-        closeStarted.await()
-        assertFalse(awaitingClose.isCompleted)
-        allowClose.complete(Unit)
-        screenClose.await()
-        awaitingClose.await()
-        opened.session.close()
-
-        assertEquals(1, session.closeCalls)
+        val inputCalls = mutableListOf<String>()
+        val inputCoordinator = DemoCleanupCoordinator()
+        val inputGeneration = assertNotNull(inputCoordinator.activateGeneration())
+        val inputClear = async {
+            inputCoordinator.clear(
+                generation = inputGeneration,
+                hideScreen = { inputCalls += "hide" },
+                clearOutput = { inputCalls += "lease"; DemoClearResult.Cleared },
+                deleteSource = { inputCalls += "source"; false },
+                clearUi = { inputCalls += "ui" },
+            )
+        }
+        yield()
+        inputCoordinator.onTerminalLifecycleComplete(inputGeneration)
+        assertEquals(DemoClearResult.Failed, inputClear.await())
+        assertEquals(listOf("hide", "lease", "source"), inputCalls)
+        assertFalse(inputCoordinator.canReselect)
     }
 
     @Test
-    fun `await active session close waits for a racing open and screen-owned close`() = runBlocking {
-        val openStarted = CompletableDeferred<Unit>()
-        val allowOpen = CompletableDeferred<Unit>()
-        val session = FakeSession()
-        val editor = SessionTrackingEditor(object : VideoClipEditor {
-            override suspend fun openSession(source: VideoSourcePath): OpenSessionResult {
-                openStarted.complete(Unit)
-                allowOpen.await()
-                return OpenSessionResult.Open(session)
-            }
-        })
-
-        val opening = async { editor.openSession(VideoSourcePath("/tmp/input.mp4")) }
-        openStarted.await()
-        val awaitingClose = async { editor.awaitActiveSessionClosed() }
-        assertFalse(awaitingClose.isCompleted)
-        allowOpen.complete(Unit)
-        val opened = assertIs<OpenSessionResult.Open>(opening.await())
+    fun stageExceptionsReportFailureAndNeverRunLaterDestructiveSteps() = runBlocking {
+        val leaseCalls = mutableListOf<String>()
+        val leaseCoordinator = DemoCleanupCoordinator()
+        val leaseGeneration = assertNotNull(leaseCoordinator.activateGeneration())
+        val leaseClear = async {
+            leaseCoordinator.clear(
+                generation = leaseGeneration,
+                hideScreen = { leaseCalls += "hide" },
+                clearOutput = { leaseCalls += "lease"; error("lease failed") },
+                deleteSource = { leaseCalls += "source"; true },
+                clearUi = { leaseCalls += "ui" },
+            )
+        }
         yield()
-        assertFalse(awaitingClose.isCompleted)
-        opened.session.close()
-        awaitingClose.await()
+        leaseCoordinator.onTerminalLifecycleComplete(leaseGeneration)
+        assertEquals(DemoClearResult.Failed, leaseClear.await())
+        assertEquals(listOf("hide", "lease"), leaseCalls)
 
-        assertEquals(1, session.closeCalls)
+        val inputCalls = mutableListOf<String>()
+        val inputCoordinator = DemoCleanupCoordinator()
+        val inputGeneration = assertNotNull(inputCoordinator.activateGeneration())
+        val inputClear = async {
+            inputCoordinator.clear(
+                generation = inputGeneration,
+                hideScreen = { inputCalls += "hide" },
+                clearOutput = { inputCalls += "lease"; DemoClearResult.Cleared },
+                deleteSource = { inputCalls += "source"; error("input failed") },
+                clearUi = { inputCalls += "ui" },
+            )
+        }
+        yield()
+        inputCoordinator.onTerminalLifecycleComplete(inputGeneration)
+        assertEquals(DemoClearResult.Failed, inputClear.await())
+        assertEquals(listOf("hide", "lease", "source"), inputCalls)
+
+        val uiCalls = mutableListOf<String>()
+        val uiCoordinator = DemoCleanupCoordinator()
+        val uiGeneration = assertNotNull(uiCoordinator.activateGeneration())
+        val uiClear = async {
+            uiCoordinator.clear(
+                generation = uiGeneration,
+                hideScreen = { uiCalls += "hide" },
+                clearOutput = { uiCalls += "lease"; DemoClearResult.Cleared },
+                deleteSource = { uiCalls += "source"; true },
+                clearUi = { uiCalls += "ui"; error("ui failed") },
+            )
+        }
+        yield()
+        uiCoordinator.onTerminalLifecycleComplete(uiGeneration)
+        assertEquals(DemoClearResult.Failed, uiClear.await())
+        assertEquals(listOf("hide", "lease", "source", "ui"), uiCalls)
+        assertFalse(uiCoordinator.canReselect)
     }
 
     @Test
-    fun `delegate close failure completes active close signal exceptionally`() = runBlocking {
-        val session = FakeSession { error("close failed") }
-        val editor = SessionTrackingEditor(object : VideoClipEditor {
-            override suspend fun openSession(source: VideoSourcePath) = OpenSessionResult.Open(session)
-        })
-        val opened = assertIs<OpenSessionResult.Open>(editor.openSession(VideoSourcePath("/tmp/input.mp4")))
+    fun cleanupCancellationRethrowsAndPerformsNoLaterDestructiveStep() = runBlocking {
+        val calls = mutableListOf<String>()
+        val coordinator = DemoCleanupCoordinator()
+        val generation = assertNotNull(coordinator.activateGeneration())
+        val clearing = async {
+            coordinator.clear(
+                generation = generation,
+                hideScreen = { calls += "hide" },
+                clearOutput = { calls += "lease"; throw CancellationException("cancelled") },
+                deleteSource = { calls += "source"; true },
+                clearUi = { calls += "ui" },
+            )
+        }
+        yield()
+        coordinator.onTerminalLifecycleComplete(generation)
 
-        assertEquals("close failed", assertFailsWith<IllegalStateException> { opened.session.close() }.message)
-        assertEquals("close failed", assertFailsWith<IllegalStateException> { editor.awaitActiveSessionClosed() }.message)
-        assertEquals(1, session.closeCalls)
+        assertFailsWith<CancellationException> { clearing.await() }
+        assertEquals(listOf("hide", "lease"), calls)
+        assertFalse(coordinator.canReselect)
     }
 
     private class FailingInputStream : java.io.InputStream() {
         override fun read(): Int = throw IllegalStateException("read failed")
-    }
-
-    private class FakeSession(
-        private val onClose: suspend () -> Unit = {},
-    ) : ClipEditorSession {
-        var closeCalls = 0
-        override val metadata = VideoMetadata(1.seconds, 1, 1, false)
-        override fun frames(request: FrameStripRequest) = emptyFlow<FrameStripEvent>()
-        override suspend fun createClip(range: ClipRange): ClipResult = error("not used")
-        override suspend fun close() {
-            closeCalls += 1
-            onClose()
-        }
     }
 }

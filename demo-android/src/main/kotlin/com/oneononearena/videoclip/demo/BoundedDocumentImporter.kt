@@ -2,14 +2,8 @@ package com.oneononearena.videoclip.demo
 
 import java.io.File
 import java.io.InputStream
-import com.oneononearena.videoclip.ClipEditorSession
-import com.oneononearena.videoclip.OpenSessionResult
-import com.oneononearena.videoclip.VideoClipEditor
-import com.oneononearena.videoclip.VideoSourcePath
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
-import kotlinx.coroutines.sync.Mutex
-import kotlinx.coroutines.sync.withLock
 
 internal sealed interface DemoOwnedInput {
     val file: File
@@ -109,77 +103,65 @@ internal class BoundedDocumentImporter(
     }
 }
 
-/** Demo-only bridge: observes the screen-owned session close without exposing raw close authority. */
-internal class SessionTrackingEditor(private val delegate: VideoClipEditor) : VideoClipEditor {
-    private val sessionMutex = Mutex()
-    private var activeSessionClosed: CompletableDeferred<Unit>? = null
-
-    override suspend fun openSession(source: VideoSourcePath): OpenSessionResult = sessionMutex.withLock {
-        activeSessionClosed = null
-        when (val opened = delegate.openSession(source)) {
-            is OpenSessionResult.Open -> {
-                val closeSignal = CompletableDeferred<Unit>()
-                activeSessionClosed = closeSignal
-                OpenSessionResult.Open(ForwardingClipEditorSession(opened.session, closeSignal))
-            }
-            else -> opened
-        }
-    }
-
-    suspend fun awaitActiveSessionClosed() {
-        sessionMutex.withLock { activeSessionClosed }?.await()
-    }
-}
-
-private class ForwardingClipEditorSession(
-    private val delegate: ClipEditorSession,
-    private val closeSignal: CompletableDeferred<Unit>,
-) : ClipEditorSession by delegate {
-    private val closeMutex = Mutex()
-    private var closeStarted = false
-
-    override suspend fun close() {
-        val ownsClose = closeMutex.withLock {
-            if (closeStarted) {
-                false
-            } else {
-                closeStarted = true
-                true
-            }
-        }
-        if (!ownsClose) {
-            closeSignal.await()
-            return
-        }
-        try {
-            delegate.close()
-            closeSignal.complete(Unit)
-        } catch (error: Throwable) {
-            closeSignal.completeExceptionally(error)
-            throw error
-        }
-    }
-}
-
 internal enum class DemoClearResult { Cleared, Failed }
 
-/** Lifecycle owner. A failed lease deletion leaves UI/source intact and disables reselect until retry. */
-internal class DemoCleanupCoordinator(
-    private val hideAndAwaitSessionClose: suspend () -> Unit,
-    private val clearOutput: suspend () -> DemoClearResult,
-    private val deleteSource: suspend () -> Boolean,
-    private val clearUi: suspend () -> Unit,
-) {
+/** Generation fence. Destructive cleanup starts only after the screen's matching terminal callback. */
+internal class DemoCleanupCoordinator {
+    private data class ActiveGeneration(
+        val id: Long,
+        val terminalCompletion: CompletableDeferred<Unit> = CompletableDeferred(),
+        var sealed: Boolean = false,
+    )
+
+    private var nextGeneration = 0L
+    private var activeGeneration: ActiveGeneration? = null
+
     var canReselect: Boolean = true
         private set
 
-    suspend fun clear(): DemoClearResult {
+    fun activateGeneration(): Long? {
+        if (!canReselect || activeGeneration != null) return null
+        val generation = ++nextGeneration
+        activeGeneration = ActiveGeneration(generation)
+        return generation
+    }
+
+    fun acceptsUpdates(generation: Long): Boolean {
+        val active = activeGeneration
+        return active?.id == generation && !active.sealed
+    }
+
+    fun sealGeneration(generation: Long): Boolean {
+        val active = activeGeneration
+        if (active?.id != generation) return false
+        active.sealed = true
         canReselect = false
+        return true
+    }
+
+    fun onTerminalLifecycleComplete(generation: Long) {
+        val active = activeGeneration
+        if (active?.id == generation && active.sealed) {
+            active.terminalCompletion.complete(Unit)
+        }
+    }
+
+    suspend fun clear(
+        generation: Long,
+        hideScreen: suspend () -> Unit,
+        clearOutput: suspend () -> DemoClearResult,
+        deleteSource: suspend () -> Boolean,
+        clearUi: suspend () -> Unit,
+    ): DemoClearResult {
+        val active = activeGeneration
+        if (active?.id != generation || !sealGeneration(generation)) return DemoClearResult.Failed
         return try {
-            hideAndAwaitSessionClose()
+            hideScreen()
+            active.terminalCompletion.await()
             if (clearOutput() == DemoClearResult.Failed) return DemoClearResult.Failed
             if (!deleteSource()) return DemoClearResult.Failed
             clearUi()
+            activeGeneration = null
             canReselect = true
             DemoClearResult.Cleared
         } catch (error: CancellationException) {

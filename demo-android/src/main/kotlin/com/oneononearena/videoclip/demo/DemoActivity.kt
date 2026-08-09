@@ -41,8 +41,10 @@ class DemoActivity : ComponentActivity() {
 @Composable
 private fun DemoApp(activity: DemoActivity) {
     val scope = rememberCoroutineScope()
-    val editor = remember(activity) { SessionTrackingEditor(createAndroidVideoClipEditor(activity)) }
+    val editor = remember(activity) { createAndroidVideoClipEditor(activity) }
+    val cleanupCoordinator = remember { DemoCleanupCoordinator() }
     var source by remember { mutableStateOf<DemoOwnedInput?>(null) }
+    var sourceGeneration by remember { mutableStateOf<Long?>(null) }
     var output by remember { mutableStateOf<TemporaryClipLease?>(null) }
     var message by remember { mutableStateOf<String?>(null) }
     var editorVisible by remember { mutableStateOf(true) }
@@ -66,10 +68,17 @@ private fun DemoApp(activity: DemoActivity) {
             }
             when (result) {
                 is DocumentImportResult.Imported -> {
-                    source = result.input
-                    output = null
-                    message = "Input: ${result.input.file.absolutePath}"
-                    editorVisible = true
+                    val generation = cleanupCoordinator.activateGeneration()
+                    if (generation == null) {
+                        withContext(Dispatchers.IO) { result.input.delete() }
+                        message = "Import failed: cleanup is still pending"
+                    } else {
+                        source = result.input
+                        sourceGeneration = generation
+                        output = null
+                        message = "Input: ${result.input.file.absolutePath}"
+                        editorVisible = true
+                    }
                 }
                 DocumentImportResult.TooLarge -> message = "Input rejected: exceeds 512 MiB"
                 is DocumentImportResult.Failed -> message = "Import failed: ${result.message ?: "unknown error"}"
@@ -85,32 +94,39 @@ private fun DemoApp(activity: DemoActivity) {
     }
     fun clear() {
         if (operationInProgress) return
+        val generation = sourceGeneration ?: return
+        val ownedInput = source ?: return
+        if (!cleanupCoordinator.sealGeneration(generation)) return
+        operationInProgress = true
+        cleanupBlocked = true
+        val issuedLease = output
         scope.launch {
-            operationInProgress = true
-            cleanupBlocked = true
-            val coordinator = DemoCleanupCoordinator(
-                hideAndAwaitSessionClose = {
-                    editorVisible = false
-                    editor.awaitActiveSessionClosed()
-                },
-                clearOutput = {
-                    val lease = output ?: return@DemoCleanupCoordinator DemoClearResult.Cleared
-                    try {
-                        when (lease.clearTemporaryFile()) {
-                            TempDeleteResult.Cleared, TempDeleteResult.AlreadyCleared -> DemoClearResult.Cleared
-                            is TempDeleteResult.Failed -> DemoClearResult.Failed
-                        }
-                    } catch (error: CancellationException) {
-                        throw error
-                    } catch (_: Exception) {
-                        DemoClearResult.Failed
-                    }
-                },
-                deleteSource = { source?.delete() ?: true },
-                clearUi = { source = null; output = null; message = null },
-            )
             try {
-                when (coordinator.clear()) {
+                val result = cleanupCoordinator.clear(
+                    generation = generation,
+                    hideScreen = { editorVisible = false },
+                    clearOutput = {
+                        val lease = issuedLease ?: return@clear DemoClearResult.Cleared
+                        try {
+                            when (lease.clearTemporaryFile()) {
+                                TempDeleteResult.Cleared, TempDeleteResult.AlreadyCleared -> DemoClearResult.Cleared
+                                is TempDeleteResult.Failed -> DemoClearResult.Failed
+                            }
+                        } catch (error: CancellationException) {
+                            throw error
+                        } catch (_: Exception) {
+                            DemoClearResult.Failed
+                        }
+                    },
+                    deleteSource = { withContext(Dispatchers.IO) { ownedInput.delete() } },
+                    clearUi = {
+                        source = null
+                        sourceGeneration = null
+                        output = null
+                        message = null
+                    },
+                )
+                when (result) {
                     DemoClearResult.Cleared -> cleanupBlocked = false
                     DemoClearResult.Failed -> message = "Temporary cleanup failed. Retry Clear temp before reselecting."
                 }
@@ -125,10 +141,12 @@ private fun DemoApp(activity: DemoActivity) {
         if (source != null || cleanupBlocked) Button(onClick = ::clear, enabled = !operationInProgress && !pickerOpen) { Text("Clear temp") }
         message?.let { Text(it) }
         source?.let { imported ->
-            if (editorVisible) ClipEditorScreen(
+            val generation = sourceGeneration
+            if (editorVisible && generation != null) ClipEditorScreen(
                 source = VideoSourcePath(imported.file.absolutePath),
                 editor = editor,
                 onResult = { result ->
+                    if (!cleanupCoordinator.acceptsUpdates(generation)) return@ClipEditorScreen
                     when (result) {
                         is ClipResult.Success -> {
                             output = result.output
@@ -139,7 +157,14 @@ private fun DemoApp(activity: DemoActivity) {
                         is ClipResult.Failed -> message = "Failed: ${result.failure.code} ${result.failure.diagnostic.orEmpty()}"
                     }
                 },
-                onCancel = { message = "Editor cancelled" },
+                onCancel = {
+                    if (cleanupCoordinator.acceptsUpdates(generation)) {
+                        message = "Editor cancelled"
+                    }
+                },
+                onTerminalLifecycleComplete = {
+                    cleanupCoordinator.onTerminalLifecycleComplete(generation)
+                },
             )
         }
     }

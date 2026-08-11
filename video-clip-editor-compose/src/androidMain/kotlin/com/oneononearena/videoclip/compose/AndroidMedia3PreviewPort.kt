@@ -190,8 +190,10 @@ internal class AndroidMedia3PreviewPort(
 
     private fun setPlayWhenReady(command: PreviewCommand.SetPlayWhenReady) {
         val binding = matchingReadyBinding(command.generation, command.revision) ?: return
+        val bindingWithIntent = binding.copy(playWhenReady = command.value)
+        appliedBinding = bindingWithIntent
         player?.playWhenReady = command.value
-        emitPosition(binding)
+        emitPosition(bindingWithIntent)
         updateTicker()
     }
 

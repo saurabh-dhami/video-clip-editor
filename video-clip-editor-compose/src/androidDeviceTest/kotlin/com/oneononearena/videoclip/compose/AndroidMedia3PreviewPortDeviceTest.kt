@@ -8,10 +8,12 @@ import com.oneononearena.videoclip.VideoMetadata
 import com.oneononearena.videoclip.VideoSourcePath
 import java.io.File
 import kotlin.time.Duration.Companion.seconds
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.delay
@@ -56,6 +58,292 @@ class AndroidMedia3PreviewPortDeviceTest {
             assertEquals(Player.REPEAT_MODE_ONE, onMain { player.repeatMode })
             assertFalse(onMain { player.playWhenReady })
             assertTrue(onMain { player.currentPosition } in 0L..250L)
+        } finally {
+            onMain { port.dispatch(PreviewCommand.Release(PreviewGeneration(1))) }
+            recorder.close()
+        }
+    }
+
+    @Test
+    fun acceptedPlayIntentSurvivesFirstRealRepeat() = runBlocking {
+        val source = fixtures.copyAvcFixture()
+        val port = onMain { AndroidMedia3PreviewPort(context) }
+        val recorder = EventRecorder(port)
+
+        try {
+            val revision = PreviewRevision(10)
+            onMain {
+                port.dispatch(PreviewCommand.Bind(binding(source, revision.value, 2, 4)))
+            }
+            recorder.await("initial Ready") {
+                it == PreviewEvent.Ready(PreviewGeneration(1), revision)
+            }
+            val player = onMain { checkNotNull(port.playerForSurface) }
+            assertFalse(onMain { player.playWhenReady })
+
+            onMain {
+                port.dispatch(PreviewCommand.SetPlayWhenReady(PreviewGeneration(1), revision, true))
+            }
+            recorder.await("high playing position before first repeat") {
+                it is PreviewEvent.Position &&
+                    it.revision == revision &&
+                    it.sourcePosition >= 3.6.seconds &&
+                    it.isPlaying
+            }
+            recorder.await("low transient paused position at first repeat") {
+                it is PreviewEvent.Position &&
+                    it.revision == revision &&
+                    it.sourcePosition <= 2.4.seconds &&
+                    !it.isPlaying
+            }
+            recorder.await("low playing position after first repeat") {
+                it is PreviewEvent.Position &&
+                    it.revision == revision &&
+                    it.sourcePosition <= 2.4.seconds &&
+                    it.isPlaying
+            }
+
+            val item = onMain { checkNotNull(player.currentMediaItem) }
+            assertEquals("1:10", item.mediaId)
+            assertEquals(2_000L, item.clippingConfiguration.startPositionMs)
+            assertEquals(4_000L, item.clippingConfiguration.endPositionMs)
+            assertEquals(Player.REPEAT_MODE_ONE, onMain { player.repeatMode })
+            assertFalse(recorder.snapshot().any { it is PreviewEvent.RecoverableFailure })
+        } finally {
+            onMain { port.dispatch(PreviewCommand.Release(PreviewGeneration(1))) }
+            recorder.close()
+        }
+    }
+
+    @Test
+    fun staleAndPreparingPlayCommandsCannotMutateAppliedIntent() = runBlocking {
+        val source = fixtures.copyAvcFixture()
+        val port = onMain { AndroidMedia3PreviewPort(context) }
+        val recorder = EventRecorder(port)
+
+        try {
+            onMain {
+                port.dispatch(PreviewCommand.Bind(binding(source, 20, 2, 4)))
+                port.dispatch(
+                    PreviewCommand.SetPlayWhenReady(
+                        PreviewGeneration(1),
+                        PreviewRevision(20),
+                        true,
+                    ),
+                )
+            }
+            recorder.await("Ready after preparing command rejection") {
+                it == PreviewEvent.Ready(PreviewGeneration(1), PreviewRevision(20))
+            }
+            val player = onMain { checkNotNull(port.playerForSurface) }
+            assertFalse(onMain { player.playWhenReady })
+
+            onMain {
+                port.dispatch(
+                    PreviewCommand.ReplaceRange(
+                        binding(source, 21, 2, 4, playWhenReady = true),
+                    ),
+                )
+            }
+            recorder.await("explicit true replacement Ready") {
+                it == PreviewEvent.Ready(PreviewGeneration(1), PreviewRevision(21))
+            }
+            assertTrue(onMain { player.playWhenReady })
+
+            onMain {
+                port.dispatch(
+                    PreviewCommand.SetPlayWhenReady(
+                        PreviewGeneration(1),
+                        PreviewRevision(20),
+                        false,
+                    ),
+                )
+                port.dispatch(
+                    PreviewCommand.SetPlayWhenReady(
+                        PreviewGeneration(2),
+                        PreviewRevision(21),
+                        false,
+                    ),
+                )
+            }
+            assertTrue(onMain { player.playWhenReady })
+
+            recorder.await("high playing position before explicit-intent repeat") {
+                it is PreviewEvent.Position &&
+                    it.revision == PreviewRevision(21) &&
+                    it.sourcePosition >= 3.6.seconds &&
+                    it.isPlaying
+            }
+            recorder.await("low transient paused position for explicit-intent repeat") {
+                it is PreviewEvent.Position &&
+                    it.revision == PreviewRevision(21) &&
+                    it.sourcePosition <= 2.4.seconds &&
+                    !it.isPlaying
+            }
+            recorder.await("low resumed position for explicit-intent repeat") {
+                it is PreviewEvent.Position &&
+                    it.revision == PreviewRevision(21) &&
+                    it.sourcePosition <= 2.4.seconds &&
+                    it.isPlaying
+            }
+
+            val item = onMain { checkNotNull(player.currentMediaItem) }
+            assertEquals("1:21", item.mediaId)
+            assertEquals(2_000L, item.clippingConfiguration.startPositionMs)
+            assertEquals(4_000L, item.clippingConfiguration.endPositionMs)
+            assertTrue(onMain { player.playWhenReady })
+            assertFalse(recorder.snapshot().any { it is PreviewEvent.RecoverableFailure })
+        } finally {
+            onMain { port.dispatch(PreviewCommand.Release(PreviewGeneration(1))) }
+            recorder.close()
+        }
+    }
+
+    @Test
+    fun replacementAndRetryUseExplicitBindingPlaybackIntent() = runBlocking {
+        val source = fixtures.copyAvcFixture()
+        val port = onMain { AndroidMedia3PreviewPort(context) }
+        val recorder = EventRecorder(port)
+
+        try {
+            onMain { port.dispatch(PreviewCommand.Bind(binding(source, 30, 2, 4))) }
+            recorder.await("initial false binding Ready") {
+                it == PreviewEvent.Ready(PreviewGeneration(1), PreviewRevision(30))
+            }
+            val player = onMain { checkNotNull(port.playerForSurface) }
+            onMain {
+                port.dispatch(
+                    PreviewCommand.SetPlayWhenReady(
+                        PreviewGeneration(1),
+                        PreviewRevision(30),
+                        true,
+                    ),
+                )
+            }
+            assertTrue(onMain { player.playWhenReady })
+
+            onMain {
+                port.dispatch(
+                    PreviewCommand.ReplaceRange(
+                        binding(source, 31, 3, 5, playWhenReady = false),
+                    ),
+                )
+            }
+            recorder.await("explicit false replacement Ready") {
+                it == PreviewEvent.Ready(PreviewGeneration(1), PreviewRevision(31))
+            }
+            var item = onMain { checkNotNull(player.currentMediaItem) }
+            assertFalse(onMain { player.playWhenReady })
+            assertEquals("1:31", item.mediaId)
+            assertEquals(3_000L, item.clippingConfiguration.startPositionMs)
+            assertEquals(5_000L, item.clippingConfiguration.endPositionMs)
+
+            onMain {
+                port.dispatch(
+                    PreviewCommand.Retry(
+                        binding(source, 32, 4, 6, playWhenReady = true),
+                    ),
+                )
+            }
+            recorder.await("explicit true retry Ready") {
+                it == PreviewEvent.Ready(PreviewGeneration(1), PreviewRevision(32))
+            }
+            assertTrue(onMain { player.playWhenReady })
+
+            onMain {
+                port.dispatch(
+                    PreviewCommand.SetPlayWhenReady(
+                        PreviewGeneration(1),
+                        PreviewRevision(30),
+                        false,
+                    ),
+                )
+            }
+            item = onMain { checkNotNull(player.currentMediaItem) }
+            assertTrue(onMain { player.playWhenReady })
+            assertEquals("1:32", item.mediaId)
+            assertEquals(4_000L, item.clippingConfiguration.startPositionMs)
+            assertEquals(6_000L, item.clippingConfiguration.endPositionMs)
+            assertFalse(recorder.snapshot().any { it is PreviewEvent.RecoverableFailure })
+        } finally {
+            onMain { port.dispatch(PreviewCommand.Release(PreviewGeneration(1))) }
+            recorder.close()
+        }
+    }
+
+    @Test
+    fun acceptedPauseCannotBeOverwrittenByLaterReady() = runBlocking {
+        val source = fixtures.copyAvcFixture()
+        val port = onMain { AndroidMedia3PreviewPort(context) }
+        val recorder = EventRecorder(port)
+        val revision = PreviewRevision(40)
+        val pauseDispatched = CompletableDeferred<Unit>()
+
+        try {
+            onMain {
+                port.dispatch(
+                    PreviewCommand.Bind(
+                        binding(source, revision.value, 2, 4, playWhenReady = true),
+                    ),
+                )
+            }
+            recorder.await("initial true binding Ready") {
+                it == PreviewEvent.Ready(PreviewGeneration(1), revision)
+            }
+            val player = onMain { checkNotNull(port.playerForSurface) }
+            onMain {
+                player.addListener(
+                    object : Player.Listener {
+                        override fun onPositionDiscontinuity(
+                            oldPosition: Player.PositionInfo,
+                            newPosition: Player.PositionInfo,
+                            reason: Int,
+                        ) {
+                            if (reason != Player.DISCONTINUITY_REASON_AUTO_TRANSITION || pauseDispatched.isCompleted) {
+                                return
+                            }
+                            port.dispatch(
+                                PreviewCommand.SetPlayWhenReady(
+                                    PreviewGeneration(1),
+                                    revision,
+                                    false,
+                                ),
+                            )
+                            pauseDispatched.complete(Unit)
+                        }
+                    },
+                )
+            }
+            recorder.await("high playing position before pause-at-repeat") {
+                it is PreviewEvent.Position &&
+                    it.revision == revision &&
+                    it.sourcePosition >= 3.6.seconds &&
+                    it.isPlaying
+            }
+            val afterHighEventIndex = recorder.snapshot().size
+            withTimeout(15.seconds) { pauseDispatched.await() }
+            recorder.await("low paused position after accepted pause") {
+                it is PreviewEvent.Position &&
+                    it.revision == revision &&
+                    it.sourcePosition <= 2.4.seconds &&
+                    !it.isPlaying
+            }
+            recorder.await("later Ready after accepted pause") {
+                it == PreviewEvent.Ready(PreviewGeneration(1), revision)
+            }
+            onMain { Unit }
+
+            assertFalse(onMain { player.playWhenReady })
+            assertFalse(onMain { player.isPlaying })
+            assertFalse(
+                recorder.snapshot().drop(afterHighEventIndex).any {
+                    it is PreviewEvent.Position &&
+                        it.revision == revision &&
+                        it.sourcePosition <= 2.4.seconds &&
+                        it.isPlaying
+                },
+            )
+            assertFalse(recorder.snapshot().any { it is PreviewEvent.RecoverableFailure })
         } finally {
             onMain { port.dispatch(PreviewCommand.Release(PreviewGeneration(1))) }
             recorder.close()
@@ -265,12 +553,19 @@ private class EventRecorder(port: PreviewPort) {
         }
     }
 
-    suspend fun await(predicate: (PreviewEvent) -> Boolean): PreviewEvent = withTimeout(15.seconds) {
-        while (true) {
-            val event = channel.receive()
-            if (predicate(event)) return@withTimeout event
+    suspend fun await(
+        description: String = "matching preview event",
+        predicate: (PreviewEvent) -> Boolean,
+    ): PreviewEvent = try {
+        withTimeout(15.seconds) {
+            while (true) {
+                val event = channel.receive()
+                if (predicate(event)) return@withTimeout event
+            }
+            error("Unreachable")
         }
-        error("Unreachable")
+    } catch (timeout: TimeoutCancellationException) {
+        throw AssertionError("Timed out awaiting $description; events=${snapshot()}", timeout)
     }
 
     fun snapshot(): List<PreviewEvent> = synchronized(events) { events.toList() }

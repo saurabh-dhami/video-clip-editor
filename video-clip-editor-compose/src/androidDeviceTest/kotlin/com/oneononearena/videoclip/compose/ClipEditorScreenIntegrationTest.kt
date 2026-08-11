@@ -25,6 +25,7 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.test.up
 import androidx.compose.ui.test.v2.runEmptyComposeUiTest
+import androidx.compose.ui.unit.dp
 import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
 import androidx.test.core.app.ActivityScenario
@@ -187,7 +188,13 @@ class ClipEditorScreenIntegrationTest {
                 assertEquals(0, ledger.count(RecordedEditorEventKind.PreviewDisposeEntry))
                 assertTrue(ledger.previewEvents().none { it is PreviewEvent.Released })
 
-                val contentWidthPx = 24f * 64f * targetContext.resources.displayMetrics.density
+                val previewBounds = onNodeWithTag("clip-preview").getUnclippedBoundsInRoot()
+                val previewHeight = previewBounds.bottom - previewBounds.top
+                val timelineBounds = onNodeWithTag("clip-timeline").getUnclippedBoundsInRoot()
+                val timelineHeight = timelineBounds.bottom - timelineBounds.top
+                assertTrue(previewHeight > 220f.dp)
+                assertTrue(previewHeight > timelineHeight * 4f)
+                val contentWidthPx = (timelineBounds.right - timelineBounds.left).value * targetContext.resources.displayMetrics.density
                 onNodeWithTag("clip-start-handle").performTouchInput {
                     down(center)
                     moveBy(Offset(contentWidthPx * 0.8f, 0f))
@@ -217,14 +224,9 @@ class ClipEditorScreenIntegrationTest {
                     moveBy(Offset(-180f, 0f))
                     up()
                 }
-                waitUntil(timeoutMillis = 15_000) {
-                    kotlin.math.abs(
-                        (
-                            onNodeWithTag("clip-playhead").getUnclippedBoundsInRoot().left -
-                                playheadBeforePan
-                            ).value,
-                    ) > 1f
-                }
+                waitForIdle()
+                val playheadAfterPan = onNodeWithTag("clip-playhead").getUnclippedBoundsInRoot().left
+                assertTrue(kotlin.math.abs((playheadAfterPan - playheadBeforePan).value) < 1f)
                 assertEquals(commandsBeforePan, ledger.count(RecordedEditorEventKind.PreviewCommand))
 
                 val seeksBefore = ledger.previewCommands().count { it is PreviewCommand.Seek }

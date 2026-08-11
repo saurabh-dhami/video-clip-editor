@@ -7,11 +7,15 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.test.ExperimentalTestApi
+import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertTouchWidthIsEqualTo
+import androidx.compose.ui.test.assertWidthIsEqualTo
 import androidx.compose.ui.test.cancel
 import androidx.compose.ui.test.click
 import androidx.compose.ui.test.down
+import androidx.compose.ui.test.getUnclippedBoundsInRoot
+import androidx.compose.ui.test.hasScrollAction
 import androidx.compose.ui.test.moveBy
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performTouchInput
@@ -28,6 +32,14 @@ import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
 
 class ClipRangeSelectorTest {
+    @Test
+    fun thumbnailSlotsReuseNearestFrameInsteadOfLeavingVisualGaps() {
+        assertEquals(
+            listOf("first", "first", "third", "third"),
+            fillMissingThumbnailSlots(listOf("first", null, "third", null), slotCount = 4),
+        )
+    }
+
     @OptIn(ExperimentalTestApi::class)
     @Test
     fun selector_exposesVisibleSelectionAnd48DpHandles_andTimelineTapSeeks() = runComposeUiTest {
@@ -55,9 +67,28 @@ class ClipRangeSelectorTest {
 
     @OptIn(ExperimentalTestApi::class)
     @Test
-    fun bareTrackDrag_doesNotSeek() = runComposeUiTest {
+    fun timelineFitsEveryThumbnailSlotWithoutHorizontalScrolling() = runComposeUiTest {
+        setContent {
+            ClipRangeSelector(
+                frames = emptyList(),
+                frameSlots = 4,
+                metadata = VideoMetadata(10.seconds, 100, 100, false),
+                range = ClipRange(Duration.ZERO, 10.seconds),
+                playhead = Duration.ZERO,
+                modifier = Modifier.width(400.dp),
+            )
+        }
+
+        onAllNodes(hasScrollAction()).assertCountEquals(0)
+        repeat(4) { index ->
+            onNodeWithTag("clip-thumbnail-$index").assertWidthIsEqualTo(100.dp)
+        }
+    }
+
+    @OptIn(ExperimentalTestApi::class)
+    @Test
+    fun bareTrackDrag_doesNotScrollOrSeek() = runComposeUiTest {
         var sought = (-1).milliseconds
-        var scrollOffset = 0
 
         setContent {
             ClipRangeSelector(
@@ -68,7 +99,6 @@ class ClipRangeSelectorTest {
                 playhead = Duration.ZERO,
                 modifier = Modifier.width(400.dp),
                 onSeek = { sought = it },
-                onContentScroll = { scrollOffset = it },
             )
         }
 
@@ -80,12 +110,11 @@ class ClipRangeSelectorTest {
         waitForIdle()
 
         assertEquals((-1).milliseconds, sought)
-        assertTrue(scrollOffset > 0)
     }
 
     @OptIn(ExperimentalTestApi::class)
     @Test
-    fun scrollOffset_isIncludedWhenTimelineTapMapsToSourceTime() = runComposeUiTest {
+    fun timelineTapMapsTheFixedViewportAcrossTheFullVideo() = runComposeUiTest {
         var sought = (-1).milliseconds
 
         setContent {
@@ -108,7 +137,7 @@ class ClipRangeSelectorTest {
         onNodeWithTag("clip-timeline").performTouchInput { click(center) }
         waitForIdle()
 
-        assertTrue(sought > 5.seconds)
+        assertEquals(5.seconds, sought)
     }
 
     @OptIn(ExperimentalTestApi::class)
@@ -141,6 +170,38 @@ class ClipRangeSelectorTest {
 
         assertEquals(false, port.commands.filterIsInstance<PreviewCommand.SetPlayWhenReady>().single().value)
         assertTrue(port.commands.filterIsInstance<PreviewCommand.Seek>().single().sourcePosition > 4.seconds)
+    }
+
+    @OptIn(ExperimentalTestApi::class)
+    @Test
+    fun playheadAtTimelineEnd_remainsVisibleAndDraggable() = runComposeUiTest {
+        var sought = 10.seconds
+
+        setContent {
+            ClipRangeSelector(
+                frames = emptyList(),
+                metadata = VideoMetadata(10.seconds, 100, 100, false),
+                range = ClipRange(Duration.ZERO, 10.seconds),
+                playhead = 10.seconds,
+                modifier = Modifier.width(400.dp),
+                onSeek = { sought = it },
+            )
+        }
+
+        val timelineBounds = onNodeWithTag("clip-timeline").getUnclippedBoundsInRoot()
+        val playheadBounds = onNodeWithTag("clip-playhead").getUnclippedBoundsInRoot()
+        assertTrue(playheadBounds.left >= timelineBounds.left)
+        assertTrue(playheadBounds.right <= timelineBounds.right)
+
+        onNodeWithTag("clip-playhead").performTouchInput {
+            down(center)
+            moveBy(Offset(-40f, 0f))
+            up()
+        }
+        waitForIdle()
+
+        assertTrue(sought < 10.seconds)
+        assertTrue(sought > 8.seconds)
     }
 
     @OptIn(ExperimentalTestApi::class)
@@ -239,6 +300,41 @@ class ClipRangeSelectorTest {
 
     @OptIn(ExperimentalTestApi::class)
     @Test
+    fun startHandleAtTimelineBoundary_remainsDraggable() = runComposeUiTest {
+        var started = false
+        var ended = false
+        var changedTo = Duration.ZERO
+
+        setContent {
+            ClipRangeSelector(
+                frames = emptyList(),
+                frameSlots = 24,
+                metadata = VideoMetadata(10.seconds, 100, 100, false),
+                range = ClipRange(Duration.ZERO, 10.seconds),
+                playhead = Duration.ZERO,
+                modifier = Modifier.width(400.dp),
+                onRangeGestureStart = { started = true },
+                onRangeChange = { boundary, value ->
+                    if (boundary == RangeBoundary.Start) changedTo = value
+                },
+                onRangeGestureEnd = { ended = true },
+            )
+        }
+
+        onNodeWithTag("clip-start-handle").performTouchInput {
+            down(center)
+            moveBy(Offset(320f, 0f))
+            up()
+        }
+        waitForIdle()
+
+        assertTrue(started)
+        assertTrue(ended)
+        assertTrue(changedTo >= 7.seconds)
+    }
+
+    @OptIn(ExperimentalTestApi::class)
+    @Test
     fun cancelledHandlePointerGesture_discardsProvisionalRangeWithoutReplacement() = runComposeUiTest {
         val port = SelectorRecordingPreviewPort()
         val metadata = VideoMetadata(10.seconds, 100, 100, false)
@@ -285,19 +381,17 @@ class ClipRangeSelectorTest {
     }
 
     @Test
-    fun viewportTimeMapping_isInverseAtZeroHalfAndMaximumScroll() {
+    fun fixedTimelineTimeMapping_isInverseAcrossTheFullWidth() {
         val duration = 10_000.milliseconds
-        val contentWidth = 2_400f
+        val contentWidth = 400f
 
-        listOf(0f, 1_000f, 2_000f).forEach { scrollPx ->
-            val content = sourceTimeToContentPx(7_500.milliseconds, duration, contentWidth)
+        listOf(0.milliseconds, 2_500.milliseconds, 7_500.milliseconds, 10_000.milliseconds).forEach { sourceTime ->
+            val content = sourceTimeToContentPx(sourceTime, duration, contentWidth)
 
             assertEquals(
-                7_500.milliseconds,
-                viewportPxToSourceTime(
-                    viewportPx = content - scrollPx,
-                    scrollPx = scrollPx,
-                    viewportWidthPx = 400f,
+                sourceTime,
+                contentPxToSourceTime(
+                    contentPx = content,
                     contentWidthPx = contentWidth,
                     duration = duration,
                 ),

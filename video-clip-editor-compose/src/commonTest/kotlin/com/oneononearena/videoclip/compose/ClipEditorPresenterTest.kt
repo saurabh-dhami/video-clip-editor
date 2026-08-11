@@ -3,8 +3,13 @@ package com.oneononearena.videoclip.compose
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import androidx.compose.foundation.layout.size
 import androidx.compose.ui.test.ExperimentalTestApi
+import androidx.compose.ui.test.assertHeightIsAtLeast
+import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.v2.runComposeUiTest
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
 import com.oneononearena.videoclip.ClipEditorSession
 import com.oneononearena.videoclip.ClipRange
 import com.oneononearena.videoclip.ClipResult
@@ -43,6 +48,25 @@ import kotlinx.coroutines.test.advanceUntilIdle
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class ClipEditorPresenterTest {
+    @OptIn(ExperimentalTestApi::class)
+    @Test
+    fun readyScreenPreviewConsumesRemainingVerticalSpace() = runComposeUiTest {
+        val session = FakeSession(flow { emit(FrameStripEvent.Complete) })
+
+        setContent {
+            ClipEditorScreen(
+                source = VideoSourcePath("/video.mp4"),
+                editor = FakeEditor(session),
+                onResult = {},
+                onCancel = {},
+                modifier = Modifier.size(360.dp, 640.dp),
+            )
+        }
+        waitForIdle()
+
+        onNodeWithTag("clip-preview").assertHeightIsAtLeast(300.dp)
+    }
+
     @Test
     fun terminalCloseDuringOpenClosesLateSessionBeforeCompletion() = runTest {
         val calls = mutableListOf<String>()

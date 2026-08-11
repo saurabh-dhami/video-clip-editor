@@ -3,10 +3,12 @@ package com.oneononearena.videoclip.compose
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectDragGestures
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
@@ -124,7 +126,7 @@ private fun ClipEditorScreenImpl(
         }
     }
 
-    Column(modifier.padding(16.dp)) {
+    Column(modifier.fillMaxSize()) {
         when (val current = state) {
             ClipEditorUiState.LoadingMetadata -> Text("Loading metadata")
             ClipEditorUiState.LoadingFrames -> Text("Loading frames")
@@ -171,48 +173,64 @@ private fun EditorControls(
     onBack: () -> Unit,
 ) {
     val visualRange = ready.provisionalRange ?: ready.range
-    Box(Modifier.fillMaxWidth().height(220.dp).background(Color.Black)) {
-        activePort?.let { PlatformPreviewSurface(port = it, modifier = Modifier.fillMaxWidth()) }
-    }
-    Text(visualRange.start.toString(), Modifier.semantics { testTag = "clip-start-time" })
-    Text(visualRange.endExclusive.toString(), Modifier.semantics { testTag = "clip-end-time" })
-    LaunchedEffect(visualRange) { coordinator.constrainPlayhead(visualRange) }
-    ClipRangeSelector(
-        frames = ready.frames,
-        metadata = ready.metadata,
-        range = visualRange,
-        playhead = clampPlayhead(preview.playhead, visualRange),
-        onRangeGestureStart = { coordinator.pause(); presenter.beginRangeGesture() },
-        onRangeChange = { boundary, value ->
-            when (boundary) {
-                RangeBoundary.Start -> presenter.updateStartFromSelector(value)
-                RangeBoundary.End -> presenter.updateEndFromSelector(value)
-            }
-        },
-        onRangeGestureEnd = presenter::commitRangeGesture,
-        onRangeGestureCancel = presenter::cancelRangeGesture,
-        onSeek = coordinator::seekPaused,
-        onPlayheadDragStart = coordinator::pause,
-    )
-    Row(Modifier.fillMaxWidth()) {
-        Button(
-            onClick = onBack,
-            modifier = Modifier.semantics { testTag = "back" },
-        ) { Text("Back") }
-        Button(
-            onClick = coordinator::togglePlayPause,
-            enabled = preview.ready && preview.failure == null,
-            modifier = Modifier.semantics { testTag = "play-pause" },
-        ) { Text(if (preview.isPlaying) "Pause" else "Play") }
-        Button(
-            onClick = { coordinator.pause(); presenter.createClip() },
-            enabled = preview.failure == null && ready.provisionalRange == null,
-            modifier = Modifier.semantics { testTag = "done" },
-        ) { Text("Done") }
-    }
-    if (preview.failure != null) {
-        Text(preview.failure)
-        Button(coordinator::retry, Modifier.semantics { testTag = "retry-preview" }) { Text("Retry") }
+    Column(Modifier.fillMaxSize()) {
+        Box(
+            Modifier
+                .fillMaxWidth()
+                .weight(1f)
+                .background(Color.Black)
+                .semantics { testTag = "clip-preview" },
+        ) {
+            activePort?.let { PlatformPreviewSurface(port = it, modifier = Modifier.fillMaxSize()) }
+        }
+        Row(
+            Modifier.fillMaxWidth().padding(horizontal = 8.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+        ) {
+            Text(visualRange.start.toString(), Modifier.semantics { testTag = "clip-start-time" })
+            Text(visualRange.endExclusive.toString(), Modifier.semantics { testTag = "clip-end-time" })
+        }
+        LaunchedEffect(visualRange) { coordinator.constrainPlayhead(visualRange) }
+        ClipRangeSelector(
+            frames = ready.frames,
+            metadata = ready.metadata,
+            range = visualRange,
+            playhead = clampPlayhead(preview.playhead, visualRange),
+            onRangeGestureStart = { coordinator.pause(); presenter.beginRangeGesture() },
+            onRangeChange = { boundary, value ->
+                when (boundary) {
+                    RangeBoundary.Start -> presenter.updateStartFromSelector(value)
+                    RangeBoundary.End -> presenter.updateEndFromSelector(value)
+                }
+            },
+            onRangeGestureEnd = presenter::commitRangeGesture,
+            onRangeGestureCancel = presenter::cancelRangeGesture,
+            onSeek = coordinator::seekPaused,
+            onPlayheadDragStart = coordinator::pause,
+        )
+        Row(
+            Modifier.fillMaxWidth().padding(horizontal = 8.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+        ) {
+            Button(
+                onClick = onBack,
+                modifier = Modifier.semantics { testTag = "back" },
+            ) { Text("Back") }
+            Button(
+                onClick = coordinator::togglePlayPause,
+                enabled = preview.ready && preview.failure == null,
+                modifier = Modifier.semantics { testTag = "play-pause" },
+            ) { Text(if (preview.isPlaying) "Pause" else "Play") }
+            Button(
+                onClick = { coordinator.pause(); presenter.createClip() },
+                enabled = preview.failure == null && ready.provisionalRange == null,
+                modifier = Modifier.semantics { testTag = "done" },
+            ) { Text("Done") }
+        }
+        if (preview.failure != null) {
+            Text(preview.failure)
+            Button(coordinator::retry, Modifier.semantics { testTag = "retry-preview" }) { Text("Retry") }
+        }
     }
 }
 

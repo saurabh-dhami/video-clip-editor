@@ -313,7 +313,7 @@ jobs:
           java-version: '17'
       - uses: gradle/actions/setup-gradle@v4
       - name: Verify release version
-        run: test "$(grep -E '^version = "' build.gradle.kts | head -1 | cut -d\\" -f2)" = "${{ inputs.version }}"
+        run: test "$(grep -E '^[[:space:]]*version = "' build.gradle.kts | head -1 | cut -d\\" -f2)" = "${{ inputs.version }}"
       - name: Publish and release
         env:
           ORG_GRADLE_PROJECT_mavenCentralUsername: ${{ secrets.MAVEN_CENTRAL_USERNAME }}

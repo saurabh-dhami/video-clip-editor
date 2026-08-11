@@ -3,6 +3,7 @@ plugins {
     alias(libs.plugins.android.kmp.library)
     alias(libs.plugins.compose.compiler)
     alias(libs.plugins.compose.multiplatform)
+    alias(libs.plugins.maven.publish)
 }
 
 kotlin {
@@ -44,6 +45,38 @@ kotlin {
             implementation("androidx.test:runner:1.7.0")
             implementation("androidx.test.ext:junit:1.3.0")
             implementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.10.2")
+        }
+    }
+}
+
+mavenPublishing {
+    publishToMavenCentral()
+    signAllPublications()
+    coordinates(group.toString(), "video-clip-editor-compose", version.toString())
+
+    pom {
+        name.set("Video Clip Editor Compose")
+        description.set("Shared Compose Multiplatform clip-editor screen with Android Media3 preview integration.")
+        inceptionYear.set("2026")
+        url.set("https://github.com/saurabh-dhami/video-clip-editor")
+        licenses {
+            license {
+                name.set("The Apache License, Version 2.0")
+                url.set("https://www.apache.org/licenses/LICENSE-2.0.txt")
+                distribution.set("https://www.apache.org/licenses/LICENSE-2.0.txt")
+            }
+        }
+        developers {
+            developer {
+                id.set("saurabh-dhami")
+                name.set("Saurabh Dhami")
+                url.set("https://github.com/saurabh-dhami")
+            }
+        }
+        scm {
+            url.set("https://github.com/saurabh-dhami/video-clip-editor")
+            connection.set("scm:git:git://github.com/saurabh-dhami/video-clip-editor.git")
+            developerConnection.set("scm:git:ssh://git@github.com/saurabh-dhami/video-clip-editor.git")
         }
     }
 }

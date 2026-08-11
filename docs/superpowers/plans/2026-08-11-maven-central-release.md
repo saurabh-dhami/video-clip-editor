@@ -26,6 +26,7 @@
 ## File Structure
 
 - `gradle/libs.versions.toml`: Maven publishing plugin version and alias.
+- `gradle/verification-metadata.xml`: SHA-256 pins for the publishing plugin and its transitive build dependencies.
 - `build.gradle.kts`: shared group/version and plugin declaration only.
 - `video-clip-editor-core/build.gradle.kts`: core publication coordinates and POM.
 - `video-clip-editor-compose/build.gradle.kts`: optional Compose publication coordinates and POM.
@@ -38,6 +39,7 @@
 
 **Files:**
 - Modify: `gradle/libs.versions.toml`
+- Modify: `gradle/verification-metadata.xml`
 - Modify: `build.gradle.kts`
 - Modify: `video-clip-editor-core/build.gradle.kts`
 - Modify: `video-clip-editor-compose/build.gradle.kts`
@@ -135,6 +137,12 @@ description.set("Shared Compose Multiplatform clip-editor screen with Android Me
 
 - [ ] **Step 6: Run publication-task GREEN checks**
 
+If strict dependency verification rejects the newly approved plugin, generate only its missing SHA-256 entries first:
+
+```bash
+env ANDROID_HOME=/Users/sandeepdhami/Library/Android/sdk ./gradlew --write-verification-metadata sha256 :video-clip-editor-core:generatePomFileForKotlinMultiplatformPublication :video-clip-editor-compose:generatePomFileForKotlinMultiplatformPublication
+```
+
 ```bash
 env ANDROID_HOME=/Users/sandeepdhami/Library/Android/sdk ./gradlew :video-clip-editor-core:generatePomFileForKotlinMultiplatformPublication :video-clip-editor-compose:generatePomFileForKotlinMultiplatformPublication
 ```
@@ -144,7 +152,7 @@ Expected: BUILD SUCCESSFUL and both root POMs exist.
 - [ ] **Step 7: Commit**
 
 ```bash
-git add gradle/libs.versions.toml build.gradle.kts video-clip-editor-core/build.gradle.kts video-clip-editor-compose/build.gradle.kts
+git add gradle/libs.versions.toml gradle/verification-metadata.xml build.gradle.kts video-clip-editor-core/build.gradle.kts video-clip-editor-compose/build.gradle.kts docs/superpowers/plans/2026-08-11-maven-central-release.md
 git commit -m "build: configure Maven Central publications"
 ```
 

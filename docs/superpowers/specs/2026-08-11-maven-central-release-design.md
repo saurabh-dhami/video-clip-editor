@@ -21,7 +21,7 @@ Included:
 
 - Public GitHub repository owned by `saurabh-dhami`.
 - Apache License 2.0.
-- Project README with prerequisites, dependency declarations, and Android usage.
+- Project README with prerequisites, dependency declarations, Android usage, and `TemporaryClipLease.clearTemporaryFile()` cleanup.
 - Maven Central publication metadata, source artifacts, documentation artifacts, checksums, and signatures.
 - A manual GitHub Actions release workflow.
 - Local publication and POM validation before any remote release.

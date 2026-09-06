@@ -19,11 +19,23 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.stateDescription
+import androidx.compose.ui.semantics.progressBarRangeInfo
+import androidx.compose.ui.semantics.ProgressBarRangeInfo
+import androidx.compose.ui.semantics.setProgress
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onSizeChanged
@@ -81,7 +93,7 @@ internal fun <T : Any> fillMissingThumbnailSlots(values: List<T?>, slotCount: In
 @Composable
 internal fun ClipRangeSelector(
     frames: List<ThumbnailFrame>,
-    frameSlots: Int = frames.size,
+    frameSlots: Int = 0,
     metadata: VideoMetadata,
     range: ClipRange,
     playhead: Duration,
@@ -92,16 +104,23 @@ internal fun ClipRangeSelector(
     onRangeGestureCancel: () -> Unit = {},
     onSeek: (Duration) -> Unit = {},
     onPlayheadDragStart: () -> Unit = {},
+    style: ClipEditorStyle = ClipEditorStyle(),
+    labels: ClipEditorLabels = ClipEditorLabels(),
 ) {
     val density = LocalDensity.current
-    val frameHeight = 48.dp
+    val frameHeight = style.safeThumbnailHeight
     val handleTarget = 48.dp
     val handleTargetPx = with(density) { handleTarget.toPx() }
     var viewportSize by remember { androidx.compose.runtime.mutableStateOf(IntSize.Zero) }
     val contentWidthPx = viewportSize.width.toFloat()
-    val slotCount = frameSlots.coerceAtLeast(frames.size).coerceAtLeast(1)
-    val decodedFrames = remember(frames) {
-        frames.map { frame -> decodeJpegForRender(frame.copyEncodedJpeg()) }
+    val slotCount = if (frameSlots > 0) frameSlots else overviewSlotCount(with(density) { contentWidthPx.toDp().value })
+    val selectedFrames = remember(frames, slotCount) {
+        overviewFrameIndices(frames.size, slotCount).map { frames[it] }
+    }
+    val decodedFrames by produceState<List<ImageBitmap?>>(emptyList(), selectedFrames) {
+        value = withContext(Dispatchers.Default) {
+            selectedFrames.map { frame -> decodeJpegForRender(frame.copyEncodedJpeg()) }
+        }
     }
     val slotBitmaps = fillMissingThumbnailSlots(decodedFrames, slotCount)
     val duration = metadata.duration
@@ -125,7 +144,7 @@ internal fun ClipRangeSelector(
                 }
             },
     ) {
-        Row(Modifier.fillMaxSize()) {
+        Row(Modifier.fillMaxSize().clip(RoundedCornerShape(style.safeCornerRadius))) {
             repeat(slotCount) { index ->
                 val slotModifier = Modifier
                     .weight(1f)
@@ -135,30 +154,40 @@ internal fun ClipRangeSelector(
                 if (bitmap != null) {
                     Image(bitmap, null, slotModifier, contentScale = ContentScale.Crop)
                 } else {
-                    Box(slotModifier.background(Color.DarkGray))
+                    Box(slotModifier.background(style.thumbnailPlaceholderColor))
                 }
             }
         }
         val startPx = sourceTimeToContentPx(range.start, duration, contentWidthPx)
         val endPx = sourceTimeToContentPx(range.endExclusive, duration, contentWidthPx)
-        Box(Modifier.width(with(density) { startPx.toDp() }).height(frameHeight).background(Color.Black.copy(alpha = 0.55f)))
-        Box(Modifier.offset { IntOffset(endPx.roundToInt(), 0) }.fillMaxWidth().height(frameHeight).background(Color.Black.copy(alpha = 0.55f)))
+        Box(Modifier.width(with(density) { startPx.toDp() }).height(frameHeight).background(style.outsideSelectionColor))
+        Box(Modifier.offset { IntOffset(endPx.roundToInt(), 0) }
+            .width(with(density) { (contentWidthPx - endPx).coerceAtLeast(0f).toDp() })
+            .height(frameHeight).background(style.outsideSelectionColor))
         Box(
             Modifier
                 .offset { IntOffset(startPx.roundToInt(), 0) }
                 .width(with(density) { (endPx - startPx).coerceAtLeast(0f).toDp() })
                 .height(frameHeight)
-                .border(2.dp, Color.Yellow)
+                .border(style.safeSelectionBorderWidth, style.selectionColor, RoundedCornerShape(style.safeCornerRadius))
                 .semantics { testTag = "clip-selected-range" },
         )
-        SelectorHandle("clip-start-handle", startPx, contentWidthPx, handleTargetPx, onRangeGestureStart, onRangeGestureEnd, onRangeGestureCancel) { x -> onRangeChange(RangeBoundary.Start, sourceTimeToContentPxToDuration(x, duration, contentWidthPx)) }
-        SelectorHandle("clip-end-handle", endPx, contentWidthPx, handleTargetPx, onRangeGestureStart, onRangeGestureEnd, onRangeGestureCancel) { x -> onRangeChange(RangeBoundary.End, sourceTimeToContentPxToDuration(x, duration, contentWidthPx)) }
+        SelectorHandle("clip-start-handle", startPx, contentWidthPx, handleTargetPx, style, labels.start,
+            formatClipTime(range.start), onRangeGestureStart, onRangeGestureEnd, onRangeGestureCancel) { x ->
+            onRangeChange(RangeBoundary.Start, sourceTimeToContentPxToDuration(x, duration, contentWidthPx))
+        }
+        SelectorHandle("clip-end-handle", endPx, contentWidthPx, handleTargetPx, style, labels.end,
+            formatClipTime(range.endExclusive), onRangeGestureStart, onRangeGestureEnd, onRangeGestureCancel) { x ->
+            onRangeChange(RangeBoundary.End, sourceTimeToContentPxToDuration(x, duration, contentWidthPx))
+        }
         Playhead(
             positionPx = sourceTimeToContentPx(playhead, duration, contentWidthPx),
             duration = duration,
             contentWidthPx = contentWidthPx,
             onDragStart = onPlayheadDragStart,
             onSeek = onSeek,
+            style = style,
+            label = labels.playhead,
         )
     }
 }
@@ -170,8 +199,15 @@ private fun Playhead(
     contentWidthPx: Float,
     onDragStart: () -> Unit,
     onSeek: (Duration) -> Unit,
+    style: ClipEditorStyle,
+    label: String,
 ) {
-    var position by remember(positionPx) { mutableFloatStateOf(positionPx) }
+    var dragPosition by remember { mutableFloatStateOf(positionPx) }
+    var dragging by remember { mutableStateOf(false) }
+    val latestPosition by rememberUpdatedState(positionPx)
+    val latestDragStart by rememberUpdatedState(onDragStart)
+    val latestSeek by rememberUpdatedState(onSeek)
+    val position = if (dragging) dragPosition else positionPx
     val density = LocalDensity.current
     val targetWidthPx = with(density) { 12.dp.toPx() }
     val markerWidthPx = with(density) { 2.dp.toPx() }
@@ -183,13 +219,30 @@ private fun Playhead(
         Modifier
             .offset { IntOffset(targetLeft.roundToInt(), 0) }
             .width(12.dp)
-            .height(48.dp)
-            .semantics { testTag = "clip-playhead" }
+            .height(style.safeThumbnailHeight)
+            .semantics {
+                testTag = "clip-playhead"
+                contentDescription = label
+                progressBarRangeInfo = ProgressBarRangeInfo(position, 0f..contentWidthPx)
+                setProgress { value ->
+                    onDragStart()
+                    onSeek(contentPxToSourceTime(value, contentWidthPx, duration))
+                    true
+                }
+            }
             .pointerInput(duration, contentWidthPx) {
-                detectDragGestures(onDragStart = { onDragStart() }) { change, drag ->
+                detectDragGestures(
+                    onDragStart = {
+                        dragPosition = latestPosition
+                        dragging = true
+                        latestDragStart()
+                    },
+                    onDragEnd = { dragging = false },
+                    onDragCancel = { dragging = false },
+                ) { change, drag ->
                     change.consume()
-                    position = (position + drag.x).coerceIn(0f, contentWidthPx)
-                    onSeek(sourceTimeToContentPxToDuration(position, duration, contentWidthPx))
+                    dragPosition = (dragPosition + drag.x).coerceIn(0f, contentWidthPx)
+                    latestSeek(sourceTimeToContentPxToDuration(dragPosition, duration, contentWidthPx))
                 }
             },
     ) {
@@ -197,8 +250,8 @@ private fun Playhead(
             Modifier
                 .offset { IntOffset(markerLeft.roundToInt(), 0) }
                 .width(2.dp)
-                .height(48.dp)
-                .background(Color.Red),
+                .height(style.safeThumbnailHeight)
+                .background(style.playheadColor),
         )
     }
 }
@@ -212,12 +265,22 @@ private fun SelectorHandle(
     positionPx: Float,
     contentWidthPx: Float,
     targetWidthPx: Float,
+    style: ClipEditorStyle,
+    label: String,
+    timeLabel: String,
     onDragStart: () -> Unit,
     onDragEnd: () -> Unit,
     onDragCancel: () -> Unit,
     onPosition: (Float) -> Unit,
 ) {
-    var position by remember(tag, positionPx) { mutableFloatStateOf(positionPx) }
+    var dragPosition by remember(tag) { mutableFloatStateOf(positionPx) }
+    var dragging by remember(tag) { mutableStateOf(false) }
+    val latestPosition by rememberUpdatedState(positionPx)
+    val latestDragStart by rememberUpdatedState(onDragStart)
+    val latestDragEnd by rememberUpdatedState(onDragEnd)
+    val latestDragCancel by rememberUpdatedState(onDragCancel)
+    val latestOnPosition by rememberUpdatedState(onPosition)
+    val position = if (dragging) dragPosition else positionPx
     val targetLeft = (position - targetWidthPx / 2f)
         .coerceIn(0f, (contentWidthPx - targetWidthPx).coerceAtLeast(0f))
     val markerWidthPx = with(LocalDensity.current) { 12.dp.toPx() }
@@ -226,13 +289,32 @@ private fun SelectorHandle(
     Box(
         Modifier
             .offset { IntOffset(targetLeft.roundToInt(), 0) }
-            .size(with(LocalDensity.current) { targetWidthPx.toDp() }, 48.dp)
-            .semantics { testTag = tag }
-            .pointerInput(tag) {
-                detectDragGestures(onDragStart = { onDragStart() }, onDragEnd = onDragEnd, onDragCancel = onDragCancel) { change, drag ->
+            .size(with(LocalDensity.current) { targetWidthPx.toDp() }, style.safeThumbnailHeight)
+            .semantics {
+                testTag = tag
+                contentDescription = label
+                stateDescription = timeLabel
+                progressBarRangeInfo = ProgressBarRangeInfo(position, 0f..contentWidthPx)
+                setProgress { value ->
+                    onDragStart()
+                    onPosition(value.coerceIn(0f, contentWidthPx))
+                    onDragEnd()
+                    true
+                }
+            }
+            .pointerInput(tag, contentWidthPx) {
+                detectDragGestures(
+                    onDragStart = {
+                        dragPosition = latestPosition
+                        dragging = true
+                        latestDragStart()
+                    },
+                    onDragEnd = { dragging = false; latestDragEnd() },
+                    onDragCancel = { dragging = false; latestDragCancel() },
+                ) { change, drag ->
                     change.consume()
-                    position = (position + drag.x).coerceIn(0f, contentWidthPx)
-                    onPosition(position)
+                    dragPosition = (dragPosition + drag.x).coerceIn(0f, contentWidthPx)
+                    latestOnPosition(dragPosition)
                 }
             },
     ) {
@@ -241,8 +323,13 @@ private fun SelectorHandle(
                 .offset { IntOffset(markerLeft.roundToInt(), 0) }
                 .align(Alignment.CenterStart)
                 .width(12.dp)
-                .height(32.dp)
-                .background(Color.White),
-        )
+                .height(style.safeThumbnailHeight)
+                .background(style.handleColor, RoundedCornerShape(style.safeCornerRadius)),
+            contentAlignment = Alignment.Center,
+        ) {
+            Row(horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(2.dp)) {
+                repeat(2) { Box(Modifier.width(1.dp).height(16.dp).background(style.handleGripColor)) }
+            }
+        }
     }
 }

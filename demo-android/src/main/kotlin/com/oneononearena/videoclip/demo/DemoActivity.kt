@@ -6,6 +6,9 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.safeDrawingPadding
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Button
@@ -18,18 +21,23 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import com.oneononearena.videoclip.ClipResult
 import com.oneononearena.videoclip.TempDeleteResult
 import com.oneononearena.videoclip.TemporaryClipLease
 import com.oneononearena.videoclip.VideoSourcePath
 import com.oneononearena.videoclip.compose.ClipEditorScreen
+import com.oneononearena.videoclip.compose.ClipEditorStyle
+import com.oneononearena.videoclip.compose.ClipEditorOptions
+import com.oneononearena.videoclip.compose.ClipEditorLabels
 import com.oneononearena.videoclip.createAndroidVideoClipEditor
 import java.io.File
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import kotlin.time.Duration.Companion.seconds
 
 class DemoActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -51,6 +59,16 @@ private fun DemoApp(activity: DemoActivity) {
     var cleanupBlocked by remember { mutableStateOf(false) }
     var operationInProgress by remember { mutableStateOf(false) }
     var pickerOpen by remember { mutableStateOf(false) }
+    var editorFinished by remember { mutableStateOf(false) }
+    var theme by remember { mutableStateOf("Default") }
+    val editorStyle = when (theme) {
+        "Light" -> ClipEditorStyle.Light
+        "Host blue" -> ClipEditorStyle(
+            primaryButtonColor = Color(0xFF90CAF9), primaryButtonContentColor = Color(0xFF082B46),
+            handleColor = Color(0xFF90CAF9), selectionColor = Color(0xFF90CAF9), handleGripColor = Color(0xFF082B46),
+        )
+        else -> ClipEditorStyle()
+    }
     val launcher = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
         if (!pickerOpen || cleanupBlocked) return@rememberLauncherForActivityResult
         pickerOpen = false
@@ -78,6 +96,7 @@ private fun DemoApp(activity: DemoActivity) {
                         output = null
                         message = "Input: ${result.input.file.absolutePath}"
                         editorVisible = true
+                        editorFinished = false
                     }
                 }
                 DocumentImportResult.TooLarge -> message = "Input rejected: exceeds 512 MiB"
@@ -137,17 +156,35 @@ private fun DemoApp(activity: DemoActivity) {
         }
     }
 
-    Column(Modifier.fillMaxSize().padding(16.dp)) {
-        Button(onClick = ::select, enabled = source == null && !cleanupBlocked && !operationInProgress && !pickerOpen) { Text("Select MP4") }
-        if (source != null || cleanupBlocked) Button(onClick = ::clear, enabled = !operationInProgress && !pickerOpen) { Text("Clear temp") }
-        message?.let { Text(it) }
+    Column(Modifier.fillMaxSize().background(editorStyle.backgroundColor).safeDrawingPadding()) {
+        // Keep the editor mounted through result handling; Clear still seals the generation
+        // before disposal, then awaits its terminal callback before deleting owned files.
+        if (source == null || editorFinished || !editorVisible) Column(Modifier.padding(16.dp)) {
+            if (source == null) {
+                Text("Editor theme", color = editorStyle.textColor)
+                Row {
+                    listOf("Default", "Host blue", "Light").forEach { choice ->
+                        Button(onClick = { theme = choice }, enabled = theme != choice) { Text(choice) }
+                    }
+                }
+            }
+            Button(onClick = ::select, enabled = source == null && !cleanupBlocked && !operationInProgress && !pickerOpen) { Text("Select MP4") }
+            if (source != null || cleanupBlocked) Button(onClick = ::clear, enabled = !operationInProgress && !pickerOpen) { Text("Clear temp") }
+            message?.let { Text(it, color = editorStyle.textColor) }
+        }
         source?.let { imported ->
             val generation = sourceGeneration
             if (editorVisible && generation != null) ClipEditorScreen(
                 source = VideoSourcePath(imported.file.absolutePath),
                 editor = editor,
+                style = editorStyle,
+                options = ClipEditorOptions(
+                    labels = ClipEditorLabels(useClip = if (theme == "Host blue") "Attach clip" else "Use clip"),
+                    maxSelectionDuration = 60.seconds,
+                ),
                 onResult = { result ->
                     if (!cleanupCoordinator.acceptsUpdates(generation)) return@ClipEditorScreen
+                    editorFinished = true
                     when (result) {
                         is ClipResult.Success -> {
                             output = result.output

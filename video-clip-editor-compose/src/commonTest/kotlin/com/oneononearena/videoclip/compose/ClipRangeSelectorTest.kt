@@ -32,6 +32,53 @@ import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
 
 class ClipRangeSelectorTest {
+    @OptIn(ExperimentalTestApi::class)
+    @Test
+    fun playheadDragAfterExternalSeekStartsAtNewPosition() = runComposeUiTest {
+        var playhead by mutableStateOf(6.seconds)
+        var sought = Duration.ZERO
+        setContent {
+            ClipRangeSelector(
+                frames = emptyList(), metadata = VideoMetadata(10.seconds, 100, 100, false),
+                range = ClipRange(Duration.ZERO, 10.seconds), playhead = playhead,
+                modifier = Modifier.width(400.dp), onSeek = { sought = it },
+            )
+        }
+        onNodeWithTag("clip-playhead").performTouchInput { down(center); moveBy(Offset(40f, 0f)); up() }
+        waitForIdle()
+        runOnIdle { playhead = 2.seconds }
+        waitForIdle()
+        onNodeWithTag("clip-playhead").performTouchInput { down(center); moveBy(Offset(40f, 0f)); up() }
+        waitForIdle()
+        assertTrue(sought > 2.seconds && sought < 4.seconds, "Drag after seek used stale position: $sought")
+    }
+
+    @OptIn(ExperimentalTestApi::class)
+    @Test
+    fun draggingAfterResetStartsAtResetBoundary() = runComposeUiTest {
+        var range by mutableStateOf(ClipRange(6.seconds, 10.seconds))
+        var changedTo = Duration.ZERO
+        setContent {
+            ClipRangeSelector(
+                frames = emptyList(), metadata = VideoMetadata(10.seconds, 100, 100, false),
+                range = range, playhead = 9.seconds, modifier = Modifier.width(400.dp),
+                onRangeChange = { boundary, value -> if (boundary == RangeBoundary.Start) changedTo = value },
+            )
+        }
+        onNodeWithTag("clip-start-handle").performTouchInput {
+            down(center); moveBy(Offset(40f, 0f)); up()
+        }
+        waitForIdle()
+        assertTrue(changedTo > 6.seconds)
+        runOnIdle { range = ClipRange(Duration.ZERO, 10.seconds); changedTo = (-1).seconds }
+        waitForIdle()
+        onNodeWithTag("clip-start-handle").performTouchInput {
+            down(center); moveBy(Offset(40f, 0f)); up()
+        }
+        waitForIdle()
+        assertTrue(changedTo > Duration.ZERO && changedTo < 2.seconds, "Drag after reset used stale position: $changedTo")
+    }
+
     @Test
     fun thumbnailSlotsReuseNearestFrameInsteadOfLeavingVisualGaps() {
         assertEquals(
